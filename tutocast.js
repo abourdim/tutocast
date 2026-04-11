@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.80 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.81 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.80';
+const APP_VERSION = '0.7.81';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 09:15';
+const BUILD_DATE = '2026-04-12 09:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -270,6 +270,8 @@ const LANG = {
     captionsLabel: '💬 Sous-titres live (Chrome/Edge)',
     sceneIntroLabel: "🎭 Texte d'intro auto sur changement de scène",
     sceneTransitionLabel: '🎞 Transition fondu entre scènes',
+    screensaverLabel: "💤 Screensaver après 90s d'inactivité",
+    screensaverHint: 'Touche une touche pour réveiller',
     snapAnnotLabel: '✏️ Annoter la capture avant sauvegarde',
     snapAnnotTitle: 'Annote ta capture',
     snapAnnotClear: 'Effacer',
@@ -832,6 +834,8 @@ const LANG = {
     captionsLabel: '💬 Live captions (Chrome/Edge)',
     sceneIntroLabel: '🎭 Auto intro text on scene change',
     sceneTransitionLabel: '🎞 Scene transition fade',
+    screensaverLabel: '💤 Screensaver after 90s idle',
+    screensaverHint: 'Press any key to wake up',
     snapAnnotLabel: '✏️ Annotate snapshots before saving',
     snapAnnotTitle: 'Annotate your snapshot',
     snapAnnotClear: 'Clear',
@@ -1386,6 +1390,8 @@ const LANG = {
     captionsLabel: '💬 ترجمات مباشرة (Chrome/Edge)',
     sceneIntroLabel: '🎭 نص مقدمة تلقائي عند تغيير المشهد',
     sceneTransitionLabel: '🎞 انتقال مع تلاشي بين المشاهد',
+    screensaverLabel: '💤 شاشة توقف بعد 90 ثانية',
+    screensaverHint: 'اضغط أي مفتاح للاستيقاظ',
     snapAnnotLabel: '✏️ توضيح اللقطة قبل الحفظ',
     snapAnnotTitle: 'وضّح لقطتك',
     snapAnnotClear: 'مسح',
@@ -2238,6 +2244,10 @@ const Engine = {
 
     // v0.7.64: scene transition fade overlay (drawn on top of everything)
     SceneTransition.render(ctx, width, height);
+
+    // v0.7.81: idle screensaver overlay — drawn on top of all other overlays,
+    // still before laser/ripples so they always appear above the standby art.
+    Screensaver.render(ctx, width, height);
 
     // Laser dot — redraw its offscreen canvas then composite
     Laser.render();
@@ -3342,6 +3352,98 @@ const SceneTransition = {
     ctx.save();
     ctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, Math.min(1, alpha))})`;
     ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  },
+};
+
+/* v0.7.81: Idle screensaver mode.
+   Opt-in via Settings toggle. After 90s of no user input AND not
+   recording, paints a playful dark overlay with a drifting emoji
+   and a pulsing "press any key to wake up" hint. Any mouse/key/
+   touch event wakes it up and re-arms the idle timer. Rendered
+   from Engine.render() each frame so it's baked into the canvas
+   pipeline (and into the recording, if it ever fired during one
+   — which it won't, because show() bails on Recorder.state). */
+const Screensaver = {
+  enabled: false,  // opt-in via Settings toggle
+  IDLE_MS: 90000,  // 90s
+  _idleTimer: null,
+  active: false,
+  _rafId: null,
+  _t0: 0,
+
+  load() {
+    try { this.enabled = localStorage.getItem('tc-screensaver') === '1'; } catch {}
+  },
+  setEnabled(v) {
+    this.enabled = !!v;
+    try { localStorage.setItem('tc-screensaver', v ? '1' : '0'); } catch {}
+    if (!v) this.wake();
+    else this.armTimer();
+  },
+
+  setup() {
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'].forEach(evt => {
+      document.addEventListener(evt, () => this.wake(), { passive: true });
+    });
+    this.armTimer();
+  },
+
+  armTimer() {
+    if (!this.enabled) return;
+    clearTimeout(this._idleTimer);
+    this._idleTimer = setTimeout(() => this.show(), this.IDLE_MS);
+  },
+
+  wake() {
+    // Any user action bumps the idle timer back
+    clearTimeout(this._idleTimer);
+    if (this.active) this.hide();
+    else if (this.enabled) this.armTimer();
+  },
+
+  show() {
+    // Don't fire during recording/countdown
+    if (Recorder.state === 'recording' || Recorder.state === 'paused') return;
+    this.active = true;
+    this._t0 = performance.now();
+    // Render loop is driven by Engine.render() — we just set a flag and
+    // let it draw each frame
+  },
+
+  hide() {
+    this.active = false;
+    this.armTimer();
+  },
+
+  // Called every Engine.render() frame, after all sources
+  render(ctx, W, H) {
+    if (!this.active) return;
+    const age = (performance.now() - this._t0) / 1000;  // seconds
+    // Full dark overlay
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, .92)';
+    ctx.fillRect(0, 0, W, H);
+    // Drifting emoji
+    const emoji = '🎬';
+    const size = 220;
+    // Slow horizontal drift with a sine bobbing
+    const dx = (Math.sin(age * 0.25) * 0.5 + 0.5) * (W - size);
+    const dy = H / 2 + Math.sin(age * 0.7) * 40;
+    ctx.font = `${size}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Soft glow behind the emoji
+    ctx.shadowColor = 'rgba(251, 191, 36, .5)';
+    ctx.shadowBlur = 60;
+    ctx.fillText(emoji, dx + size / 2, dy);
+    ctx.shadowBlur = 0;
+    // "Press any key" text at the bottom, pulsing opacity
+    const alpha = 0.5 + Math.sin(age * 2) * 0.25;
+    ctx.globalAlpha = alpha;
+    ctx.font = '700 48px Righteous, Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(t('screensaverHint') || 'Touche une touche pour réveiller', W / 2, H - 80);
     ctx.restore();
   },
 };
@@ -10017,6 +10119,12 @@ function wireEvents() {
     stEl.checked = SceneTransition.enabled;
     stEl.addEventListener('change', (e) => SceneTransition.setEnabled(e.target.checked));
   }
+  // v0.7.81: opt-in idle screensaver mode
+  const ssEl = $('tcScreensaverToggle');
+  if (ssEl) {
+    ssEl.checked = Screensaver.enabled;
+    ssEl.addEventListener('change', (e) => Screensaver.setEnabled(e.target.checked));
+  }
   // v0.7.28: History clear button
   $('tcHistoryClearBtn')?.addEventListener('click', () => {
     if (History.entries.length === 0) return;
@@ -10094,6 +10202,7 @@ async function init() {
   LiveCaptions.load();
   SceneIntroText.load();
   SceneTransition.load();
+  Screensaver.load();  // v0.7.81
   IntroOutro.load();
   History.load();
   Scenes.loadCustom();  // v0.7.48: restore custom scenes
@@ -10125,6 +10234,7 @@ async function init() {
   Tooltip.setup();
   GuidedTour.setup();
   Minimap.setup();
+  Screensaver.setup();  // v0.7.81
 
   renderScenes();
   renderTextPresets();
