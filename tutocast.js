@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.55 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.56 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.55';
+const APP_VERSION = '0.7.56';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 03:00';
+const BUILD_DATE = '2026-04-12 03:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -230,6 +230,16 @@ const LANG = {
     historyClear: "🗑 Vider l'historique",
     historyConfirmClear: "Vider l'historique des tutos ?",
     historyCleared: '🗑 Historique vidé',
+    dashTitle: 'Tes stats',
+    dashEmpty: 'Fais ton premier tuto pour voir tes stats 📊',
+    dashRecs: 'tutos',
+    dashTotal: 'total',
+    dashLongest: 'max',
+    dashSize: 'taille',
+    dashStreak: 'jours',
+    dashFavDay: 'favori',
+    dash7Days: '7 derniers jours',
+    dashNote: '💡 Stats calculées sur les 10 derniers tutos',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Réinitialiser les badges',
     clearCache: 'Vider le cache complet',
@@ -718,6 +728,16 @@ const LANG = {
     historyClear: '🗑 Clear history',
     historyConfirmClear: 'Clear tutorial history?',
     historyCleared: '🗑 History cleared',
+    dashTitle: 'Your stats',
+    dashEmpty: 'Record your first tutorial to see your stats 📊',
+    dashRecs: 'tutorials',
+    dashTotal: 'total',
+    dashLongest: 'longest',
+    dashSize: 'size',
+    dashStreak: 'day streak',
+    dashFavDay: 'favorite day',
+    dash7Days: 'last 7 days',
+    dashNote: '💡 Stats from the last 10 tutorials',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Reset badges',
     clearCache: 'Clear all local data',
@@ -1198,6 +1218,16 @@ const LANG = {
     historyClear: '🗑 مسح السجل',
     historyConfirmClear: 'مسح سجل الدروس؟',
     historyCleared: '🗑 تم مسح السجل',
+    dashTitle: 'إحصاءاتك',
+    dashEmpty: 'سجّل درسك الأول لرؤية إحصاءاتك 📊',
+    dashRecs: 'دروس',
+    dashTotal: 'المجموع',
+    dashLongest: 'الأطول',
+    dashSize: 'الحجم',
+    dashStreak: 'أيام',
+    dashFavDay: 'اليوم المفضل',
+    dash7Days: 'آخر 7 أيام',
+    dashNote: '💡 إحصاءات آخر 10 دروس',
     setSecDanger: '♻ الصيانة',
     resetBadges: 'إعادة تعيين الشارات',
     clearCache: 'مسح جميع البيانات المحلية',
@@ -7052,12 +7082,112 @@ const History = {
       const totalSecs = this.entries.reduce((s, e) => s + (e.durSec || 0), 0);
       stats.textContent = `${this.entries.length} · ${this._fmtDur(totalSecs)}`;
     }
+    if (typeof Dashboard !== 'undefined') Dashboard.render();
   },
 
   _escape(s) {
     return String(s).replace(/[&<>"']/g, c => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
     ));
+  },
+};
+
+/* v0.7.56: aggregate session stats dashboard. Derived from
+   History.entries, which is capped at 10 entries — stats may
+   undercount if the history was cleared or if the user has
+   recorded more than 10 takes. Shows a "last 10 tutorials"
+   note at the bottom to make that explicit. */
+const Dashboard = {
+  render() {
+    const wrap = $('tcDashboard');
+    if (!wrap) return;
+    const entries = (History.entries || []);
+    if (entries.length === 0) {
+      wrap.innerHTML = `<div class="tc-dash-empty" data-i18n="dashEmpty">${t('dashEmpty')}</div>`;
+      return;
+    }
+    // Total count, total seconds, total bytes
+    const total = entries.length;
+    const totalSec = entries.reduce((s, e) => s + (e.durSec || 0), 0);
+    const totalBytes = entries.reduce((s, e) => s + (e.size || 0), 0);
+    const longest = entries.reduce((m, e) => Math.max(m, e.durSec || 0), 0);
+    // Favorite day of week (local time)
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+    entries.forEach(e => { const d = new Date(e.at); dayCounts[d.getDay()]++; });
+    const favDay = dayCounts.indexOf(Math.max(...dayCounts));
+    const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    // Last 7 calendar days, count per day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayBuckets = new Array(7).fill(0);
+    entries.forEach(e => {
+      const d = new Date(e.at);
+      const diffMs = today - new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays < 7) dayBuckets[6 - diffDays]++;
+    });
+    const maxBucket = Math.max(1, ...dayBuckets);
+    // Streak: consecutive calendar days ending today with >= 1 recording
+    const uniqueDays = new Set(entries.map(e => {
+      const d = new Date(e.at);
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    }));
+    let streak = 0;
+    for (let i = 0; i < 30; i++) {
+      const day = new Date(today.getTime() - i * 86400000);
+      const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+      if (uniqueDays.has(key)) streak++;
+      else break;
+    }
+
+    const fmtDur = secs => {
+      const s = Math.max(0, Math.floor(secs || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m ${s % 60}s`;
+    };
+    const fmtSize = bytes => {
+      if (!bytes) return '0 B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+      return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+    };
+
+    wrap.innerHTML = `
+      <div class="tc-dash-grid">
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${total}</div>
+          <div class="tc-dash-label" data-i18n="dashRecs">${t('dashRecs')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${fmtDur(totalSec)}</div>
+          <div class="tc-dash-label" data-i18n="dashTotal">${t('dashTotal')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${fmtDur(longest)}</div>
+          <div class="tc-dash-label" data-i18n="dashLongest">${t('dashLongest')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${fmtSize(totalBytes)}</div>
+          <div class="tc-dash-label" data-i18n="dashSize">${t('dashSize')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${streak}</div>
+          <div class="tc-dash-label" data-i18n="dashStreak">${t('dashStreak')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${dayNames[favDay]}</div>
+          <div class="tc-dash-label" data-i18n="dashFavDay">${t('dashFavDay')}</div>
+        </div>
+      </div>
+      <div class="tc-dash-chart">
+        <div class="tc-dash-chart-label" data-i18n="dash7Days">${t('dash7Days')}</div>
+        <div class="tc-dash-chart-bars">
+          ${dayBuckets.map(v => `<div class="tc-dash-bar" style="height:${Math.max(4, (v / maxBucket) * 100)}%"><span>${v || ''}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="tc-dash-note" data-i18n="dashNote">${t('dashNote')}</div>
+    `;
   },
 };
 
@@ -8398,6 +8528,7 @@ async function init() {
   renderTextPresets();
   renderBadges();
   History.render();
+  Dashboard.render();
   renderTicker();
   Templates.renderStepStrip();
 

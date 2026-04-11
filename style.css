@@ -3695,105 +3695,87 @@ body.log-open .app {
   .tc-tpl-step { padding: 4px 6px; }
 }
 
-/* v0.7.54: snapshot annotator modal */
-.tc-snap-annot-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 12800;
-  background: rgba(0, 0, 0, .85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+/* ═══════════════════ v0.7.56: session stats dashboard ═══════════════════ */
+.tc-dash {
+  padding: 4px;
 }
-.tc-snap-annot-card {
-  background: var(--panel, #0c1f0a);
-  border: 2px solid var(--accent, #a3e635);
-  border-radius: 14px;
-  max-width: min(1200px, 96vw);
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .7);
-}
-.tc-snap-annot-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 20px;
-  border-bottom: 1px dashed rgba(255, 255, 255, .1);
-}
-.tc-snap-annot-title {
-  font-family: var(--font-h, Righteous, sans-serif);
-  font-size: 1rem;
-  color: var(--accent, #a3e635);
-  letter-spacing: 1px;
-}
-.tc-snap-annot-close {
-  background: rgba(255, 255, 255, .06);
-  border: 1px solid rgba(255, 255, 255, .15);
-  color: #e5e7eb;
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-.tc-snap-annot-close:hover { background: rgba(239, 68, 68, .2); color: #fff; }
-.tc-snap-annot-body {
-  flex: 1;
+.tc-dash-empty {
   padding: 16px;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
+  text-align: center;
+  font-size: .85rem;
+  color: rgba(255, 255, 255, .5);
+  font-style: italic;
 }
-.tc-snap-annot-body canvas {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 6px;
-  cursor: crosshair;
-  background: #000;
+.tc-dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
 }
-.tc-snap-annot-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px dashed rgba(255, 255, 255, .1);
+.tc-dash-stat {
+  text-align: center;
+  padding: 8px 6px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 8px;
 }
-.tc-snap-annot-swatch {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .2);
-  cursor: pointer;
-  padding: 0;
-  transition: transform .1s;
-}
-.tc-snap-annot-swatch:hover { transform: scale(1.1); }
-.tc-snap-annot-swatch.active {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .4);
-}
-.tc-snap-annot-sep {
-  width: 1px;
-  height: 22px;
-  background: rgba(255, 255, 255, .15);
-  margin: 0 6px;
-}
-.tc-snap-annot-btn {
-  background: rgba(255, 255, 255, .06);
-  border: 1px solid rgba(255, 255, 255, .15);
-  color: #e5e7eb;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: .82rem;
+.tc-dash-value {
   font-family: var(--font-h, Righteous, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent, #a3e635);
+  line-height: 1;
 }
-.tc-snap-annot-btn:hover { background: rgba(255, 255, 255, .14); }
-.tc-snap-annot-save {
-  background: var(--accent, #a3e635) !important;
-  color: var(--bg, #000) !important;
-  border-color: var(--accent, #a3e635) !important;
+.tc-dash-label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .55);
+  margin-top: 4px;
+  letter-spacing: .3px;
+}
+.tc-dash-chart {
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.tc-dash-chart-label {
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: .68rem;
+  color: rgba(255, 255, 255, .5);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 8px;
+}
+.tc-dash-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 50px;
+}
+.tc-dash-bar {
+  flex: 1;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent, #a3e635) 80%, transparent),
+    color-mix(in srgb, var(--accent, #a3e635) 30%, transparent));
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  position: relative;
+  transition: height .3s cubic-bezier(.4, 0, .2, 1);
+}
+.tc-dash-bar span {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .6rem;
+  color: rgba(255, 255, 255, .7);
+  font-family: ui-monospace, monospace;
+}
+.tc-dash-note {
+  font-size: .68rem;
+  color: rgba(255, 255, 255, .45);
+  text-align: center;
+  font-style: italic;
 }
