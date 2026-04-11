@@ -2487,6 +2487,21 @@ body.log-open .app {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* v0.7.84 — inline rename: name span is contenteditable */
+.tc-src-row .tc-src-name {
+  cursor: text;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: background .15s;
+  outline: none;
+}
+.tc-src-row .tc-src-name:hover {
+  background: rgba(255, 255, 255, .06);
+}
+.tc-src-row .tc-src-name:focus {
+  background: rgba(163, 230, 53, .15);
+  box-shadow: 0 0 0 1px rgba(163, 230, 53, .4);
+}
 .tc-src-row-bot {
   display: grid;
   grid-template-columns: 1fr auto auto;

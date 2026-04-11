@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.83 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.84 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.83';
+const APP_VERSION = '0.7.84';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 10:00';
+const BUILD_DATE = '2026-04-12 10:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -364,6 +364,7 @@ const LANG = {
     sourceShow: '🙈 Afficher à nouveau',
     sourceHidden: '🙈 Source cachée',
     sourceShown: '👁 Source affichée',
+    sourceRenamed: 'Source renommée',
     sourceChromeHint: 'Clique ✕ pour retirer · 👁 pour cacher · Suppr clavier',
     transparency_solid: 'Fond plein',
     transparency_semi:  'Fond semi-transparent',
@@ -935,6 +936,7 @@ const LANG = {
     sourceShow: '🙈 Show again',
     sourceHidden: '🙈 Source hidden',
     sourceShown: '👁 Source shown',
+    sourceRenamed: 'Source renamed',
     sourceChromeHint: 'Click ✕ to remove · 👁 to hide · Del key',
     transparency_solid: 'Solid background',
     transparency_semi:  'Semi-transparent background',
@@ -1498,6 +1500,7 @@ const LANG = {
     sourceShow: '🙈 إظهار مجددًا',
     sourceHidden: '🙈 المصدر مخفي',
     sourceShown: '👁 المصدر ظاهر',
+    sourceRenamed: 'أُعيدت تسمية المصدر',
     sourceChromeHint: 'انقر ✕ للإزالة · 👁 للإخفاء · Del للحذف',
     transparency_solid: 'خلفية ممتلئة',
     transparency_semi:  'خلفية شبه شفافة',
@@ -2970,7 +2973,36 @@ const Engine = {
         topRow.className = 'tc-src-row-top';
         const icon = s.type === 'screen' ? '🖥' : s.type === 'cam' ? '🎥' : '🎤';
         const iconEl = document.createElement('span'); iconEl.textContent = icon;
-        const nameEl = document.createElement('span'); nameEl.className = 'tc-src-name'; nameEl.textContent = s.label;
+        const nameEl = document.createElement('span');
+        nameEl.className = 'tc-src-name';
+        nameEl.textContent = s.label;
+        nameEl.contentEditable = 'plaintext-only';
+        nameEl.dataset.srcId = s.id;
+        nameEl.spellcheck = false;
+        nameEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            nameEl.blur();
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            nameEl.textContent = s.label;
+            nameEl.blur();
+          }
+        });
+        nameEl.addEventListener('blur', () => {
+          const newLabel = nameEl.textContent.trim().slice(0, 50);
+          if (newLabel && newLabel !== s.label) {
+            s.label = newLabel;
+            nameEl.textContent = s.label;
+            log('renamed: ' + s.label, 'info');
+            showToast('✏ ' + (t('sourceRenamed') || 'Source renommée'), 1200);
+          } else {
+            nameEl.textContent = s.label;
+          }
+        });
+        // Prevent clicks inside the name from triggering row-level actions
+        nameEl.addEventListener('mousedown', (e) => e.stopPropagation());
         topRow.append(iconEl, nameEl);
 
         if (s.type !== 'mic') {
