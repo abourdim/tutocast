@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.81 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.82 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.81';
+const APP_VERSION = '0.7.82';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 09:30';
+const BUILD_DATE = '2026-04-12 09:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -189,6 +189,12 @@ const LANG = {
     firstTimeBody: 'Les 7 étapes ci-dessous t\'emmènent de zéro à ton premier tuto téléchargé en moins de 5 minutes. TutoCast fonctionne aussi bien sur un Chromebook que sur un ordinateur classique, sans compte, sans installation.',
     firstTimeTeacher: '👩‍🏫 Pour les profs : TutoCast est conçu pour expliquer du code avec un robot (micro:bit, Arduino, LEGO). Utilise le template « 🤖 Démo robot » pour une séquence guidée en 5 étapes. Tes vidéos restent 100% sur ton ordi.',
     brandSection: '🏷 Marque (logo + slogan)',
+    brandPresets: '📁 Presets de marque',
+    brandSave: 'Sauvegarder :',
+    brandLoad: 'Charger :',
+    brandPresetSaved: 'Preset sauvegardé',
+    brandPresetLoaded: 'Preset chargé',
+    brandPresetEmpty: 'Slot vide',
     brandUploadLogo: 'Charger un logo (PNG/SVG)',
     brandClearLogo: 'Retirer le logo',
     brandLogoLoaded: '🏷 Logo chargé',
@@ -753,6 +759,12 @@ const LANG = {
     firstTimeBody: 'The 7 steps below take you from zero to your first downloaded tutorial in under 5 minutes. TutoCast runs on a Chromebook or any desktop browser, no account, no install.',
     firstTimeTeacher: '👩‍🏫 For teachers: TutoCast is built to explain code with a robot (micro:bit, Arduino, LEGO). Use the "🤖 Robot demo" template for a guided 5-step sequence. Your videos stay 100% on your computer.',
     brandSection: '🏷 Brand (logo + slogan)',
+    brandPresets: '📁 Brand presets',
+    brandSave: 'Save:',
+    brandLoad: 'Load:',
+    brandPresetSaved: 'Preset saved',
+    brandPresetLoaded: 'Preset loaded',
+    brandPresetEmpty: 'Slot empty',
     brandUploadLogo: 'Upload a logo (PNG/SVG)',
     brandClearLogo: 'Remove logo',
     brandLogoLoaded: '🏷 Logo loaded',
@@ -1309,6 +1321,12 @@ const LANG = {
     firstTimeBody: 'الخطوات السبع أدناه تأخذك من الصفر إلى أول درس محمّل في أقل من 5 دقائق. يعمل TutoCast على Chromebook أو أي متصفح سطح مكتب، بدون حساب، بدون تثبيت.',
     firstTimeTeacher: '👩‍🏫 للمعلّمين: TutoCast مصمّم لشرح الكود مع روبوت (micro:bit، Arduino، LEGO). استخدم قالب «🤖 عرض روبوت» لتسلسل موجّه من 5 خطوات. فيديوهاتك تبقى 100% على حاسوبك.',
     brandSection: '🏷 العلامة (شعار + شعار نصي)',
+    brandPresets: '📁 إعدادات العلامة',
+    brandSave: 'حفظ:',
+    brandLoad: 'تحميل:',
+    brandPresetSaved: 'تم حفظ الإعداد',
+    brandPresetLoaded: 'تم تحميل الإعداد',
+    brandPresetEmpty: 'فتحة فارغة',
     brandUploadLogo: 'رفع شعار (PNG/SVG)',
     brandClearLogo: 'إزالة الشعار',
     brandLogoLoaded: '🏷 تم تحميل الشعار',
@@ -5670,6 +5688,116 @@ const Brand = {
       ctx.fillText(S.text, cx, cy);
       ctx.restore();
     }
+  },
+};
+
+/* v0.7.82 — Brand presets: 3 numbered slots that snapshot the current
+   Brand state (logo + slogan + colors + effect + filter + tint) into
+   localStorage so teachers can switch between identities (class vs
+   personal channel vs parent volunteer role) in one click. */
+const BrandPresets = {
+  SLOT_KEYS: ['tc-brand-preset-1', 'tc-brand-preset-2', 'tc-brand-preset-3'],
+
+  // Keys under Brand that we serialize. Listed explicitly to avoid
+  // capturing runtime/transient fields.
+  FIELDS: ['logo', 'slogan'],  // the two top-level sub-objects
+  // We also want to preserve the raw data URL of the uploaded logo
+  // image if any — stored in Brand.logo._originalDataUrl
+
+  save(slot) {
+    const idx = slot - 1;
+    if (idx < 0 || idx > 2) return;
+    try {
+      // Build a JSON-safe snapshot
+      const snap = {
+        logo: {
+          _originalDataUrl: Brand.logo?._originalDataUrl || null,
+          x: Brand.logo?.x,
+          y: Brand.logo?.y,
+          w: Brand.logo?.w,
+          h: Brand.logo?.h,
+          rotation: Brand.logo?.rotation,
+          effect: Brand.logo?.effect,
+          opacity: Brand.logo?.opacity,
+          filter: Brand.logo?.filter,
+          tint: Brand.logo?.tint,
+          bgRemoved: Brand.logo?.bgRemoved,
+        },
+        slogan: {
+          text: Brand.slogan?.text,
+          color: Brand.slogan?.color,
+          x: Brand.slogan?.x,
+          y: Brand.slogan?.y,
+          size: Brand.slogan?.size,
+          font: Brand.slogan?.font,
+          rotation: Brand.slogan?.rotation,
+        },
+      };
+      localStorage.setItem(this.SLOT_KEYS[idx], JSON.stringify(snap));
+      showToast(`💾 ${t('brandPresetSaved') || 'Preset'} ${slot}`, 1400);
+      this._renderSlots();
+    } catch (e) {
+      log('brand preset save error: ' + e.message, 'error');
+    }
+  },
+
+  load(slot) {
+    const idx = slot - 1;
+    if (idx < 0 || idx > 2) return;
+    try {
+      const raw = localStorage.getItem(this.SLOT_KEYS[idx]);
+      if (!raw) {
+        showToast(`${t('brandPresetEmpty') || 'Slot vide'} ${slot}`, 1400);
+        return;
+      }
+      const snap = JSON.parse(raw);
+      // Apply slogan first (cheap)
+      if (snap.slogan && Brand.slogan) {
+        Object.assign(Brand.slogan, snap.slogan);
+        if (Brand._measureSlogan) Brand._measureSlogan();
+      }
+      // Apply logo — if a data URL exists, reload it
+      if (snap.logo) {
+        Object.assign(Brand.logo, {
+          x: snap.logo.x, y: snap.logo.y, w: snap.logo.w, h: snap.logo.h,
+          rotation: snap.logo.rotation, effect: snap.logo.effect,
+          opacity: snap.logo.opacity, filter: snap.logo.filter,
+          tint: snap.logo.tint, bgRemoved: snap.logo.bgRemoved,
+          _originalDataUrl: snap.logo._originalDataUrl,
+        });
+        if (snap.logo._originalDataUrl) {
+          const img = new Image();
+          img.onload = () => {
+            Brand.logo.img = img;
+            if (Brand._recomputeLogo) Brand._recomputeLogo();
+          };
+          img.src = snap.logo._originalDataUrl;
+        }
+      }
+      Brand.save();
+      showToast(`📥 ${t('brandPresetLoaded') || 'Preset'} ${slot}`, 1400);
+    } catch (e) {
+      log('brand preset load error: ' + e.message, 'error');
+    }
+  },
+
+  setup() {
+    document.querySelectorAll('[data-brand-save]').forEach(btn => {
+      btn.addEventListener('click', () => this.save(parseInt(btn.dataset.brandSave)));
+    });
+    document.querySelectorAll('[data-brand-load]').forEach(btn => {
+      btn.addEventListener('click', () => this.load(parseInt(btn.dataset.brandLoad)));
+    });
+    this._renderSlots();
+  },
+
+  _renderSlots() {
+    // Add a small dot indicator on buttons whose slot has data
+    document.querySelectorAll('[data-brand-load]').forEach(btn => {
+      const slot = parseInt(btn.dataset.brandLoad);
+      const hasData = !!localStorage.getItem(this.SLOT_KEYS[slot - 1]);
+      btn.classList.toggle('has-data', hasData);
+    });
   },
 };
 
@@ -10208,6 +10336,7 @@ async function init() {
   Scenes.loadCustom();  // v0.7.48: restore custom scenes
   Scenes.loadOrder();  // v0.7.32: restore persisted scene order before first render
   Brand.load();
+  BrandPresets.setup();  // v0.7.82: 3 numbered brand preset slots
   Badges.load();
 
   applyI18n();  // after Sfx/Badges so Teleprompter.hasUserText() is safe

@@ -2573,6 +2573,44 @@ body.log-open .app {
   gap: 6px;
   margin-top: 6px;
 }
+
+/* v0.7.82 — brand preset save/load slots row */
+.tc-brand-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: .74rem;
+  color: rgba(255, 255, 255, .75);
+}
+.tc-brand-preset-row > span { flex: 0 0 auto; }
+.tc-brand-preset-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .2);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: .85rem;
+  position: relative;
+}
+.tc-brand-preset-btn:hover {
+  background: rgba(163, 230, 53, .15);
+  border-color: var(--accent, #a3e635);
+}
+.tc-brand-preset-btn.has-data::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: var(--accent, #a3e635);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--accent, #a3e635);
+}
 .tc-brand-swatch {
   width: 24px;
   height: 24px;
