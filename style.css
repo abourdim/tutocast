@@ -1736,6 +1736,49 @@ body.log-open .app {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   SILENCE WARNING CHIP — v0.5.0
+   Appears on the stage (teacher-only, NOT in the recording) when the
+   mic has been quiet > 1.8s during an active recording.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.tc-silence-chip {
+  position: absolute;
+  top: 14px;
+  inset-inline-start: 14px;
+  background: rgba(251, 191, 36, .92);
+  color: #1a0f05;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: 'Righteous', sans-serif;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  box-shadow: 0 4px 16px rgba(251, 191, 36, .4);
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 10;
+}
+.tc-silence-chip.show {
+  opacity: 1;
+  transform: translateY(0);
+  animation: silencePulse 1.6s ease-in-out infinite;
+}
+@keyframes silencePulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(251, 191, 36, .4); }
+  50%      { box-shadow: 0 6px 24px rgba(251, 191, 36, .7); }
+}
+
+/* Silence-trim button in the Take panel — colored to stand out */
+.tc-silence-trim {
+  background: linear-gradient(135deg, #a855f7, #6366f1) !important;
+  border-color: #a855f7 !important;
+  color: #fff !important;
+  font-weight: 800;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    TRIM MODAL — non-destructive take shortening
    ═══════════════════════════════════════════════════════════════════ */
 

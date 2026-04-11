@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.4.0 — kids-friendly multi-cam screen recorder
+   TutoCast v0.5.0 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.5.0';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -107,6 +107,13 @@ const LANG = {
     removeSource: '✕ Retirer',
     resetLayout: '🔓 Réinitialiser la disposition',
     layoutReset: '🔓 Disposition réinitialisée',
+    downloadCsv: 'Capteurs (.csv)',
+    removeSilence: 'Retirer les silences',
+    silenceEncoding: '🔇 Encodage sans silences…',
+    silenceExported: 'Silences retirés',
+    silenceChip: 'Tu es silencieux…',
+    quizPromptLabel: 'Quelle question veux-tu poser à tes élèves ?',
+    sensorOverlayLabel: '🤖 Overlay auto si le robot bouge fort',
     badge_first: 'Premier tuto',
     badge_long: 'Plus de 5 min',
     badge_multi: 'Multi-caméras',
@@ -205,6 +212,13 @@ const LANG = {
     news_040_4: "Flou arrière-plan par source (🌫) — net au centre, flou dégradé aux bords",
     news_040_5: "Halo de couleur thème toujours actif autour des sources visibles",
     news_040_6: "Pulse visuelle sur chaque marker (M) — retour visible que la marque est enregistrée",
+    news_050: "micro:bit superpouvoirs + trim intelligent 🤖🔇",
+    news_050_1: "Bouton A du micro:bit = zoom · Bouton B = marker · Inclinaison = position du laser",
+    news_050_2: "Export CSV des capteurs aligné sur la timeline du tuto (Unique à TutoCast)",
+    news_050_3: "Trim automatique des silences > 2s — un clic après l'enregistrement, zéro éditeur externe",
+    news_050_4: "Chip d'alerte silence en temps réel (>1.8s de micro muet, visible toi seul)",
+    news_050_5: "Touche Q = carte question overlay (kid-friendly quiz)",
+    news_050_6: "Overlay 🤖 auto si le robot s'agite fort (opt-in dans les Paramètres)",
     tplTitle: "Choisis comment tu commences",
     tplSubtitle: "Chaque template te guide étape par étape",
     tplChoose: "Choisir un template",
@@ -327,6 +341,13 @@ const LANG = {
     removeSource: '✕ Remove',
     resetLayout: '🔓 Reset layout',
     layoutReset: '🔓 Layout reset',
+    downloadCsv: 'Sensors (.csv)',
+    removeSilence: 'Remove silences',
+    silenceEncoding: '🔇 Encoding without silences…',
+    silenceExported: 'Silences removed',
+    silenceChip: 'You\'re silent…',
+    quizPromptLabel: 'What question do you want to ask your students?',
+    sensorOverlayLabel: '🤖 Auto-overlay when the robot jolts',
     badge_first: 'First tutorial',
     badge_long: 'Over 5 minutes',
     badge_multi: 'Multi-camera',
@@ -425,6 +446,13 @@ const LANG = {
     news_040_4: "Per-source background blur (🌫) — sharp center, blurred edge ring",
     news_040_5: "Theme-accent glow halo around every visible source (always on)",
     news_040_6: "Visible pulse on every marker (M) — the teacher gets instant confirmation",
+    news_050: "micro:bit superpowers + smart trim 🤖🔇",
+    news_050_1: "micro:bit button A = zoom · button B = marker · tilt = laser position",
+    news_050_2: "Sensor CSV export aligned with the tutorial timeline (unique to TutoCast)",
+    news_050_3: "Auto-trim silences > 2s — one click post-record, no external editor",
+    news_050_4: "Live silence warning chip (>1.8s quiet mic, visible to you only)",
+    news_050_5: "Q key = quiz card overlay (kid-friendly mid-recording question)",
+    news_050_6: "Auto 🤖 overlay when the robot jolts hard (opt-in in Settings)",
     tplTitle: "Pick how you start",
     tplSubtitle: "Each template guides you step by step",
     tplChoose: "Pick a template",
@@ -539,6 +567,13 @@ const LANG = {
     removeSource: '✕ إزالة',
     resetLayout: '🔓 إعادة ضبط التخطيط',
     layoutReset: '🔓 تمت إعادة ضبط التخطيط',
+    downloadCsv: 'المستشعرات (.csv)',
+    removeSilence: 'إزالة فترات الصمت',
+    silenceEncoding: '🔇 جارٍ الترميز بدون صمت…',
+    silenceExported: 'تمت إزالة الصمت',
+    silenceChip: 'أنت صامت…',
+    quizPromptLabel: 'ما السؤال الذي تريد طرحه على طلابك؟',
+    sensorOverlayLabel: '🤖 طبقة تلقائية عند اهتزاز الروبوت',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
     faq_q1: "ما هو TutoCast؟",
@@ -633,6 +668,13 @@ const LANG = {
     news_040_4: "تمويه خلفية لكل مصدر (🌫) — واضح في الوسط، مموّه عند الحواف",
     news_040_5: "هالة بلون المظهر حول كل مصدر مرئي (دائمًا مفعّلة)",
     news_040_6: "نبضة بصرية عند كل علامة (M) — تأكيد فوري للمعلّم",
+    news_050: "قوى micro:bit الخارقة + قص ذكي 🤖🔇",
+    news_050_1: "زر A = تكبير · زر B = علامة · الإمالة = موضع الليزر",
+    news_050_2: "تصدير CSV للمستشعرات متزامن مع الجدول الزمني للدرس (حصري)",
+    news_050_3: "قص تلقائي لفترات الصمت > 2ث — نقرة واحدة بعد التسجيل، بدون محرر خارجي",
+    news_050_4: "إشعار صمت مباشر (> 1.8ث ميكروفون صامت، مرئي لك فقط)",
+    news_050_5: "مفتاح Q = بطاقة سؤال (quiz) ملائمة للأطفال",
+    news_050_6: "طبقة 🤖 تلقائية عند اهتزاز الروبوت بقوة (اختياري في الإعدادات)",
     tplTitle: "اختر كيف تبدأ",
     tplSubtitle: "كل قالب يرشدك خطوة بخطوة",
     tplChoose: "اختر قالبًا",
@@ -1575,6 +1617,8 @@ const Recorder = {
       this.state = 'recording';
       Chapters.reset();
       Chapters.add(t('scene_' + Scenes.active));
+      SensorTimeline.start();
+      SilenceWatch.start();
       this.updateUI();
       this.startTimer();
       log(t('recStarted'), 'success');
@@ -1655,6 +1699,8 @@ const Recorder = {
     try { this.recorder.stop(); } catch (e) { log(`✗ recorder.stop: ${e.message}`, 'error'); }
     this.state = 'idle';
     this.stopTimer();
+    SensorTimeline.stop();
+    SilenceWatch.stop();
   },
 
   finish() {
@@ -1694,6 +1740,30 @@ const Recorder = {
     this._prevUrls.push(vttUrl);
     const dlVtt = $('tcDownloadVtt');
     dlVtt.href = vttUrl; dlVtt.download = `${fname}.vtt`;
+    // v0.5.0: sensor CSV export — only if the micro:bit was connected and
+    // actually produced samples during the recording. Goes in the same
+    // download flow as the .webm and .vtt.
+    const csv = SensorTimeline.toCSV();
+    if (csv) {
+      const csvBlob = new Blob([csv], { type: 'text/csv' });
+      const csvUrl = URL.createObjectURL(csvBlob);
+      this._prevUrls.push(csvUrl);
+      const dlCsv = $('tcDownloadCsv');
+      if (dlCsv) {
+        dlCsv.href = csvUrl; dlCsv.download = `${fname}-sensors.csv`;
+        dlCsv.style.display = '';
+      }
+      log(`📈 sensor CSV: ${SensorTimeline.samples.length} samples`, 'info');
+    } else {
+      const dlCsv = $('tcDownloadCsv');
+      if (dlCsv) dlCsv.style.display = 'none';
+    }
+
+    // v0.5.0: if silence-trim has something to offer, expose the button
+    const silenceBtn = $('tcSilenceTrimBtn');
+    if (silenceBtn) silenceBtn.style.display = 'none';  // reset until analysed
+    SilenceTrim.checkLastTake();
+
     // trigger auto-download of webm
     setTimeout(() => dl.click(), 200);
     log(`${t('recStopped')} — ${(blob.size / 1024 / 1024).toFixed(1)} MB`, 'success');
@@ -2289,6 +2359,246 @@ const Trim = {
   },
 };
 
+/* ─────────── SilenceTrim — auto-remove long silences from the last take ──────
+
+   Scans the recorded audio for runs of sub-threshold RMS longer than
+   MIN_SILENCE_SEC, produces a list of "keep ranges" (the loud parts),
+   then re-encodes via the same offscreen-canvas pipeline as the Trim
+   tool — only seeking through the keep ranges instead of one window.
+
+   Fully local: uses AudioContext.decodeAudioData to get the samples.
+   No deps, no cloud, no AI. Just RMS thresholding. */
+const SilenceTrim = {
+  MIN_SILENCE_SEC: 2.0,
+  PAD_SEC: 0.15,        // leave a little breathing room either side of each cut
+  THRESHOLD: 0.015,     // RMS below this is "silent"
+  WINDOW_MS: 100,
+
+  keepRanges: null,    // [[startSec, endSec], ...] after analysis
+  savedSeconds: 0,
+  encoding: false,
+
+  /* Called after Recorder.finish() — decodes the audio of the last take,
+     computes keep ranges, and if the total silence saved is >= 2s,
+     shows the "Remove silences?" button in the Take panel. */
+  async checkLastTake() {
+    if (!Recorder._lastBlob) return;
+    const btn = $('tcSilenceTrimBtn');
+    if (!btn) return;
+    btn.style.display = 'none';
+    this.keepRanges = null;
+    this.savedSeconds = 0;
+
+    try {
+      const ab = await Recorder._lastBlob.arrayBuffer();
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      let audioBuf;
+      try {
+        audioBuf = await ac.decodeAudioData(ab.slice(0));
+      } catch (e) {
+        log(`silence-scan decode failed: ${e.message}`, 'info');
+        try { ac.close(); } catch {}
+        return;
+      }
+      const samples = audioBuf.getChannelData(0);
+      const sr = audioBuf.sampleRate;
+      const duration = audioBuf.duration;
+      const windowSamples = Math.max(1, Math.floor((this.WINDOW_MS / 1000) * sr));
+
+      // Step 1: compute silent/loud mask per window
+      const windows = [];
+      for (let i = 0; i < samples.length; i += windowSamples) {
+        let sum = 0;
+        const end = Math.min(i + windowSamples, samples.length);
+        for (let j = i; j < end; j++) sum += samples[j] * samples[j];
+        const rms = Math.sqrt(sum / (end - i));
+        windows.push({ t: i / sr, silent: rms < this.THRESHOLD });
+      }
+
+      // Step 2: find silent runs ≥ MIN_SILENCE_SEC
+      const cuts = [];   // [[cutStart, cutEnd], ...]
+      let runStart = null;
+      for (let i = 0; i < windows.length; i++) {
+        if (windows[i].silent) {
+          if (runStart == null) runStart = windows[i].t;
+        } else if (runStart != null) {
+          const runEnd = windows[i].t;
+          if (runEnd - runStart >= this.MIN_SILENCE_SEC) {
+            // pad inward so we don't clip speech
+            cuts.push([runStart + this.PAD_SEC, runEnd - this.PAD_SEC]);
+          }
+          runStart = null;
+        }
+      }
+      if (runStart != null && duration - runStart >= this.MIN_SILENCE_SEC) {
+        cuts.push([runStart + this.PAD_SEC, duration]);
+      }
+
+      try { ac.close(); } catch {}
+
+      if (cuts.length === 0) {
+        log('🔊 silence-scan: no long silences found', 'info');
+        return;
+      }
+
+      // Step 3: invert cuts into keep ranges
+      const keep = [];
+      let cursor = 0;
+      for (const [cs, ce] of cuts) {
+        if (cs > cursor) keep.push([cursor, cs]);
+        cursor = ce;
+      }
+      if (cursor < duration) keep.push([cursor, duration]);
+
+      this.keepRanges = keep;
+      this.savedSeconds = cuts.reduce((a, [s, e]) => a + (e - s), 0);
+      log(`🔊 silence-scan: ${cuts.length} silent runs, ${this.savedSeconds.toFixed(1)}s saved`, 'info');
+      // Show the offer button with the saved-seconds count in the label
+      btn.style.display = '';
+      btn.textContent = `🔇 ${t('removeSilence')} (−${this.savedSeconds.toFixed(1)}s)`;
+    } catch (e) {
+      log(`silence-scan error: ${e.message}`, 'error');
+    }
+  },
+
+  async exportCleaned() {
+    if (this.encoding) return;
+    if (!this.keepRanges || !Recorder._lastBlob) return;
+    this.encoding = true;
+    const btn = $('tcSilenceTrimBtn');
+    if (btn) btn.disabled = true;
+    showToast(t('silenceEncoding'), 2500);
+
+    const srcVideo = document.createElement('video');
+    srcVideo.src = URL.createObjectURL(Recorder._lastBlob);
+    srcVideo.muted = true;
+    srcVideo.playsInline = true;
+    await new Promise(r => srcVideo.addEventListener('loadedmetadata', r, { once: true }));
+    if (!isFinite(srcVideo.duration)) {
+      srcVideo.currentTime = 1e9;
+      await new Promise(r => srcVideo.addEventListener('timeupdate', r, { once: true }));
+    }
+
+    const W = srcVideo.videoWidth || Engine.width;
+    const H = srcVideo.videoHeight || Engine.height;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ac.createMediaElementSource(srcVideo);
+    const dest = ac.createMediaStreamDestination();
+    const silent = ac.createConstantSource();
+    const gain = ac.createGain(); gain.gain.value = 0;
+    silent.connect(gain).connect(dest);
+    silent.start();
+    src.connect(dest);
+
+    const videoStream = canvas.captureStream(30);
+    const stream = new MediaStream([
+      videoStream.getVideoTracks()[0],
+      dest.stream.getAudioTracks()[0],
+    ]);
+    const mime = Recorder.pickMime();
+    let rec;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+    } catch {
+      rec = new MediaRecorder(stream, { videoBitsPerSecond: 4_000_000 });
+    }
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const finished = new Promise(r => rec.onstop = r);
+
+    rec.start(250);
+
+    // Walk each keep range sequentially. For each: seek to start, play, and
+    // push canvas frames until we hit the end. Then seek to the next range's
+    // start and continue. A brief pause is needed around the seek to let the
+    // <video> stall/flush cleanly so audio doesn't blip.
+    let rangeIdx = 0;
+    let rafId;
+    const pumpRange = async (ri) => {
+      const [rs, re] = this.keepRanges[ri];
+      srcVideo.currentTime = rs;
+      await new Promise(r => srcVideo.addEventListener('seeked', r, { once: true }));
+      srcVideo.play();
+      await new Promise((resolve) => {
+        const step = () => {
+          ctx.drawImage(srcVideo, 0, 0, W, H);
+          if (srcVideo.currentTime >= re || srcVideo.ended) {
+            srcVideo.pause();
+            cancelAnimationFrame(rafId);
+            resolve();
+            return;
+          }
+          rafId = requestAnimationFrame(step);
+        };
+        step();
+      });
+    };
+
+    for (rangeIdx = 0; rangeIdx < this.keepRanges.length; rangeIdx++) {
+      await pumpRange(rangeIdx);
+    }
+    try { rec.requestData(); } catch {}
+    rec.stop();
+    await finished;
+    try { silent.stop(); } catch {}
+    try { ac.close(); } catch {}
+    try { URL.revokeObjectURL(srcVideo.src); } catch {}
+
+    const outBlob = new Blob(chunks, { type: chunks[0]?.type || mime || 'video/webm' });
+    if (outBlob.size === 0) {
+      showToast(t('recEmpty'), 5000);
+      log('✗ silence-trim produced 0-byte blob', 'error');
+      this.encoding = false;
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    const url = URL.createObjectURL(outBlob);
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const fname = `tutocast-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}-nosilence`;
+    const ext = Recorder.extForMime(outBlob.type);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${fname}.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+
+    log(`🔇 silence-trim exported: ${(outBlob.size / 1024 / 1024).toFixed(1)} MB (saved ${this.savedSeconds.toFixed(1)}s)`, 'success');
+    showToast(`🔇 ${t('silenceExported')} (−${this.savedSeconds.toFixed(1)}s)`, 3000);
+    Sfx.play('stop');
+    this.encoding = false;
+    if (btn) { btn.disabled = false; btn.style.display = 'none'; }
+  },
+};
+
+/* QuizCard — press Q mid-recording, enter a question, it appears as a big
+   text overlay. Reuses TextOverlays so it's drawn on the canvas and goes
+   into the recording. Auto-removes after 6 seconds. Not interactive —
+   a student pauses playback to answer mentally. Cheap implementation of
+   the "quiz injection" pattern without a custom video player. */
+const QuizCard = {
+  prompt() {
+    const text = window.prompt(t('quizPromptLabel'), '');
+    if (!text || !text.trim()) return;
+    TextOverlays.add('❓ ' + text.trim(), {
+      ttl: 6000,
+      size: 70,
+      color: '#fffbeb',
+      bg: 'rgba(251,146,60,.85)',
+      y: Engine.height / 2,
+    });
+    if (Recorder.state === 'recording' || Recorder.state === 'paused') {
+      Chapters.items.push({ time: Recorder.elapsed() / 1000, label: 'Quiz: ' + text.trim().slice(0, 40) });
+    }
+    Sfx.play('click');
+    log(`❓ quiz: ${text.trim().slice(0, 40)}`, 'info');
+  },
+};
+
 /* Snapshot — download current canvas as PNG */
 function snapshot() {
   Engine.canvas.toBlob((blob) => {
@@ -2304,11 +2614,117 @@ function snapshot() {
   });
 }
 
+/* ─────────── SilenceWatch — flash a ⚠ chip when the mic has been quiet too long
+
+   The cheap-and-honest alternative to "uh/um detection". We can't run
+   Whisper in the browser (40 MB wasm, violates zero-install), but we
+   already have Engine.analyser wired to the VU meter. A 1.8-second run
+   of below-threshold audio usually means a hesitation the teacher
+   would want to self-correct. A small chip appears in the stage
+   corner — NOT drawn to the canvas, so it's invisible to students
+   watching the recording, only visible to the teacher as a coaching hint. */
+const SilenceWatch = {
+  running: false,
+  lastSoundAt: 0,
+  threshold: 0.018,   // RMS threshold — below this counts as "silent"
+  warnAfterMs: 1800,
+  _rafId: null,
+
+  start() {
+    this.running = true;
+    this.lastSoundAt = Date.now();
+    this._tick();
+  },
+
+  stop() {
+    this.running = false;
+    if (this._rafId) cancelAnimationFrame(this._rafId);
+    const chip = $('tcSilenceChip');
+    if (chip) chip.classList.remove('show');
+  },
+
+  _tick() {
+    if (!this.running) return;
+    const a = Engine.analyser;
+    if (a && Recorder.state === 'recording') {
+      const data = new Uint8Array(a.frequencyBinCount);
+      a.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      if (rms > this.threshold) {
+        this.lastSoundAt = Date.now();
+        const chip = $('tcSilenceChip');
+        if (chip) chip.classList.remove('show');
+      } else if (Date.now() - this.lastSoundAt > this.warnAfterMs) {
+        const chip = $('tcSilenceChip');
+        if (chip && !chip.classList.contains('show')) {
+          chip.classList.add('show');
+        }
+      }
+    }
+    this._rafId = requestAnimationFrame(() => this._tick());
+  },
+};
+
+/* ─────────── SensorTimeline — record micro:bit samples to CSV ───────────
+
+   Unique to TutoCast: because we read the micro:bit's accelerometer and
+   buttons over Web Bluetooth, we can capture a timestamp-aligned sensor
+   log alongside the video. Researchers and physics teachers can load
+   the CSV in a spreadsheet and correlate robot motion with tutorial
+   timestamps. Every other screen recorder on earth ignores this. */
+const SensorTimeline = {
+  samples: [],   // { t, x, y, z, a, b }
+  recording: false,
+  lastSampleAt: 0,
+
+  start() {
+    this.samples = [];
+    this.recording = true;
+    this.lastSampleAt = 0;
+  },
+
+  stop() {
+    this.recording = false;
+  },
+
+  sample(v) {
+    if (!this.recording) return;
+    const t = Recorder.elapsed() / 1000;
+    // Throttle to ~20 Hz — accelerometer fires much faster than that,
+    // and 20 samples/sec is plenty for tutorial correlation while
+    // keeping the CSV file small.
+    if (t - this.lastSampleAt < 0.05) return;
+    this.lastSampleAt = t;
+    this.samples.push({
+      t: t.toFixed(3),
+      x: (v.x ?? 0).toFixed(3),
+      y: (v.y ?? 0).toFixed(3),
+      z: (v.z ?? 0).toFixed(3),
+      a: v.a ?? 0,
+      b: v.b ?? 0,
+    });
+  },
+
+  toCSV() {
+    if (!this.samples.length) return null;
+    const header = 't_seconds,accel_x,accel_y,accel_z,button_a,button_b\n';
+    const rows = this.samples.map(s => `${s.t},${s.x},${s.y},${s.z},${s.a},${s.b}`).join('\n');
+    return header + rows + '\n';
+  },
+};
+
 /* ─────────── 6. micro:bit sensors (Web Bluetooth) ─────────── */
 
 const Sensors = {
   device: null, server: null,
   values: null, // { a: 0, b: 0, x: 0, y: 0, z: 0, light: 0 }
+  autoOverlayEnabled: false,  // v0.5.0 — opt-in in Settings
+  _lastAutoOverlayAt: 0,
 
   async connect() {
     if (!navigator.bluetooth) {
@@ -2336,6 +2752,31 @@ const Sensors = {
           this.values.y = v.getInt16(2, true) / 1000;
           this.values.z = v.getInt16(4, true) / 1000;
           this.updatePanel();
+          // v0.5.0: if the laser is ON, tilt drives the laser position
+          // so the teacher can aim with the physical robot in their hand.
+          // Accelerometer range ≈ [-1, 1] in g's for tilt angles.
+          // Map x → laserX, y → laserY (inverted — nose-down = top of screen).
+          if (Laser.on) {
+            const nx = Math.max(-1, Math.min(1, this.values.x));
+            const ny = Math.max(-1, Math.min(1, this.values.y));
+            const targetX = Engine.width * 0.5 + nx * Engine.width * 0.45;
+            const targetY = Engine.height * 0.5 + ny * Engine.height * 0.45;
+            // Smooth ease so jitter doesn't jerk the dot around
+            Laser.x = Laser.x + (targetX - Laser.x) * 0.3;
+            Laser.y = Laser.y + (targetY - Laser.y) * 0.3;
+            Laser.lastMove = Date.now();
+          }
+          // v0.5.0: accumulate a sensor sample into the recording timeline
+          if (SensorTimeline.recording) SensorTimeline.sample(this.values);
+          // v0.5.0: if opted in, drop a 🤖 overlay when the robot jerks hard.
+          // Cooldown 3s so we don't spam the canvas during continuous motion.
+          if (this.autoOverlayEnabled) {
+            const mag = Math.sqrt(this.values.x * this.values.x + this.values.y * this.values.y + this.values.z * this.values.z);
+            if (mag > 1.6 && Date.now() - this._lastAutoOverlayAt > 3000) {
+              this._lastAutoOverlayAt = Date.now();
+              TextOverlays.add('🤖', { size: 120, ttl: 1800, y: Engine.height / 2 });
+            }
+          }
         });
       } catch (e) { /* accelerometer optional */ }
       // Try buttons
@@ -2356,8 +2797,12 @@ const Sensors = {
         await bChar.startNotifications();
         bChar.addEventListener('characteristicvaluechanged', (e) => {
           this.values = this.values || {};
+          const prevB = this.values.b || 0;
           this.values.b = e.target.value.getUint8(0);
           this.updatePanel();
+          // v0.5.0: edge-trigger on B button → add a chapter marker.
+          // Combined with A → zoom, the micro:bit is a full remote now.
+          if (prevB === 0 && this.values.b !== 0) Chapters.addMarker();
         });
       } catch (e) { /* buttons optional */ }
       log(t('btConnected'), 'success');
@@ -2641,6 +3086,7 @@ function setupHotkeys() {
     else if (k === 'f') { Freeze.toggle(); e.preventDefault(); }
     else if (k === 'd') { Whiteboard.toggle(); e.preventDefault(); }
     else if (k === 'z') { Zoom.toggle(); e.preventDefault(); }
+    else if (k === 'q') { QuizCard.prompt(); e.preventDefault(); }
     else if (k === 'escape') { closeAllPanels(); }
   });
 }
@@ -2740,6 +3186,21 @@ function wireEvents() {
   // Reset Layout — clears all .custom flags and re-runs the active scene
   const resetBtn = $('tcResetLayoutBtn');
   if (resetBtn) resetBtn.addEventListener('click', () => Drag.resetAll());
+
+  // Silence-trim wiring (v0.5.0) — appears after recording if the scan found > 2s of silence
+  const silBtn = $('tcSilenceTrimBtn');
+  if (silBtn) silBtn.addEventListener('click', () => SilenceTrim.exportCleaned());
+
+  // Sensor-triggered overlay toggle (v0.5.0) — opt-in in Settings
+  const sensorOverlayEl = $('tcSensorOverlayToggle');
+  if (sensorOverlayEl) {
+    try { sensorOverlayEl.checked = localStorage.getItem('tc-sensor-overlay') === '1'; } catch {}
+    Sensors.autoOverlayEnabled = sensorOverlayEl.checked;
+    sensorOverlayEl.addEventListener('change', (e) => {
+      Sensors.autoOverlayEnabled = e.target.checked;
+      try { localStorage.setItem('tc-sensor-overlay', e.target.checked ? '1' : '0'); } catch {}
+    });
+  }
 
   // Trim wiring
   $('tcTrimBtn').addEventListener('click', () => Trim.open());

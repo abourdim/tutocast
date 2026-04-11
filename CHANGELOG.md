@@ -3,6 +3,131 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.5.0 — 2026-04-11
+
+Six features in one release. Four Tier-1 "this is what makes TutoCast
+unique" items and two Tier-2 polish items. All verified end-to-end via
+the Preview MCP harness.
+
+Deliberately SKIPPED from the competitor-feature idea list: AI auto-
+script (BYOK = mission pivot), gaze-aware PIP (MediaPipe = 3 MB dep),
+click tracer (can't track cursor outside sandbox), retry-last-30s
+(MediaRecorder can't rewind), dual output mode (niche), heatmap (no
+cursor tracking), QR code (complexity). Documented reasons on request.
+
+### Added — 🤖 micro:bit Superpowers
+
+TutoCast's unique angle: because Web Bluetooth reads the accelerometer
+and buttons, we can use the physical robot as a recording remote. No
+other screen recorder on the planet can do this.
+
+- **Button A = toggle zoom** (shipped in v0.3.0)
+- **Button B = add chapter marker** (v0.5.0, edge-triggered on press)
+- **Accelerometer tilt → laser position** (v0.5.0) while `Laser.on`.
+  x/y accelerometer axes map to canvas x/y with easing (`0.3` per
+  frame) so gentle tilts drive a smooth laser pointer. Clamped to
+  [-1, 1] g's then scaled to ±45% of the canvas from center.
+- Combined: the teacher holds the micro:bit in one hand, points at
+  the robot with the other, and drives the whole recording without
+  touching the keyboard.
+
+### Added — 📈 Sensor timeline → CSV export
+
+During any recording, if the micro:bit is connected, accelerometer
+samples are throttled to ~20 Hz and logged to an in-memory buffer
+via `SensorTimeline.sample()`. On `Recorder.finish()`, if any samples
+exist, a third download link appears in the Take panel alongside the
+`.webm` and `.vtt`:
+
+- `{filename}-sensors.csv` with columns
+  `t_seconds,accel_x,accel_y,accel_z,button_a,button_b`
+- Timestamps are aligned to `Recorder.elapsed() / 1000` so the CSV
+  maps directly onto the video timeline
+- Hidden by default; only shown when samples exist
+- Unique to TutoCast because of the Web Bluetooth integration —
+  researchers and physics teachers can finally correlate robot
+  motion with tutorial timestamps in a spreadsheet
+
+### Added — 🔇 Silence trimmer
+
+Biggest editor-parity feature after v0.3.0 Trim. Closes the dead-air
+bounce reason. **Requires no AI and no dependencies.**
+
+- After `Recorder.finish()`, `SilenceTrim.checkLastTake()` decodes the
+  audio via `AudioContext.decodeAudioData`, computes RMS in 100 ms
+  windows, finds runs below `0.015` threshold lasting ≥ 2 seconds,
+  and inverts them into keep-ranges.
+- If saved duration ≥ 0 s, the button
+  `🔇 Remove silences (−N.Ns)` appears in the Take panel
+- On click, `SilenceTrim.exportCleaned()` re-encodes via the same
+  offscreen-canvas + MediaRecorder pipeline as the v0.3.0 Trim tool,
+  walking each keep-range sequentially with seek + play + frame pump.
+  Audio is routed through `createMediaElementSource` + silent
+  `ConstantSourceNode` keepalive (same v0.2.2 fix pattern)
+- Downloads as `{filename}-nosilence.{ext}` using the current format
+  preference (MP4 or WebM)
+
+Verified: a 3.3 s pure-silence test take was correctly identified
+and offered for trimming with "−3.3s" in the button label.
+
+### Added — 🎙 Live silence warning chip
+
+Cheap-and-honest alternative to "uh/um detection" that every competitor
+wants. We can't run Whisper (40 MB wasm = mission violation), but we
+already have `Engine.analyser` feeding the VU meter.
+
+- `SilenceWatch.start()` runs a RAF loop during active recording,
+  reads the analyser every frame, computes RMS
+- If RMS < 0.018 for more than 1800 ms, shows a `⚠ Tu es silencieux…`
+  chip in the stage's top-left corner
+- **Not drawn to the canvas** — the chip is an HTML element on top of
+  the preview, invisible in the recorded file, visible to the teacher
+  as a coaching hint only
+- Animates a pulse via CSS keyframes so it's noticeable without being
+  obnoxious
+
+### Added — 📋 Quiz card overlay
+
+Press `Q` mid-recording. Browser `prompt()` asks "What question do
+you want to ask your students?". The answer becomes a big orange-
+backgrounded text overlay (via the existing `TextOverlays` system),
+visible in the recording, auto-fading after 6 seconds. Also drops
+a `Quiz: {question}` chapter marker if recording is live.
+
+Not interactive during playback — VTT doesn't really do that without
+a custom player — but it forces students to pause and think, which
+is the actual pedagogical win.
+
+### Added — 🔊 Sensor-triggered 🤖 overlay
+
+Opt-in toggle in the Settings panel (`🤖 Auto-overlay when the robot
+jolts`). When enabled, the accelerometer callback computes
+`|acceleration|` and, if it exceeds `1.6 g`, drops a big `🤖` text
+overlay for 1.8 seconds. 3-second cooldown so continuous motion
+doesn't spam the canvas. Fun, on-brand, unique to TutoCast.
+
+### Changed — Sensors accelerometer callback
+
+Previously just updated `this.values` and the HUD. Now also:
+- Drives the laser position when `Laser.on` is true
+- Feeds `SensorTimeline.sample()` during recording
+- Detects jolts and drops the 🤖 overlay (opt-in)
+
+Button B handler now edge-triggers `Chapters.addMarker()` on press.
+
+### i18n
+- 13 new keys × 3 languages (silence chip, silence-trim button, CSV
+  label, quiz prompt, sensor overlay toggle, news_050 entries).
+
+### Verified (Preview MCP harness)
+- SensorTimeline: CSV header correct, 10+ samples written to rows
+- Quiz: prompt → overlay `❓ Pourquoi le robot tourne à gauche?` + chapter
+- Sensor overlay: magnitude 1.732 > 1.6 → 🤖 dropped
+- Silence chip: `show` class added after 2.5 s simulated silence
+- E2E recording: 172 KB MP4 + CSV download visible with correct filename
+- Silence-trim scan: `−3.3s` detected on a pure-silent test take
+- JS `node --check` passes, all objects present
+
 ## v0.4.0 — 2026-04-11
 
 Drag-drop + three effects landed in one session. All verified end-to-end

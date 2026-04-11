@@ -61,6 +61,22 @@ Switch between them in real time during the recording using number keys **1-6**.
 - **📸 Snapshot** (`S`) — download a PNG of the current frame
 - **🏷 Markers** (`M`) — tag moments in the recording, exported as chapters
 
+### 🤖 micro:bit as a recording remote (v0.5.0)
+- **Button A** — toggle zoom
+- **Button B** — add a chapter marker
+- **Tilt the robot** (accelerometer) — drives the laser pointer position while `L` is on
+- **Sensor timeline → CSV** dropped alongside the `.webm` and `.vtt` on every take where the micro:bit was connected. Columns: `t_seconds, accel_x, accel_y, accel_z, button_a, button_b`
+
+### 🔇 Smart silence trimming (v0.5.0)
+- **Auto-detects silences > 2s** in the recorded audio after every take
+- Offers a one-click `🔇 Remove silences (−N.Ns)` button in the Take panel
+- Re-encodes cleanly via the same offscreen-canvas pipeline as Trim — no external editor
+- **Live silence warning chip** flashes on the stage (visible to you only, not in the recording) when the mic has been quiet > 1.8 s
+
+### 📋 Quick teaching overlays (v0.5.0)
+- **`Q` key** — drop a quiz card on the canvas with a question you type
+- **`🤖 overlay` on robot jolt** — opt-in Settings toggle, fires a robot sticker whenever accel magnitude > 1.6 g
+
 ### 🖐 Drag & drop layout (v0.4.0)
 - **Click-drag any source** on the stage to reposition it
 - **Auto-pins** the source so scene switches won't move it back
@@ -175,8 +191,11 @@ python3 -m http.server 8000
 | `Z` | Toggle smooth zoom (cursor-centered, 1.8×) |
 | `S` | Take a photo snapshot |
 | `Esc` | Close all panels |
+| `Q` | Quiz card — drop a question overlay mid-recording (v0.5.0) |
 | `Ctrl+Shift+D` | Toggle debug HUD (FPS + memory) |
 | `micro:bit A` | Same as `Z` — toggle zoom from the physical robot button |
+| `micro:bit B` | Same as `M` — add a chapter marker (v0.5.0) |
+| `micro:bit tilt` | Drive the laser pointer position (v0.5.0, requires laser on) |
 
 ---
 

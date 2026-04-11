@@ -109,7 +109,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.4.0</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.5.0</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -161,6 +161,8 @@
               <div class="tc-teleprompter" id="tcTeleprompter" style="display:none">
                 <div class="tc-tele-inner" id="tcTeleInner" data-i18n="promptTelePlaceholder">Colle ton script ici…</div>
               </div>
+              <!-- Silence warning chip — appears (teacher-only, never in the recording) when mic is quiet >1.8s -->
+              <div class="tc-silence-chip" id="tcSilenceChip">⚠ <span data-i18n="silenceChip">Tu es silencieux…</span></div>
             </div>
           </div>
 
@@ -204,7 +206,9 @@
           <div class="tc-take-actions">
             <a class="tc-btn-full" id="tcDownloadBtn" download>⬇️ <span data-i18n="download">Télécharger</span></a>
             <a class="tc-btn-full" id="tcDownloadVtt" download>📝 <span data-i18n="downloadChapters">Chapitres (.vtt)</span></a>
+            <a class="tc-btn-full" id="tcDownloadCsv" download style="display:none">📈 <span data-i18n="downloadCsv">Capteurs (.csv)</span></a>
             <button class="tc-btn-full" id="tcTrimBtn">✂️ <span data-i18n="trim">Couper</span></button>
+            <button class="tc-btn-full tc-silence-trim" id="tcSilenceTrimBtn" style="display:none">🔇 <span data-i18n="removeSilence">Retirer les silences</span></button>
             <button class="tc-btn-full" id="tcNewTakeBtn">🎬 <span data-i18n="newTake">Nouveau tuto</span></button>
           </div>
         </div>
@@ -374,6 +378,18 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
+          <h3>🤖 v0.5.0 — 11 avril 2026</h3>
+          <p data-i18n="news_050">micro:bit superpouvoirs + trim intelligent 🤖🔇</p>
+          <ul>
+            <li data-i18n="news_050_1">Bouton A du micro:bit = zoom · Bouton B = marker · Inclinaison = position du laser</li>
+            <li data-i18n="news_050_2">Export CSV des capteurs aligné sur la timeline du tuto (Unique à TutoCast)</li>
+            <li data-i18n="news_050_3">Trim automatique des silences > 2s — un clic après l'enregistrement, zéro éditeur externe</li>
+            <li data-i18n="news_050_4">Chip d'alerte silence en temps réel (>1.8s de micro muet, visible toi seul)</li>
+            <li data-i18n="news_050_5">Touche Q = carte question overlay (kid-friendly quiz)</li>
+            <li data-i18n="news_050_6">Overlay 🤖 auto si le robot s'agite fort (opt-in dans les Paramètres)</li>
+          </ul>
+        </div>
+        <div class="wiki-entry">
           <h3>🖐 v0.4.0 — 11 avril 2026</h3>
           <p data-i18n="news_040">Drag-drop + effets 🖐✨</p>
           <ul>
@@ -489,7 +505,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.4.0</strong></span>
+      <span class="badge"><strong>v0.5.0</strong></span>
     </div>
   </aside>
 
@@ -542,6 +558,12 @@
         </label>
       </div>
       <div class="sidebar-group">
+        <label class="toggle-ctrl">
+          <input type="checkbox" id="tcSensorOverlayToggle" class="checkbox-ctrl" />
+          <span data-i18n="sensorOverlayLabel">🤖 Overlay auto si la robot bouge fort</span>
+        </label>
+      </div>
+      <div class="sidebar-group">
         <label class="sidebar-label" data-i18n="outputFormat">🎞 Format de sortie</label>
         <select id="tcFormatSelect" class="sidebar-select" aria-label="Output format">
           <option value="auto" data-i18n="formatAuto">Auto (MP4 si possible)</option>
@@ -553,7 +575,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.4.0</strong></span>
+      <span class="badge"><strong>v0.5.0</strong></span>
     </div>
   </aside>
 
@@ -585,7 +607,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.4.0</strong></span>
+      <span class="badge"><strong>v0.5.0</strong></span>
     </div>
   </aside>
 
