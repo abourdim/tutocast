@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.93';
+const APP_VERSION = '0.7.94';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 12:30';
+const BUILD_DATE = '2026-04-12 12:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -157,6 +157,8 @@ const LANG = {
     pipError: '❌ PiP indisponible',
     resetLayout: '🔓 Réinitialiser la disposition',
     layoutReset: '🔓 Disposition réinitialisée',
+    collapseSidebar: 'Cacher la sidebar',
+    expandSidebar: 'Afficher la sidebar',
     saveScene: 'Sauvegarder la disposition',
     promptSaveScene: 'Nom de cette scène ?',
     customSceneEmpty: '⚠ Aucune source visible à sauvegarder',
@@ -754,6 +756,8 @@ const LANG = {
     pipError: '❌ PiP unavailable',
     resetLayout: '🔓 Reset layout',
     layoutReset: '🔓 Layout reset',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
     saveScene: 'Save this layout',
     promptSaveScene: 'Name for this scene?',
     customSceneEmpty: '⚠ No visible source to save',
@@ -1343,6 +1347,8 @@ const LANG = {
     pipError: '❌ PiP غير متوفر',
     resetLayout: '🔓 إعادة ضبط التخطيط',
     layoutReset: '🔓 تمت إعادة ضبط التخطيط',
+    collapseSidebar: 'إخفاء الشريط الجانبي',
+    expandSidebar: 'إظهار الشريط الجانبي',
     saveScene: 'حفظ التخطيط',
     promptSaveScene: 'اسم هذا المشهد؟',
     customSceneEmpty: '⚠ لا يوجد مصدر مرئي للحفظ',
@@ -10503,6 +10509,27 @@ function wireEvents() {
   // Reset Layout — clears all .custom flags and re-runs the active scene
   const resetBtn = $('tcResetLayoutBtn');
   if (resetBtn) resetBtn.addEventListener('click', () => Drag.resetAll());
+
+  // v0.7.94: collapse the right sidebar (focus mode) — small ◀ / ▶ toggle
+  // anchored to the studio grid. State persisted in tc-rsidebar-collapsed.
+  (() => {
+    const btn = $('tcRSidebarToggle');
+    const grid = document.querySelector('.tc-studio-grid');
+    if (!btn || !grid) return;
+    let collapsed = false;
+    try { collapsed = localStorage.getItem('tc-rsidebar-collapsed') === '1'; } catch {}
+    const apply = () => {
+      grid.classList.toggle('rsidebar-collapsed', collapsed);
+      btn.textContent = collapsed ? '▶' : '◀';
+      btn.title = collapsed ? (t('expandSidebar') || 'Expand sidebar') : (t('collapseSidebar') || 'Collapse sidebar');
+    };
+    apply();
+    btn.addEventListener('click', () => {
+      collapsed = !collapsed;
+      try { localStorage.setItem('tc-rsidebar-collapsed', collapsed ? '1' : '0'); } catch {}
+      apply();
+    });
+  })();
 
   // v0.7.48: Save current layout as a new custom scene
   $('tcSaveSceneBtn')?.addEventListener('click', () => Scenes.saveCurrentAsScene());
