@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.1 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.2 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.1';
+const APP_VERSION = '0.7.2';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -152,6 +152,8 @@ const LANG = {
     drawHint: '✏ D = activer/désactiver · clique-glisse sur l\'aperçu pour dessiner',
     layerForward: '⬆ Vers l\'avant',
     layerBackward: '⬇ Vers l\'arrière',
+    sourceRemoved: 'Source retirée',
+    firstSourceHint: '💡 Glisse pour déplacer · coin pour redimensionner · ✕ dans la liste ou touche Suppr pour retirer',
     badge_first: 'Premier tuto',
     badge_long: 'Plus de 5 min',
     badge_multi: 'Multi-caméras',
@@ -437,6 +439,8 @@ const LANG = {
     drawHint: '✏ D = toggle · click-drag on the preview to draw',
     layerForward: '⬆ Forward',
     layerBackward: '⬇ Backward',
+    sourceRemoved: 'Source removed',
+    firstSourceHint: '💡 Drag to move · corner to resize · ✕ in the list or Delete key to remove',
     badge_first: 'First tutorial',
     badge_long: 'Over 5 minutes',
     badge_multi: 'Multi-camera',
@@ -714,6 +718,8 @@ const LANG = {
     drawHint: '✏ D = تفعيل/إلغاء · اسحب على المعاينة للرسم',
     layerForward: '⬆ إلى الأمام',
     layerBackward: '⬇ إلى الخلف',
+    sourceRemoved: 'تمت إزالة المصدر',
+    firstSourceHint: '💡 اسحب للتحريك · الزاوية لتغيير الحجم · ✕ في القائمة أو مفتاح Delete للإزالة',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
     faq_q1: "ما هو TutoCast؟",
@@ -1265,6 +1271,7 @@ const Engine = {
       // Re-apply the active scene so the new source is laid out correctly
       if (Scenes.active) Scenes.reapply();
       log(`+ ${t('sourceScreen')}`, 'success');
+      this._maybeShowFirstSourceHint();
     } catch (e) {
       log(`✗ screen: ${e.message}`, 'error');
       if (e.name === 'NotAllowedError') showToast(t('permissionDenied'), 3500);
@@ -1299,6 +1306,8 @@ const Engine = {
       if (Scenes.active) Scenes.reapply();
       log(`+ ${src.label}`, 'success');
       Badges.unlockIfMultiCam();
+      // v0.7.2: one-time hint toast so the user knows how to remove
+      this._maybeShowFirstSourceHint();
       // After a successful permission grant, labels become available — refresh
       this.refreshDeviceList();
     } catch (e) {
@@ -1333,6 +1342,15 @@ const Engine = {
     } catch (e) {
       log(`✗ mic: ${e.message}`, 'error');
     }
+  },
+
+  /* One-time instructional toast, shown the first time the user adds a
+     source in a new session. Tells them how to drag/resize/remove so
+     the controls are discoverable without reading docs. */
+  _maybeShowFirstSourceHint() {
+    if (this._firstSourceHintShown) return;
+    this._firstSourceHintShown = true;
+    showToast(t('firstSourceHint'), 5500);
   },
 
   /* Re-read the current theme's --accent CSS variable and cache it for the
@@ -1391,8 +1409,10 @@ const Engine = {
     if (!src) return;
     try { src.stream.getTracks().forEach(t => t.stop()); } catch {}
     this.sources = this.sources.filter(s => s.id !== id);
+    if (Drag.selectedSourceId === id) Drag.selectedSourceId = null;
     this.onSourcesChanged();
     log(`- ${src.label}`, 'info');
+    showToast(`✕ ${t('sourceRemoved')}: ${src.label}`, 1500);
   },
 
   onSourcesChanged() {
@@ -1432,7 +1452,7 @@ const Engine = {
         }
 
         const rm = document.createElement('button');
-        rm.className = 'tc-src-icon-btn';
+        rm.className = 'tc-src-icon-btn tc-src-remove';
         rm.title = t('removeSource');
         rm.textContent = '✕';
         rm.addEventListener('click', (e) => { e.stopPropagation(); this.removeSource(s.id); });
@@ -2377,6 +2397,7 @@ const Whiteboard = {
    text overlays scale their font size instead. */
 const Drag = {
   state: null,  // { kind, ref, mode: 'move'|'resize', corner, offsetX, offsetY, startW, startH, startX, startY, aspect }
+  selectedSourceId: null,   // v0.7.2: track the last-clicked source for Delete-key removal
   SNAP_RADIUS: 60,
   CORNER_RADIUS: 36,
   stage: null,
@@ -2387,13 +2408,20 @@ const Drag = {
     this.stage.addEventListener('mousedown', (e) => this._onDown(e));
     window.addEventListener('mousemove', (e) => this._onMove(e));
     window.addEventListener('mouseup', (e) => this._onUp(e));
-    // Escape clears selection, Delete removes the selected overlay
+    // Escape clears selection, Delete removes the selected overlay/source
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
       const k = e.key.toLowerCase();
-      if ((k === 'delete' || k === 'backspace') && TextOverlays.selectedId != null) {
-        TextOverlays.remove(TextOverlays.selectedId);
-        e.preventDefault();
+      if (k === 'delete' || k === 'backspace') {
+        if (TextOverlays.selectedId != null) {
+          TextOverlays.remove(TextOverlays.selectedId);
+          e.preventDefault();
+        } else if (this.selectedSourceId != null) {
+          // v0.7.2: Delete on a clicked video source removes it from the stage
+          Engine.removeSource(this.selectedSourceId);
+          this.selectedSourceId = null;
+          e.preventDefault();
+        }
       }
     });
   },
@@ -2470,6 +2498,9 @@ const Drag = {
     // Mark text selection for the visible selection rectangle
     if (kind === 'text') TextOverlays.selectedId = ref.id;
     else TextOverlays.selectedId = null;
+    // Mark source selection so Delete/Backspace can remove it
+    if (kind === 'source') this.selectedSourceId = ref.id;
+    else this.selectedSourceId = null;
 
     // Corner-near → resize, otherwise move
     const corner = this._nearCorner(ref, mx, my);

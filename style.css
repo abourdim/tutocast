@@ -1401,9 +1401,9 @@ body.log-open .app {
   border: 1px solid transparent;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: .85rem;
+  font-size: .95rem;
   line-height: 1;
   transition: background .12s, border-color .12s, color .12s;
 }
@@ -1417,11 +1417,18 @@ body.log-open .app {
   border-color: rgba(163,230,53,.4);
   color: var(--accent);
 }
-/* The remove ✕ stays red on hover for destructive intent */
-.tc-src-icon-btn:last-child:hover {
-  background: rgba(239,68,68,.15);
-  border-color: rgba(239,68,68,.45);
+/* The remove ✕ is obviously destructive at rest, not just on hover */
+.tc-src-icon-btn.tc-src-remove {
+  background: rgba(239,68,68,.14);
+  border-color: rgba(239,68,68,.4);
   color: #fca5a5;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+.tc-src-icon-btn.tc-src-remove:hover {
+  background: rgba(239,68,68,.32);
+  border-color: rgba(239,68,68,.7);
+  color: #fff;
 }
 
 /* Reset-layout button in the scenes sidebar */
