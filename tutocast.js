@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.30 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.31 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.30';
+const APP_VERSION = '0.7.31';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 20:30';
+const BUILD_DATE = '2026-04-11 20:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -199,6 +199,7 @@ const LANG = {
     autoResumed: '▶ Enregistrement repris',
     sensorChartTitle: 'Capteurs micro:bit',
     sensorBtnsLegend: 'Boutons',
+    chapterListTitle: 'Chapitres',
     historyTitle: 'Mes tutos',
     historyEmpty: 'Aucun tuto encore. Clique 🔴 ENREGISTRER pour commencer !',
     historyClear: "🗑 Vider l'historique",
@@ -611,6 +612,7 @@ const LANG = {
     autoResumed: '▶ Recording resumed',
     sensorChartTitle: 'micro:bit sensors',
     sensorBtnsLegend: 'Buttons',
+    chapterListTitle: 'Chapters',
     historyTitle: 'My tutorials',
     historyEmpty: 'No tutorial yet. Click 🔴 RECORD to start!',
     historyClear: '🗑 Clear history',
@@ -1015,6 +1017,7 @@ const LANG = {
     autoResumed: '▶ استُؤنف التسجيل',
     sensorChartTitle: 'مستشعرات micro:bit',
     sensorBtnsLegend: 'الأزرار',
+    chapterListTitle: 'الفصول',
     historyTitle: 'دروسي',
     historyEmpty: 'لا دروس بعد. اضغط 🔴 تسجيل للبدء!',
     historyClear: '🗑 مسح السجل',
@@ -2896,6 +2899,9 @@ const Recorder = {
     // v0.6.0: snapshot stats for the BadgeCard generator
     BadgeCard.capture(blob, this.elapsed());
 
+    // v0.7.31: render clickable chapter list under the take video
+    ChapterList.render(Chapters.items, $('tcTakeVideo'));
+
     // v0.7.28: push this take to the history log. Metadata only (name,
     // duration, size, badge/scene counts). No blob, no frames — tiny
     // localStorage footprint.
@@ -3012,6 +3018,58 @@ const Chapters = {
     // Trigger the visual pulse animation on all visible sources
     Recorder._pulseUntil = Date.now() + Recorder._pulseDur;
     Badges.unlockMarker(this.items.length);
+  }
+};
+
+/* v0.7.31: ChapterList — render Chapters.items as a clickable list
+   under the take video so the teacher can seek to any chapter in
+   one click. Pure presentation, driven off the existing Chapters
+   data model (no new state). */
+const ChapterList = {
+  render(items, videoEl) {
+    const wrap = $('tcChapterList');
+    if (!wrap) return;
+    if (!items || items.length === 0) {
+      wrap.style.display = 'none';
+      wrap.innerHTML = '';
+      return;
+    }
+    wrap.style.display = '';
+    wrap.innerHTML = `<div class="tc-chapter-title">🏷 <span data-i18n="chapterListTitle">Chapitres</span> <span class="tc-chapter-count">(${items.length})</span></div>`;
+    const list = document.createElement('div');
+    list.className = 'tc-chapter-items';
+    items.forEach((c, i) => {
+      const row = document.createElement('button');
+      row.className = 'tc-chapter-row';
+      row.innerHTML = `
+        <span class="tc-chapter-idx">${i + 1}</span>
+        <span class="tc-chapter-time">${this._fmtHHMMSS(c.time)}</span>
+        <span class="tc-chapter-label">${this._esc(c.label)}</span>
+      `;
+      row.addEventListener('click', () => {
+        if (videoEl && isFinite(c.time)) {
+          try {
+            videoEl.currentTime = c.time;
+            videoEl.play().catch(() => {});
+            // Brief highlight on the clicked row
+            document.querySelectorAll('.tc-chapter-row').forEach(r => r.classList.remove('active'));
+            row.classList.add('active');
+          } catch {}
+        }
+      });
+      list.appendChild(row);
+    });
+    wrap.appendChild(list);
+  },
+  _fmtHHMMSS(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  },
+  _esc(s) {
+    return String(s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
   }
 };
 

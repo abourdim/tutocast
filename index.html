@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.30</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.31</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -286,7 +286,7 @@
         <!-- Template step strip — "Pick a template" pill when inactive, step progression when a template is running -->
         <div class="tc-template-strip" id="tcTemplateStrip"></div>
 
-        <!-- v0.7.30: Snapshot gallery strip — shows thumbnails of every
+        <!-- v0.7.31: Snapshot gallery strip — shows thumbnails of every
              snapshot taken during the session. Hidden when empty. -->
         <div class="tc-snapshot-strip" id="tcSnapshotStrip" style="display:none"></div>
 
@@ -311,7 +311,9 @@
         <!-- Last take preview -->
         <div class="tc-take" id="tcTake" style="display:none">
           <video id="tcTakeVideo" controls></video>
-          <!-- v0.7.30: sensor timeline mini-chart. Only visible when the
+          <!-- v0.7.31: clickable chapter list — seeks the take video on click -->
+          <div class="tc-chapter-list" id="tcChapterList" style="display:none"></div>
+          <!-- v0.7.31: sensor timeline mini-chart. Only visible when the
                last take has sensor samples. Renders accelerometer X/Y/Z
                lines over the take duration, aligned with the video. -->
           <div class="tc-sensor-chart-wrap" id="tcSensorChartWrap" style="display:none">
@@ -344,7 +346,7 @@
         </div>
       </details>
 
-      <!-- v0.7.30: My tutorials history — last 10 recorded takes, metadata only -->
+      <!-- v0.7.31: My tutorials history — last 10 recorded takes, metadata only -->
       <details class="collapsible">
         <summary><span class="icon">📊</span> <span data-i18n="historyTitle">Mes tutos</span></summary>
         <div class="card">
@@ -380,7 +382,7 @@
   </div>
 
   <!-- ═══════════════════ TRIM MODAL ═══════════════════ -->
-  <!-- v0.7.30: Keyboard shortcuts cheat sheet overlay. Toggle via ? key. -->
+  <!-- v0.7.31: Keyboard shortcuts cheat sheet overlay. Toggle via ? key. -->
   <div class="tc-cheat-modal" id="tcCheatModal" style="display:none">
     <div class="tc-cheat-card">
       <div class="tc-cheat-header">
@@ -580,14 +582,14 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
-          <h3>⌨ v0.7.24 → v0.7.30 — 11 avril 2026</h3>
+          <h3>⌨ v0.7.24 → v0.7.31 — 11 avril 2026</h3>
           <p data-i18n="news_028">Intro/outro + auto-pause + capteurs chart + historique + cheat sheet ⌨🎬⏸📊</p>
           <ul>
             <li data-i18n="news_028_1">Cheat sheet clavier (v0.7.24) : touche ? pour voir tous les 22 raccourcis groupés en 5 catégories</li>
             <li data-i18n="news_028_2">Cartes intro/outro cinématiques (v0.7.25) : 2,5 s en début et 2 s en fin, intégrées au recording (bouton opt-in)</li>
             <li data-i18n="news_028_3">Pause auto quand tu changes d'onglet (v0.7.26) : plus jamais de captures accidentelles de notifications</li>
             <li data-i18n="news_028_4">Mini-graph des capteurs micro:bit (v0.7.27) dans le panneau du dernier tuto : X/Y/Z + boutons A/B</li>
-            <li data-i18n="news_028_5">Panneau 📊 Mes tutos (v0.7.30) : 10 derniers tutos avec date, durée, badges, taille, total session</li>
+            <li data-i18n="news_028_5">Panneau 📊 Mes tutos (v0.7.31) : 10 derniers tutos avec date, durée, badges, taille, total session</li>
           </ul>
         </div>
         <div class="wiki-entry">
@@ -808,7 +810,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.30</strong></span>
+      <span class="badge"><strong>v0.7.31</strong></span>
     </div>
   </aside>
 
@@ -890,14 +892,14 @@
               <span data-i18n="jingleLabel">🎵 Jingle d'intro (1.5s)</span>
             </label>
           </div>
-          <!-- v0.7.30: cinematic intro/outro cards baked into the recording -->
+          <!-- v0.7.31: cinematic intro/outro cards baked into the recording -->
           <div class="sidebar-group">
             <label class="toggle-ctrl">
               <input type="checkbox" id="tcIntroOutroToggle" class="checkbox-ctrl" />
               <span data-i18n="introOutroLabel">🎬 Cartes intro/outro cinématiques</span>
             </label>
           </div>
-          <!-- v0.7.30: auto-pause on tab focus loss -->
+          <!-- v0.7.31: auto-pause on tab focus loss -->
           <div class="sidebar-group">
             <label class="toggle-ctrl">
               <input type="checkbox" id="tcAutoPauseToggle" class="checkbox-ctrl" />
@@ -1020,7 +1022,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.30</strong></span>
+      <span class="badge"><strong>v0.7.31</strong></span>
     </div>
   </aside>
 
@@ -1052,7 +1054,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.30</strong></span>
+      <span class="badge"><strong>v0.7.31</strong></span>
     </div>
   </aside>
 
