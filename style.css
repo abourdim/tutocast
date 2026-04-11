@@ -1850,6 +1850,27 @@ body.log-open .app {
 .tc-scene-btn:hover .tc-scene-del { opacity: 1; }
 .tc-scene-del:hover { background: #ef4444; }
 
+/* v0.7.101: quick-duplicate button (top-left, mirrors delete) */
+.tc-scene-dup {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, .85);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: .55rem;
+  line-height: 18px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.tc-scene-btn:hover .tc-scene-dup { opacity: 1; }
+.tc-scene-dup:hover { background: #38bdf8; }
+
 /* ─── Text presets ─── */
 .tc-text-presets {
   display: flex; flex-wrap: wrap; gap: 4px;

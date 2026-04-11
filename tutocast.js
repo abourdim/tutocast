@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.100';
+const APP_VERSION = '0.7.101';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 14:15';
+const BUILD_DATE = '2026-04-12 14:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -162,6 +162,7 @@ const LANG = {
     expandSidebar: 'Afficher la sidebar',
     saveScene: 'Sauvegarder la disposition',
     promptSaveScene: 'Nom de cette scène ?',
+    promptDuplicateScene: 'Nom de la copie ?',
     customSceneEmpty: '⚠ Aucune source visible à sauvegarder',
     confirmDeleteCustomScene: 'Supprimer cette scène ?',
     downloadCsv: 'Capteurs (.csv)',
@@ -774,6 +775,7 @@ const LANG = {
     expandSidebar: 'Expand sidebar',
     saveScene: 'Save this layout',
     promptSaveScene: 'Name for this scene?',
+    promptDuplicateScene: 'Name of the copy?',
     customSceneEmpty: '⚠ No visible source to save',
     confirmDeleteCustomScene: 'Delete this scene?',
     downloadCsv: 'Sensors (.csv)',
@@ -1378,6 +1380,7 @@ const LANG = {
     expandSidebar: 'إظهار الشريط الجانبي',
     saveScene: 'حفظ التخطيط',
     promptSaveScene: 'اسم هذا المشهد؟',
+    promptDuplicateScene: 'اسم النسخة؟',
     customSceneEmpty: '⚠ لا يوجد مصدر مرئي للحفظ',
     confirmDeleteCustomScene: 'حذف هذا المشهد؟',
     downloadCsv: 'المستشعرات (.csv)',
@@ -3524,6 +3527,58 @@ const Scenes = {
     this.render();
   },
 
+  /* v0.7.101: clone any scene (preset or custom) into a new custom scene
+     based on its preview rects. Builds a snapshot using current Engine
+     dimensions so the clone behaves like a regular custom scene. */
+  duplicateScene(key) {
+    const src = this.presets.find(p => p.key === key);
+    if (!src) return;
+    const baseLabel = src.custom ? src.label : t('scene_' + src.key);
+    const label = prompt(t('promptDuplicateScene') || 'Nom de la copie ?', (baseLabel || 'Scene') + ' (copie)');
+    if (!label || !label.trim()) return;
+    const W = Engine.width || 1920, H = Engine.height || 1080;
+    const newKey = 'custom-' + Date.now();
+    // If the source is already a custom scene with a snapshot, deep-copy it.
+    // Otherwise, build a snapshot from the preset's normalized preview rects.
+    let snapshot;
+    if (src.custom && Array.isArray(src.snapshot) && src.snapshot.length) {
+      snapshot = src.snapshot.map(s => ({
+        type: s.type,
+        label: s.label || '',
+        x: s.x, y: s.y, w: s.w, h: s.h,
+        shape: s.shape || 'rect',
+      }));
+    } else {
+      snapshot = (src.preview || []).map(p => ({
+        type: p.kind === 'screen' ? 'screen' : 'cam',
+        label: '',
+        x: p.x * W,
+        y: p.y * H,
+        w: p.w * W,
+        h: p.h * H,
+        shape: p.shape || 'rect',
+      }));
+    }
+    const scene = {
+      key: newKey,
+      icon: src.icon || '📋',
+      label: label.trim().slice(0, 40),
+      custom: true,
+      snapshot,
+      apply: (e) => this._applyCustomSnapshot(snapshot, e),
+      preview: snapshot.map(s => ({
+        kind: s.type === 'screen' ? 'screen' : s.type === 'cam' ? 'cam' : 'face',
+        x: s.x / W, y: s.y / H, w: s.w / W, h: s.h / H,
+        shape: s.shape,
+      })),
+    };
+    this.custom.push(scene);
+    this.presets.push(scene);
+    this.saveCustom();
+    this.render();
+    showToast('📋 ' + scene.label, 1400);
+  },
+
   saveCustom() {
     try {
       localStorage.setItem('tc-scene-custom', JSON.stringify(
@@ -3812,9 +3867,18 @@ function renderScenes() {
       <span class="tc-scene-label">${sceneLabel}</span>
       <kbd class="tc-scene-kbd">${i + 1}</kbd>
       <span class="tc-scene-grip" aria-hidden="true">⋮⋮</span>
+      <button class="tc-scene-dup" data-dup="${s.key}" title="Duplicate">📋</button>
       ${s.custom ? '<button class="tc-scene-del" data-del="' + s.key + '" title="Delete">✕</button>' : ''}
     `;
     btn.addEventListener('click', () => Scenes.switch(s.key));
+    // v0.7.101: quick-duplicate button (top-left, hover-revealed)
+    const dupBtn = btn.querySelector('.tc-scene-dup');
+    if (dupBtn) {
+      dupBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        Scenes.duplicateScene(s.key);
+      });
+    }
     if (s.custom) {
       const delBtn = btn.querySelector('.tc-scene-del');
       if (delBtn) {
