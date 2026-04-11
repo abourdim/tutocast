@@ -2166,6 +2166,56 @@ body.log-open .app {
   .tc-tool-btn { padding: 7px 9px; }
 }
 
+/* v0.7.43: rich hover tooltips for the tools bar (and any element with
+   data-tip-key). Replaces plain HTML title="" attributes with a themed
+   card showing a bold label, an optional kbd chip, and a description.
+   A single shared .tc-tooltip element is lazy-created by the Tooltip
+   JS module and positioned fixed, clamped to the viewport. */
+.tc-tooltip {
+  position: fixed;
+  z-index: 12900;
+  max-width: 260px;
+  padding: 10px 14px;
+  background: rgba(12, 31, 10, .97);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(163, 230, 53, .4);
+  border-radius: 8px;
+  color: #e5e7eb;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .15s, transform .15s;
+  pointer-events: none;
+}
+.tc-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tc-tooltip-title {
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--accent, #a3e635);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tc-tooltip-title kbd {
+  font-size: .62rem;
+  padding: 1px 5px;
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 4px;
+  color: #fbbf24;
+  font-family: ui-monospace, monospace;
+}
+.tc-tooltip-body {
+  font-size: .76rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .8);
+}
+
 /* v0.7.14: Settings panel sections (collapsible via <details>).
    Each section has a bold summary header and an indented body. */
 .tc-set-section {

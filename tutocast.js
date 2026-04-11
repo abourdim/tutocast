@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.42 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.43 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.42';
+const APP_VERSION = '0.7.43';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 23:30';
+const BUILD_DATE = '2026-04-12 00:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -471,6 +471,16 @@ const LANG = {
     tour_5_title: '⌨ Raccourcis',
     tour_5_body: 'Touche ? pour voir tous les raccourcis clavier.',
     tour_skip: 'Passer', tour_back: '← Retour', tour_next: 'Suivant →', tour_done: 'Terminé ✓',
+    // v0.7.43: rich hover tooltips on tools bar buttons
+    tip_laser: 'Pointeur laser rouge qui suit ta souris',
+    tip_ripples: 'Ondes animées à chaque clic (dans le recording)',
+    tip_freeze: 'Fige l\'écran pour expliquer sans toucher la souris',
+    tip_whiteboard: 'Dessine par-dessus l\'écran',
+    tip_zoom: 'Zoom manuel pour le code',
+    tip_autozoom: 'Zoom auto sur clic (Canva/ScreenStudio)',
+    tip_tele: 'Script téléprompteur avec auto-scroll',
+    tip_snap: 'Capture photo PNG + galerie',
+    tip_fullscreen: 'Plein écran pour immersion totale',
   },
   en: {
     title: 'TutoCast', slogan: '🎬 Lights, camera, ROBOT!',
@@ -921,6 +931,16 @@ const LANG = {
     tour_5_title: '⌨ Shortcuts',
     tour_5_body: 'Press ? to see all keyboard shortcuts.',
     tour_skip: 'Skip', tour_back: '← Back', tour_next: 'Next →', tour_done: 'Done ✓',
+    // v0.7.43: rich hover tooltips on tools bar buttons
+    tip_laser: 'Red laser pointer that follows your mouse',
+    tip_ripples: 'Animated ripples on every click (in the recording)',
+    tip_freeze: 'Freeze the screen to explain without moving the mouse',
+    tip_whiteboard: 'Draw over the screen',
+    tip_zoom: 'Manual zoom for code',
+    tip_autozoom: 'Auto-zoom on click (Canva/ScreenStudio)',
+    tip_tele: 'Teleprompter script with auto-scroll',
+    tip_snap: 'PNG snapshot + gallery',
+    tip_fullscreen: 'Fullscreen for full immersion',
   },
   ar: {
     title: 'TutoCast', slogan: '🎬 أضواء، كاميرا، روبوت!',
@@ -1359,6 +1379,16 @@ const LANG = {
     tour_5_title: '⌨ الاختصارات',
     tour_5_body: 'اضغط ? لرؤية جميع الاختصارات.',
     tour_skip: 'تخطي', tour_back: '← رجوع', tour_next: 'التالي →', tour_done: 'انتهى ✓',
+    // v0.7.43: rich hover tooltips on tools bar buttons
+    tip_laser: 'مؤشر ليزر أحمر يتبع الفأرة',
+    tip_ripples: 'موجات متحركة عند كل نقرة (في التسجيل)',
+    tip_freeze: 'جمّد الشاشة للشرح دون تحريك الفأرة',
+    tip_whiteboard: 'ارسم فوق الشاشة',
+    tip_zoom: 'تكبير يدوي للكود',
+    tip_autozoom: 'تكبير تلقائي عند النقر',
+    tip_tele: 'نص التيليبرومبتر مع تمرير تلقائي',
+    tip_snap: 'لقطة PNG + معرض',
+    tip_fullscreen: 'ملء الشاشة للانغماس الكامل',
   }
 };
 
@@ -6001,6 +6031,79 @@ const LayoutHistory = {
   },
 };
 
+/* v0.7.43: Tooltip — rich themed hover tooltip for the tools bar (and
+   any element with data-tip-key). Replaces the plain HTML title=""
+   attributes which show slow unstyled system tooltips. A single shared
+   element is lazy-created on first hover; it reads data-tip-title /
+   data-tip-kbd / data-tip-key attributes to build the card, and the
+   i18n t() function resolves the body description (tip_*) so FR/EN/AR
+   stay in sync. 300ms delay, fades in/out, clamped to the viewport. */
+const Tooltip = {
+  el: null,
+  timer: null,
+
+  setup() {
+    // Lazy-create a single shared tooltip element on first hover
+    this.el = document.createElement('div');
+    this.el.className = 'tc-tooltip';
+    this.el.style.display = 'none';
+    document.body.appendChild(this.el);
+    // Bind to all elements with data-tip-key
+    document.addEventListener('mouseover', (e) => {
+      const target = e.target.closest('[data-tip-key]');
+      if (!target) return;
+      const key = target.dataset.tipKey;
+      const kbd = target.dataset.tipKbd || '';
+      const title = target.dataset.tipTitle || t(key + '_title') || '';
+      const body = t(key) || '';
+      this._scheduleShow(target, title, body, kbd);
+    }, true);
+    document.addEventListener('mouseout', (e) => {
+      const target = e.target.closest('[data-tip-key]');
+      if (!target) return;
+      this._hide();
+    }, true);
+  },
+
+  _scheduleShow(target, title, body, kbd) {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this._show(target, title, body, kbd), 300);
+  },
+
+  _show(target, title, body, kbd) {
+    if (!this.el) return;
+    const kbdHtml = kbd ? `<kbd>${kbd}</kbd>` : '';
+    this.el.innerHTML = `
+      <div class="tc-tooltip-title">${this._esc(title)} ${kbdHtml}</div>
+      <div class="tc-tooltip-body">${this._esc(body)}</div>
+    `;
+    this.el.style.display = 'block';
+    // Position below the target, centered
+    const r = target.getBoundingClientRect();
+    const tw = this.el.offsetWidth;
+    const th = this.el.offsetHeight;
+    let left = r.left + r.width / 2 - tw / 2;
+    let top = r.bottom + 8;
+    // Clamp to viewport
+    left = Math.max(8, Math.min(window.innerWidth - tw - 8, left));
+    if (top + th > window.innerHeight - 8) top = r.top - th - 8;
+    this.el.style.left = left + 'px';
+    this.el.style.top = top + 'px';
+    this.el.classList.add('visible');
+  },
+
+  _hide() {
+    clearTimeout(this.timer);
+    if (!this.el) return;
+    this.el.classList.remove('visible');
+    setTimeout(() => { if (!this.el.classList.contains('visible')) this.el.style.display = 'none'; }, 150);
+  },
+
+  _esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+};
+
 /* v0.7.24: Cheatsheet — keyboard-shortcut overlay, toggle with ? / Shift+/.
    All shortcuts grouped by category so teachers can discover the full
    keyboard API without digging through FAQ. Pure presentation — the
@@ -7465,6 +7568,7 @@ async function init() {
   SourceContextMenu.setup();
   Teleprompter.setup();
   Cheatsheet.setup();
+  Tooltip.setup();
   GuidedTour.setup();
   Minimap.setup();
 
