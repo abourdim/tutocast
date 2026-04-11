@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.69 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.70 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.69';
+const APP_VERSION = '0.7.70';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 06:30';
+const BUILD_DATE = '2026-04-12 06:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -124,13 +124,12 @@ const LANG = {
     ctxPin: 'Épingler / détacher',
     ctxDup: 'Dupliquer',
     ctxShape: 'Forme ▸',
+    ctxPip: 'Pop out (PiP)',
     ctxDel: 'Supprimer',
-    ctxChroma: 'Chroma key…',
-    chromaPromptColor: 'Couleur à rendre transparente (hex)',
-    chromaPromptThresh: 'Seuil (20-120)',
-    chromaOn: 'Chroma key on',
-    chromaOff: 'Chroma key off',
-    chromaDisable: 'Désactiver le chroma key ?',
+    pipNotSupported: '❌ PiP non supporté',
+    pipOnlyCam: '❌ Caméras uniquement',
+    pipOn: 'PiP activé',
+    pipError: '❌ PiP indisponible',
     resetLayout: '🔓 Réinitialiser la disposition',
     layoutReset: '🔓 Disposition réinitialisée',
     saveScene: 'Sauvegarder la disposition',
@@ -651,13 +650,12 @@ const LANG = {
     ctxPin: 'Pin / unpin',
     ctxDup: 'Duplicate',
     ctxShape: 'Shape ▸',
+    ctxPip: 'Pop out (PiP)',
     ctxDel: 'Delete',
-    ctxChroma: 'Chroma key…',
-    chromaPromptColor: 'Color to make transparent (hex)',
-    chromaPromptThresh: 'Threshold (20-120)',
-    chromaOn: 'Chroma key on',
-    chromaOff: 'Chroma key off',
-    chromaDisable: 'Disable chroma key?',
+    pipNotSupported: '❌ PiP not supported',
+    pipOnlyCam: '❌ Cameras only',
+    pipOn: 'PiP on',
+    pipError: '❌ PiP unavailable',
     resetLayout: '🔓 Reset layout',
     layoutReset: '🔓 Layout reset',
     saveScene: 'Save this layout',
@@ -1170,13 +1168,12 @@ const LANG = {
     ctxPin: 'تثبيت / إلغاء',
     ctxDup: 'تكرار',
     ctxShape: 'الشكل ▸',
+    ctxPip: 'إخراج (PiP)',
     ctxDel: 'حذف',
-    ctxChroma: 'مفتاح اللون…',
-    chromaPromptColor: 'اللون المراد جعله شفافًا (hex)',
-    chromaPromptThresh: 'الحد (20-120)',
-    chromaOn: 'مفتاح اللون مُفعَّل',
-    chromaOff: 'مفتاح اللون مُعطَّل',
-    chromaDisable: 'إيقاف مفتاح اللون؟',
+    pipNotSupported: '❌ PiP غير مدعوم',
+    pipOnlyCam: '❌ الكاميرات فقط',
+    pipOn: 'PiP مُفعَّل',
+    pipError: '❌ PiP غير متوفر',
     resetLayout: '🔓 إعادة ضبط التخطيط',
     layoutReset: '🔓 تمت إعادة ضبط التخطيط',
     saveScene: 'حفظ التخطيط',
@@ -1790,100 +1787,70 @@ const StageAspect = {
   },
 };
 
-/* v0.7.69: mic boost + noise gate. Sits between the raw mic source node
-   and Engine.audioDest. The gain is applied via a GainNode (smoothed via
-   setTargetAtTime so slider drags don't click). The noise gate runs an
-   AnalyserNode tap on the raw signal, computes per-frame RMS via rAF,
-   and ramps the gain to 0 when RMS dips below the threshold. */
-const MicBoost = {
-  gain: 1.0,
-  gateDb: -50,  // -60 (strict) to -20 (loose). Default -50 = very permissive.
-  _gainNode: null,
-  _gateAnalyser: null,
-  _gateBuf: null,
-  _rafId: null,
-  _muted: false,
+/* v0.7.70: PipPopout — pop a cam source out into a floating OS-level
+   Picture-in-Picture window via the standard <video>.requestPictureInPicture()
+   API. A hidden <video> bound to the source's MediaStream is the actual PiP
+   target. Closes via the browser's native PiP UI; the leavepictureinpicture
+   listener cleans the hidden element up. Cam sources only — image (v0.7.62)
+   and mic sources fall back to a toast. */
+const PipPopout = {
+  activeVideo: null,
 
-  load() {
+  supported() {
+    return !!document.pictureInPictureEnabled;
+  },
+
+  async popOut(src) {
+    if (!this.supported()) {
+      showToast(t('pipNotSupported') || '❌ PiP non supporté', 2500);
+      return;
+    }
+    if (!src || src.type !== 'cam' || !src.stream) {
+      showToast(t('pipOnlyCam') || '❌ Caméras uniquement', 2000);
+      return;
+    }
+    // Close any existing PiP first
+    this.close();
+    // Create a dedicated <video> element bound to this cam's stream.
+    // It has to be in the DOM + playing for requestPictureInPicture
+    // to accept it, but we can hide it off-screen.
+    const v = document.createElement('video');
+    v.srcObject = src.stream;
+    v.muted = true;
+    v.playsInline = true;
+    v.autoplay = true;
+    v.style.position = 'fixed';
+    v.style.left = '-10000px';
+    v.style.top = '-10000px';
+    v.style.width = '320px';
+    v.style.height = '240px';
+    document.body.appendChild(v);
     try {
-      const g = parseFloat(localStorage.getItem('tc-mic-gain'));
-      if (!isNaN(g)) this.gain = Math.max(0, Math.min(4, g));
-      const d = parseFloat(localStorage.getItem('tc-mic-gate-db'));
-      if (!isNaN(d)) this.gateDb = Math.max(-60, Math.min(-20, d));
-    } catch {}
-  },
-
-  setGain(v) {
-    this.gain = Math.max(0, Math.min(4, parseFloat(v) || 1));
-    try { localStorage.setItem('tc-mic-gain', String(this.gain)); } catch {}
-    this._applyGain();
-  },
-
-  setGate(db) {
-    this.gateDb = Math.max(-60, Math.min(-20, parseFloat(db) || -50));
-    try { localStorage.setItem('tc-mic-gate-db', String(this.gateDb)); } catch {}
-  },
-
-  _applyGain() {
-    if (!this._gainNode) return;
-    const target = this._muted ? 0 : this.gain;
-    try {
-      this._gainNode.gain.setTargetAtTime(target, Engine.audioCtx.currentTime, 0.015);
-    } catch {
-      this._gainNode.gain.value = target;
+      await v.play();
+      await v.requestPictureInPicture();
+      this.activeVideo = v;
+      v.addEventListener('leavepictureinpicture', () => {
+        this.close();
+      }, { once: true });
+      showToast('📺 ' + (t('pipOn') || 'PiP activé'), 1500);
+    } catch (e) {
+      log('PiP error: ' + e.message, 'error');
+      showToast(t('pipError') || '❌ PiP indisponible', 2500);
+      try { v.remove(); } catch {}
     }
   },
 
-  // Called from Engine.setMic when a mic source is ready. Builds a chain:
-  //   srcNode → gainNode → audioDest
-  //           \
-  //            → gateAnalyser (split for RMS read, no output connection)
-  // The gate analyser is on the INPUT side so gate decisions are based on
-  // the raw mic signal.
-  attach(srcNode) {
-    const ac = Engine.audioCtx;
-    if (!ac) return srcNode;  // fallback
-    this._gainNode = ac.createGain();
-    this._gainNode.gain.value = this.gain;
-    this._gateAnalyser = ac.createAnalyser();
-    this._gateAnalyser.fftSize = 512;
-    this._gateBuf = new Uint8Array(this._gateAnalyser.frequencyBinCount);
-    // Wire: src → gain, src → analyser (analyser is a "read-only" tap)
-    srcNode.connect(this._gainNode);
-    srcNode.connect(this._gateAnalyser);
-    // gain → audioDest (caller expects attach() to return the node to
-    // connect into audioDest, so we return the gain node)
-    this._startGateLoop();
-    return this._gainNode;
-  },
-
-  detach() {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-    this._rafId = null;
-    this._gainNode = null;
-    this._gateAnalyser = null;
-    this._muted = false;
-  },
-
-  _startGateLoop() {
-    const tick = () => {
-      if (!this._gateAnalyser) return;
-      this._gateAnalyser.getByteTimeDomainData(this._gateBuf);
-      let sum = 0;
-      for (let i = 0; i < this._gateBuf.length; i++) {
-        const v = (this._gateBuf[i] - 128) / 128;
-        sum += v * v;
-      }
-      const rms = Math.sqrt(sum / this._gateBuf.length);
-      const db = rms > 0 ? 20 * Math.log10(rms) : -100;
-      const shouldMute = db < this.gateDb;
-      if (shouldMute !== this._muted) {
-        this._muted = shouldMute;
-        this._applyGain();
-      }
-      this._rafId = requestAnimationFrame(tick);
-    };
-    this._rafId = requestAnimationFrame(tick);
+  close() {
+    if (this.activeVideo) {
+      try {
+        if (document.pictureInPictureElement === this.activeVideo) {
+          document.exitPictureInPicture();
+        }
+      } catch {}
+      try { this.activeVideo.pause(); } catch {}
+      try { this.activeVideo.remove(); } catch {}
+      this.activeVideo = null;
+    }
   },
 };
 
@@ -6784,26 +6751,11 @@ const SourceContextMenu = {
       e.stopPropagation(); reorder('back');
     });
 
-    // v0.7.68: chroma key toggle — prompts for hex colour + threshold,
-    // stores { color, threshold } on the source. Re-clicking with chromaKey
-    // already set toggles it back off (after a confirm).
-    this.el.querySelector('[data-action="chroma"]')?.addEventListener('click', (e) => {
+    // v0.7.70: pop a cam out into a floating PiP window
+    this.el.querySelector('[data-action="pip"]')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const src = Engine.sources.find(s => s.id === this.currentId);
-      if (!src) { this.hide(); return; }
-      if (src.chromaKey) {
-        // Toggle off
-        if (confirm(t('chromaDisable') || 'Désactiver le chroma key ?')) {
-          src.chromaKey = null;
-          showToast('🟢 ' + (t('chromaOff') || 'Chroma key off'), 1200);
-        }
-      } else {
-        const color = prompt(t('chromaPromptColor') || 'Couleur à rendre transparente (hex)', '#00ff00');
-        if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) { this.hide(); return; }
-        const thresh = parseInt(prompt(t('chromaPromptThresh') || 'Seuil (20-120)', '50')) || 50;
-        src.chromaKey = { color, threshold: Math.max(10, Math.min(200, thresh)) };
-        showToast('🟢 ' + (t('chromaOn') || 'Chroma key on'), 1200);
-      }
+      const s = getSrc(); if (!s) return;
+      PipPopout.popOut(s);
       this.hide();
     });
 
