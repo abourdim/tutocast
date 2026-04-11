@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.77 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.78 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.77';
+const APP_VERSION = '0.7.78';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 08:30';
+const BUILD_DATE = '2026-04-12 08:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -221,6 +221,8 @@ const LANG = {
     cheatRecPause: 'Pause / reprendre',
     cheatRecMark: 'Ajouter un marker chapitre',
     cheatRecSnap: 'Capture photo',
+    cheatRecBig: 'Big marker (★)',
+    bigMarker: 'Big marker',
     cheatTools: '🛠 Outils live',
     cheatToolLaser: 'Laser pointer on/off',
     cheatToolFreeze: "Geler l'écran",
@@ -779,6 +781,8 @@ const LANG = {
     cheatRecPause: 'Pause / resume',
     cheatRecMark: 'Add a chapter marker',
     cheatRecSnap: 'Photo snapshot',
+    cheatRecBig: 'Big marker (★)',
+    bigMarker: 'Big marker',
     cheatTools: '🛠 Live tools',
     cheatToolLaser: 'Laser pointer on/off',
     cheatToolFreeze: 'Freeze the screen',
@@ -1329,6 +1333,8 @@ const LANG = {
     cheatRecPause: 'إيقاف مؤقت / استئناف',
     cheatRecMark: 'إضافة علامة فصل',
     cheatRecSnap: 'لقطة صورة',
+    cheatRecBig: 'علامة كبيرة (★)',
+    bigMarker: 'علامة كبيرة',
     cheatTools: '🛠 الأدوات المباشرة',
     cheatToolLaser: 'مؤشر ليزر تشغيل/إيقاف',
     cheatToolFreeze: 'تجميد الشاشة',
@@ -2239,6 +2245,30 @@ const Engine = {
       ctx.strokeStyle = `rgba(251, 146, 60, ${age * 0.9})`;
       ctx.lineWidth = 24;
       ctx.strokeRect(0, 0, width, height);
+      ctx.restore();
+    }
+
+    // v0.7.78: big marker full-screen flash
+    if (Recorder._bigFlashUntil && performance.now() < Recorder._bigFlashUntil) {
+      const age = (Recorder._bigFlashUntil - performance.now()) / 1000;  // 1→0
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 255, ${age * 0.75})`;
+      ctx.fillRect(0, 0, width, height);
+      // A bright yellow ring at center that expands as it fades
+      const expand = 1 - age;  // 0→1
+      const cx = width / 2, cy = height / 2;
+      const r = 80 + expand * 180;
+      ctx.strokeStyle = `rgba(251, 191, 36, ${age})`;
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      // Star text
+      ctx.font = '800 140px Arial, sans-serif';
+      ctx.fillStyle = `rgba(251, 191, 36, ${age})`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', cx, cy);
       ctx.restore();
     }
 
@@ -3838,6 +3868,7 @@ const Recorder = {
   recorder: null, chunks: [], startTime: 0, pausedDuration: 0, pausedAt: 0,
   timerId: null, state: 'idle', frozen: false,
   _pulseUntil: 0, _pulseDur: 800,  // marker-pulse animation state (ms)
+  _bigFlashUntil: 0,                // v0.7.78: big-marker full-screen flash deadline (perf.now ms)
 
   async start() {
     if (this.state !== 'idle' || this._starting) {
@@ -4336,7 +4367,25 @@ const Chapters = {
     // Trigger the visual pulse animation on all visible sources
     Recorder._pulseUntil = Date.now() + Recorder._pulseDur;
     Badges.unlockMarker(this.items.length);
-  }
+  },
+
+  // v0.7.78: "Big marker" — louder visual + audio cue for important moments.
+  // Bound to 'B' by default; rebindable via the v0.7.66 RebindModal.
+  addBigMarker() {
+    if (Recorder.state !== 'recording' && Recorder.state !== 'paused') return;
+    const n = this.items.filter(i => i.label && i.label.startsWith('★')).length + 1;
+    const label = `★ Big ${n}`;
+    this.items.push({ time: Recorder.elapsed() / 1000, label });
+    log(`★ BIG marker — ${label}`, 'success');
+    Sfx.play('mark');
+    Sfx.play('start');
+    // Full-screen flash drawn in Engine.render via this timestamp
+    Recorder._bigFlashUntil = performance.now() + 1000;
+    // Still pulse the sources for an extra touch
+    Recorder._pulseUntil = Date.now() + 800;
+    showToast('★ ' + (t('bigMarker') || 'Big marker'), 1500);
+    Badges.unlockMarker(this.items.length);
+  },
 };
 
 /* v0.7.34: Waveform — decode the take blob's audio, render an
@@ -9040,6 +9089,7 @@ const KeyBindings = {
     laser: 'l', freeze: 'f', draw: 'd', zoom: 'z',
     quiz: 'q', teleprompter: 't',
     captions: 'c',  // v0.7.75
+    bigMarker: 'b',  // v0.7.78
   },
   current: {},
 
@@ -9132,6 +9182,7 @@ const RebindModal = {
       quiz: '❓ Quiz',
       teleprompter: '📜 Teleprompter',
       captions: '💬 ' + (t('captionsLabel') || 'Captions'),
+      bigMarker: '★ ' + (t('bigMarker') || 'Big marker'),
     };
     list.innerHTML = '';
     Object.keys(KeyBindings.DEFAULTS).forEach(action => {
@@ -9306,6 +9357,7 @@ function setupHotkeys() {
             break;
           case 'pause': Recorder.togglePause(); break;
           case 'marker': Chapters.addMarker(); break;
+          case 'bigMarker': Chapters.addBigMarker(); break;
           case 'snapshot': snapshot(); break;
           case 'laser': Laser.toggle(); break;
           case 'freeze': Freeze.toggle(); break;
