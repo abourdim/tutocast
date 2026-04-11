@@ -3962,3 +3962,12 @@ body.log-open .app {
   font-size: .78rem;
 }
 .tc-rebind-reset:hover { background: rgba(239, 68, 68, .22); color: #fff; }
+
+/* v0.7.71: countdown duration row inside the countdown sidebar group */
+.tc-countdown-secs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.tc-countdown-secs-row input { flex: 0 0 80px; }

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.70 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.71 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.70';
+const APP_VERSION = '0.7.71';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 06:45';
+const BUILD_DATE = '2026-04-12 07:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -42,7 +42,7 @@ const LANG = {
     onbGo: "C'est parti !",
     stageHint: '👆 Ajoute une source pour commencer',
     mainSection: 'Studio', mainDesc: 'Compose ta scène et enregistre',
-    mirrorCam: '🪞 Miroir webcam', countdownOn: '⏱ Compte à rebours 3-2-1',
+    mirrorCam: '🪞 Miroir webcam', countdownOn: '⏱ Compte à rebours', countdownSecs: 'Secondes :',
     scene_code: 'Code', scene_robot: 'Robot', scene_sensors: 'Capteurs',
     scene_coderobot: 'Code + Robot', scene_studio: 'Studio', scene_you: 'Toi',
     txt_bravo: '⭐ Bravo !', txt_step1: '🎯 Étape 1', txt_step2: '🎯 Étape 2', txt_step3: '🎯 Étape 3',
@@ -568,7 +568,7 @@ const LANG = {
     onbGo: "Let's go!",
     stageHint: '👆 Add a source to get started',
     mainSection: 'Studio', mainDesc: 'Compose your scene and record',
-    mirrorCam: '🪞 Mirror webcam', countdownOn: '⏱ 3-2-1 countdown',
+    mirrorCam: '🪞 Mirror webcam', countdownOn: '⏱ Countdown', countdownSecs: 'Seconds:',
     scene_code: 'Code', scene_robot: 'Robot', scene_sensors: 'Sensors',
     scene_coderobot: 'Code + Robot', scene_studio: 'Studio', scene_you: 'You',
     txt_bravo: '⭐ Well done!', txt_step1: '🎯 Step 1', txt_step2: '🎯 Step 2', txt_step3: '🎯 Step 3',
@@ -1092,7 +1092,7 @@ const LANG = {
     onbGo: 'هيّا!',
     stageHint: '👆 أضف مصدرًا للبدء',
     mainSection: 'الاستوديو', mainDesc: 'اصنع مشهدك وسجّل',
-    mirrorCam: '🪞 مرآة', countdownOn: '⏱ عدّ تنازلي 3-2-1',
+    mirrorCam: '🪞 مرآة', countdownOn: '⏱ العد التنازلي', countdownSecs: 'الثواني:',
     scene_code: 'كود', scene_robot: 'روبوت', scene_sensors: 'مستشعرات',
     scene_coderobot: 'كود + روبوت', scene_studio: 'استوديو', scene_you: 'أنت',
     txt_bravo: '⭐ أحسنت!', txt_step1: '🎯 الخطوة 1', txt_step2: '🎯 الخطوة 2', txt_step3: '🎯 الخطوة 3',
@@ -3757,8 +3757,13 @@ const Recorder = {
   },
 
   async countdown() {
+    let duration = 3;
+    try {
+      const saved = parseInt(localStorage.getItem('tc-countdown-secs'), 10);
+      if (!isNaN(saved) && saved >= 1 && saved <= 10) duration = saved;
+    } catch {}
     const el = $('tcCountdown');
-    for (let n = 3; n > 0; n--) {
+    for (let n = duration; n > 0; n--) {
       el.textContent = n;
       el.classList.remove('show');
       void el.offsetWidth;
@@ -9500,6 +9505,22 @@ function wireEvents() {
     sensorOverlayEl.addEventListener('change', (e) => {
       Sensors.autoOverlayEnabled = e.target.checked;
       try { localStorage.setItem('tc-sensor-overlay', e.target.checked ? '1' : '0'); } catch {}
+    });
+  }
+
+  // v0.7.71: custom countdown duration (1-10s, default 3) persisted in tc-countdown-secs
+  const cdEl = $('tcCountdownSecs');
+  if (cdEl) {
+    try {
+      const saved = parseInt(localStorage.getItem('tc-countdown-secs'), 10);
+      if (!isNaN(saved) && saved >= 1 && saved <= 10) cdEl.value = saved;
+    } catch {}
+    cdEl.addEventListener('change', (e) => {
+      let v = parseInt(e.target.value, 10);
+      if (isNaN(v)) v = 3;
+      v = Math.max(1, Math.min(10, v));
+      e.target.value = v;
+      try { localStorage.setItem('tc-countdown-secs', String(v)); } catch {}
     });
   }
 
