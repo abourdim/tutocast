@@ -3,6 +3,31 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.21 — 2026-04-11 (Auto-zoom on click)
+
+Click anywhere on a screen source and the preview smoothly zooms in
+for 1.5s then zooms back, ScreenStudio-style, toggle via the 🎯 button
+in the tools bar. Implemented on top of the existing Zoom infrastructure.
+
+### Added
+- `AutoZoom` object next to `Zoom` in `tutocast.js`. Owns: `enabled`
+  (button toggle), click-vs-drag detector (`armDown` / `onUp`, distance
+  < 5 canvas px AND time < 500ms), screen-source hit test, and 1.5s
+  hold timer. Drives `Zoom.cx` / `Zoom.cy` / `Zoom.target` and reuses
+  the existing `Zoom.tick()` eased interpolator — no new render path.
+- New 🎯 **Auto-zoom** button in the floating tools bar next to 🔍 Zoom.
+  Toggles `AutoZoom.enabled`, toasts `ON` / `OFF`.
+- i18n key `autoZoom` (FR `Zoom auto`, EN `Auto-zoom`, AR `تكبير تلقائي`).
+
+### Changed
+- `Drag._onDown` now calls `AutoZoom.armDown(mx, my)` right after mapping
+  the stage event to canvas coordinates — purely additive, no change to
+  selection / move / resize behaviour.
+- `Drag._onUp(e)` now accepts the event and calls `AutoZoom.onUp(ux, uy)`
+  after clearing drag state. Fires only when enabled, only over screen
+  sources, and only when the down/up pair qualifies as a click (not a
+  drag). Wrapped in try/catch so a bad mouseup can never break drag reset.
+
 ## v0.7.18 — 2026-04-11 (Redesign + critical toolbar mousedown fix)
 
 ### Fixed — critical bug in floating toolbars

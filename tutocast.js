@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.20 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.21 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.20';
+const APP_VERSION = '0.7.21';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 17:50';
+const BUILD_DATE = '2026-04-11 18:05';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -94,6 +94,7 @@ const LANG = {
     recEmpty: '⚠️ Fichier vide — l\'encodeur n\'a rien produit. Ouvre le journal 📜 pour le détail.',
     recNoStream: '✗ Pas de flux vidéo — relance la page',
     zoom: 'Zoom', zoomOn: '🔍 Zoom activé', zoomOff: '🔍 Zoom désactivé',
+    autoZoom: 'Zoom auto',
     fullscreen: 'Plein écran',
     outputFormat: '🎞 Format de sortie',
     formatAuto: 'Auto (MP4 si possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
@@ -448,6 +449,7 @@ const LANG = {
     recEmpty: '⚠️ Empty file — the encoder produced nothing. Open the log 📜 for details.',
     recNoStream: '✗ No video stream — reload the page',
     zoom: 'Zoom', zoomOn: '🔍 Zoom on', zoomOff: '🔍 Zoom off',
+    autoZoom: 'Auto-zoom',
     fullscreen: 'Fullscreen',
     outputFormat: '🎞 Output format',
     formatAuto: 'Auto (MP4 if possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
@@ -794,6 +796,7 @@ const LANG = {
     recEmpty: '⚠️ ملف فارغ — لم ينتج المُرمِّز شيئًا. افتح السجل 📜 للتفاصيل.',
     recNoStream: '✗ لا يوجد تدفق فيديو — أعد تحميل الصفحة',
     zoom: 'تكبير', zoomOn: '🔍 تم التكبير', zoomOff: '🔍 تم الإلغاء',
+    autoZoom: 'تكبير تلقائي',
     fullscreen: 'ملء الشاشة',
     outputFormat: '🎞 تنسيق الإخراج',
     formatAuto: 'تلقائي (MP4 إن أمكن)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
@@ -2901,6 +2904,8 @@ const Drag = {
     if (e.button !== 0) return;
     if (Whiteboard.on) return;
     const [mx, my] = this._stageToCanvas(e);
+    // v0.7.21: arm click-vs-drag detector for AutoZoom
+    AutoZoom.armDown(mx, my);
 
     // v0.7.3: text-overlay canvas ✕ delete button
     if (TextOverlays.selectedId != null) {
@@ -3055,10 +3060,20 @@ const Drag = {
     }
   },
 
-  _onUp() {
+  _onUp(e) {
     if (this.state) {
       this.state = null;
       if (this.stage) this.stage.classList.remove('dragging');
+    }
+    // v0.7.21: fire AutoZoom if this was a real click on a screen source.
+    // Runs even when state was null (empty-area clicks) so clicks that
+    // miss _hitTest still trigger auto-zoom when the coords land on a
+    // screen source.
+    if (e && this.stage) {
+      try {
+        const [ux, uy] = this._stageToCanvas(e);
+        AutoZoom.onUp(ux, uy);
+      } catch {}
     }
   },
 
@@ -3357,6 +3372,60 @@ const Zoom = {
     log(this.on ? t('zoomOn') : t('zoomOff'), 'info');
     if (this.on) showToast(t('zoomHint'), 4000);
     Sfx.play('click');
+  },
+};
+
+/* v0.7.21 — Auto-zoom on click (ScreenStudio's signature feature).
+   When enabled, a real click (not a drag) on a screen-type source
+   smoothly zooms the preview in to that point for 1.5s then eases
+   back. Built on top of the existing Zoom object — reuses its
+   tick() interpolator and target field, only drives cx/cy/target.
+   Click-vs-drag: distance < 5px AND time < 500ms. */
+const AutoZoom = {
+  enabled: false,     // toggled by button
+  _active: false,     // currently inside a zoom-in/out cycle
+  _timer: null,       // setTimeout handle for zoom-out
+  _downAt: null,      // {x, y, t} of mousedown for click-vs-drag detection
+  toggle() {
+    this.enabled = !this.enabled;
+    const btn = $('tcAutoZoomBtn');
+    if (btn) btn.classList.toggle('active', this.enabled);
+    showToast(this.enabled ? '🎯 Auto-zoom ON' : '🎯 Auto-zoom OFF', 1400);
+    log(this.enabled ? 'autozoom on' : 'autozoom off', 'info');
+  },
+  armDown(mx, my) {
+    // Called from Drag._onDown — records mouse position + time for later click detection
+    this._downAt = { x: mx, y: my, t: performance.now() };
+  },
+  onUp(mx, my) {
+    // Called from Drag._onUp when state transitions back to idle.
+    // If it was a real click (not a drag), and the click landed on a
+    // screen source, trigger a zoom-to-point animation.
+    if (!this.enabled) return;
+    if (!this._downAt) return;
+    const d2 = (mx - this._downAt.x) ** 2 + (my - this._downAt.y) ** 2;
+    const dt = performance.now() - this._downAt.t;
+    this._downAt = null;
+    if (d2 > 25 || dt > 500) return;  // drag or long-press, ignore
+    // Only trigger over screen sources
+    const hit = Engine.sources.find(s => s.type === 'screen' && !s.hidden && s.visible !== false
+      && mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h);
+    if (!hit) return;
+    this._zoomTo(mx, my);
+  },
+  _zoomTo(mx, my) {
+    if (this._active) return;
+    this._active = true;
+    // Drive the existing Zoom object — it already has tick() + eased interpolation
+    Zoom.cx = mx;
+    Zoom.cy = my;
+    Zoom.target = 2.2;  // zoom level
+    // Hold for 1.5s then release
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => {
+      Zoom.target = 1.0;
+      this._active = false;
+    }, 1500);
   },
 };
 
@@ -5050,6 +5119,7 @@ function wireEvents() {
   $('tcFreezeBtn').addEventListener('click', () => Freeze.toggle());
   $('tcWhiteboardBtn').addEventListener('click', () => Whiteboard.toggle());
   $('tcZoomBtn').addEventListener('click', () => Zoom.toggle());
+  $('tcAutoZoomBtn')?.addEventListener('click', () => AutoZoom.toggle());
   $('tcTeleBtn').addEventListener('click', () => Teleprompter.toggle());
   $('tcSnapBtn').addEventListener('click', () => snapshot());
 
