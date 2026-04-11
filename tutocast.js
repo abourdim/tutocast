@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.2 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.3 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.2';
+const APP_VERSION = '0.7.3';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -154,6 +154,7 @@ const LANG = {
     layerBackward: '⬇ Vers l\'arrière',
     sourceRemoved: 'Source retirée',
     firstSourceHint: '💡 Glisse pour déplacer · coin pour redimensionner · ✕ dans la liste ou touche Suppr pour retirer',
+    overlayDeleted: '✕ Overlay supprimé',
     badge_first: 'Premier tuto',
     badge_long: 'Plus de 5 min',
     badge_multi: 'Multi-caméras',
@@ -441,6 +442,7 @@ const LANG = {
     layerBackward: '⬇ Backward',
     sourceRemoved: 'Source removed',
     firstSourceHint: '💡 Drag to move · corner to resize · ✕ in the list or Delete key to remove',
+    overlayDeleted: '✕ Overlay deleted',
     badge_first: 'First tutorial',
     badge_long: 'Over 5 minutes',
     badge_multi: 'Multi-camera',
@@ -720,6 +722,7 @@ const LANG = {
     layerBackward: '⬇ إلى الخلف',
     sourceRemoved: 'تمت إزالة المصدر',
     firstSourceHint: '💡 اسحب للتحريك · الزاوية لتغيير الحجم · ✕ في القائمة أو مفتاح Delete للإزالة',
+    overlayDeleted: '✕ تم حذف الطبقة',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
     faq_q1: "ما هو TutoCast؟",
@@ -1903,7 +1906,7 @@ const TextOverlays = {
       ctx.fillStyle = item.color;
       ctx.fillText(item.text, cx, cy);
 
-      // Selection + resize handles (teacher-visible, drawn on top)
+      // Selection + resize handles + canvas-native delete button
       if (TextOverlays.selectedId === item.id) {
         ctx.strokeStyle = Engine._accentColor || '#a3e635';
         ctx.lineWidth = 3;
@@ -1917,6 +1920,32 @@ const TextOverlays = {
             ctx.fillStyle = Engine._accentColor || '#a3e635';
             ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
           });
+        // v0.7.3: unmissable red × delete button floating above the top-right
+        // of the selection. Hit-tested in Drag._onDown so clicking it removes.
+        const dx = item.x + w + 24;  // outside the box, top-right
+        const dy = item.y - 24;
+        const dr = 26;
+        // cache on the item so Drag's hit-test can find it
+        item._deleteBtn = { x: dx, y: dy, r: dr };
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,.6)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        const s = dr * 0.45;
+        ctx.beginPath();
+        ctx.moveTo(dx - s, dy - s); ctx.lineTo(dx + s, dy + s);
+        ctx.moveTo(dx + s, dy - s); ctx.lineTo(dx - s, dy + s);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        item._deleteBtn = null;
       }
       ctx.restore();
     });
@@ -2488,6 +2517,24 @@ const Drag = {
     if (e.button !== 0) return;
     if (Whiteboard.on) return;
     const [mx, my] = this._stageToCanvas(e);
+
+    // v0.7.3: if there's a selected text overlay with a canvas-drawn red ✕
+    // delete button, check it first. A click inside the button removes the
+    // overlay even if the mouse isn't over the text itself (the button
+    // floats above the top-right corner of the selection).
+    if (TextOverlays.selectedId != null) {
+      const sel = TextOverlays.items.find(i => i.id === TextOverlays.selectedId);
+      if (sel && sel._deleteBtn) {
+        const { x: bx, y: by, r: br } = sel._deleteBtn;
+        if ((mx - bx) ** 2 + (my - by) ** 2 <= br * br) {
+          TextOverlays.remove(sel.id);
+          showToast(t('overlayDeleted'), 1500);
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+
     const hit = this._hitTest(mx, my);
     if (!hit) {
       // Clicking empty canvas deselects any selected text overlay
@@ -3467,14 +3514,16 @@ const TextToolbar = {
     const stage = $('tcStage');
     if (!stage) return;
     const r = stage.getBoundingClientRect();
-    // Map canvas coords to stage pixels
-    const cx = (item.x + item.w / 2) / Engine.width * r.width;
-    const topY = item.y / Engine.height * r.height;
-    // Place the toolbar 12px above the text, centered horizontally.
-    // We use stage-relative absolute positioning so it moves with the stage.
+    // v0.7.3: toolbar is position:fixed, so we need VIEWPORT coords.
+    // Map canvas-space (1920×1080) → stage-local → viewport.
+    const itemCxStage = (item.x + item.w / 2) / Engine.width * r.width;
+    const itemTopStage = item.y / Engine.height * r.height;
+    const vpLeft = r.left + itemCxStage;
+    // Place 56px above the text top, but never above the stage's top edge
+    const vpTop = Math.max(r.top + 8, r.top + itemTopStage - 56);
     this.el.style.display = 'flex';
-    this.el.style.left = `${cx}px`;
-    this.el.style.top = `${Math.max(8, topY - 48)}px`;
+    this.el.style.left = `${vpLeft}px`;
+    this.el.style.top = `${vpTop}px`;
   },
 };
 

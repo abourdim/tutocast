@@ -1747,17 +1747,20 @@ body.log-open .app {
    ═══════════════════════════════════════════════════════════════════ */
 
 .tc-text-toolbar {
-  position: absolute;
+  /* v0.7.3: position: fixed + viewport coords so .tc-stage's overflow:hidden
+     can't clip us. The toolbar used to live inside the stage and get cut off
+     whenever the selected text was near any stage edge. */
+  position: fixed;
   display: none;
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  background: rgba(12, 31, 10, .92);
+  background: rgba(12, 31, 10, .96);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(163, 230, 53, .4);
+  border: 2px solid rgba(163, 230, 53, .55);
   border-radius: 999px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
-  z-index: 50;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .6);
+  z-index: 11000;
   transform: translateX(-50%);
   pointer-events: auto;
 }
