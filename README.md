@@ -161,6 +161,39 @@ that expands and fades over 600 ms — outer ring in theme accent, inner
 ring in white. Rendered on the output canvas (unlike the teleprompter),
 so the ripples ARE in the final recording. Opt-in via the 💧 button.
 
+### ⌨ Keyboard cheat sheet (v0.7.24)
+Press `?` (or `Shift+/`) to see **all 22 keyboard shortcuts** grouped
+into 5 categories (Recording / Tools / Scenes / Text / Misc) in a
+full-screen overlay. Styled `<kbd>` chips, accent-green card,
+backdrop-click to dismiss.
+
+### 🎬 Cinematic intro/outro cards (v0.7.25)
+Opt-in toggle adds a **2.5 s intro card** (brand title + scene name
++ "Action !") at the start of every recording and a **2 s outro card**
+(Merci ! + badge summary) at the end. Both baked into the output
+canvas via radial-gradient backdrop + accent glow + big typography.
+
+### ⏸ Auto-pause on tab switch (v0.7.26)
+Opt-in setting: when you tab away from TutoCast mid-recording,
+`visibilitychange` triggers `Recorder.autoPause()`. Come back → auto-resume.
+Never capture accidental tab switches again. A user who manually paused
+before tabbing away stays paused (no surprise resume).
+
+### 📈 micro:bit sensor mini-chart (v0.7.27)
+When a recording with micro:bit samples finishes, a compact canvas
+chart appears above the download buttons showing the accelerometer
+X/Y/Z lines over the take duration, plus button A/B presses as
+vertical ticks at the bottom. Auto-scales to observed range.
+Unique to TutoCast — no other tutorial tool surfaces sensor data
+this way.
+
+### 📊 My tutorials history (v0.7.28)
+New collapsible "📊 Mes tutos" panel below the Badges strip shows
+your **last 10 takes** with date, duration, file size, scene count,
+and badge count. Metadata only (no video blobs), persisted as
+`tc-history` in localStorage. Aggregate "N · total duration" stat
+in the footer, plus a 🗑 Clear history button.
+
 ### ✨ Effects (v0.4.0)
 - **Background blur** (🌫 per source) — sharp center, blurred edge ring, no ML model
 - **Theme-accent glow** around every visible source (follows the 8 themes)
