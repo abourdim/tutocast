@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.87 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.88 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.87';
+const APP_VERSION = '0.7.88';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 11:00';
+const BUILD_DATE = '2026-04-12 11:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -312,6 +312,8 @@ const LANG = {
     dashStreak: 'jours',
     dashFavDay: 'favori',
     dash7Days: '7 derniers jours',
+    dashPauses: 'pauses/take',
+    manyPauses: 'Tu as fait beaucoup de pauses — essaie Shift+R pour démarrer direct',
     dashNote: '💡 Stats calculées sur les 10 derniers tutos',
     setSecDanger: '♻ Maintenance',
     diagnostics: 'Diagnostics',
@@ -892,6 +894,8 @@ const LANG = {
     dashStreak: 'day streak',
     dashFavDay: 'favorite day',
     dash7Days: 'last 7 days',
+    dashPauses: 'pauses/take',
+    manyPauses: 'You paused a lot — try Shift+R for instant start',
     dashNote: '💡 Stats from the last 10 tutorials',
     setSecDanger: '♻ Maintenance',
     diagnostics: 'Diagnostics',
@@ -1464,6 +1468,8 @@ const LANG = {
     dashStreak: 'أيام',
     dashFavDay: 'اليوم المفضل',
     dash7Days: 'آخر 7 أيام',
+    dashPauses: 'إيقاف/درس',
+    manyPauses: 'لقد أوقفت كثيرًا — جرّب Shift+R للبدء الفوري',
     dashNote: '💡 إحصاءات آخر 10 دروس',
     setSecDanger: '♻ الصيانة',
     diagnostics: 'التشخيص',
@@ -4211,6 +4217,7 @@ const Recorder = {
       this.recorder.start(250);
       this.startTime = Date.now();
       this.pausedDuration = 0;
+      this.pauseCount = 0;  // v0.7.88: count manual pauses for this take
       this.state = 'recording';
       Chapters.reset();
       Chapters.add(t('scene_' + Scenes.active));
@@ -4303,6 +4310,7 @@ const Recorder = {
       this.recorder.pause();
       this.pausedAt = Date.now();
       this.state = 'paused';
+      this.pauseCount = (this.pauseCount || 0) + 1;  // v0.7.88
       log(t('recPaused'), 'info');
       Sfx.play('click');
     } else if (this.state === 'paused') {
@@ -4501,7 +4509,14 @@ const Recorder = {
       scenes: Badges.scenesUsed ? Badges.scenesUsed.size : 0,
       badges: Badges.unlocked ? Badges.unlocked.size : 0,
       size: blob.size,
+      pauses: this.pauseCount || 0,  // v0.7.88
     });
+    // v0.7.88: friendly nudge if the user paused a lot
+    if ((this.pauseCount || 0) > 5) {
+      setTimeout(() => {
+        showToast('💡 ' + (t('manyPauses') || 'Tu as fait beaucoup de pauses — essaie Shift+R pour démarrer direct'), 3500);
+      }, 3500);
+    }
     try { DailyGoal.celebrate(); } catch (e) { log('daily goal error: ' + e.message, 'error'); }
 
     // trigger auto-download of webm
@@ -8656,6 +8671,10 @@ const Dashboard = {
       else break;
     }
 
+    // v0.7.88: average pauses per take (ignores old entries without the field)
+    const totalPauses = entries.reduce((s, e) => s + (e.pauses || 0), 0);
+    const avgPauses = entries.length > 0 ? (totalPauses / entries.length).toFixed(1) : '0';
+
     const fmtDur = secs => {
       const s = Math.max(0, Math.floor(secs || 0));
       const h = Math.floor(s / 3600);
@@ -8694,6 +8713,10 @@ const Dashboard = {
         <div class="tc-dash-stat">
           <div class="tc-dash-value">${dayNames[favDay]}</div>
           <div class="tc-dash-label" data-i18n="dashFavDay">${t('dashFavDay')}</div>
+        </div>
+        <div class="tc-dash-stat">
+          <div class="tc-dash-value">${avgPauses}</div>
+          <div class="tc-dash-label" data-i18n="dashPauses">${t('dashPauses')}</div>
         </div>
       </div>
       <div class="tc-dash-chart">
