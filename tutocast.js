@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.74 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.75 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.74';
+const APP_VERSION = '0.7.75';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 07:45';
+const BUILD_DATE = '2026-04-12 08:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -227,6 +227,9 @@ const LANG = {
     cheatToolZoom: 'Zoom manuel',
     cheatToolTele: 'Téléprompteur on/off',
     cheatToolQuiz: 'Carte question',
+    cheatToolCaptions: 'Sous-titres on/off',
+    captionsOn: 'Sous-titres on',
+    captionsOff: 'Sous-titres off',
     cheatScenes: '🎭 Scènes',
     cheatScene: 'Changer de scène',
     cheatText: '✏️ Texte sélectionné',
@@ -780,6 +783,9 @@ const LANG = {
     cheatToolZoom: 'Manual zoom',
     cheatToolTele: 'Teleprompter on/off',
     cheatToolQuiz: 'Quiz card',
+    cheatToolCaptions: 'Captions on/off',
+    captionsOn: 'Captions on',
+    captionsOff: 'Captions off',
     cheatScenes: '🎭 Scenes',
     cheatScene: 'Switch scene',
     cheatText: '✏️ Selected text',
@@ -1325,6 +1331,9 @@ const LANG = {
     cheatToolZoom: 'تكبير يدوي',
     cheatToolTele: 'التيليبرومبتر',
     cheatToolQuiz: 'بطاقة سؤال',
+    cheatToolCaptions: 'ترجمات تشغيل/إيقاف',
+    captionsOn: 'ترجمات مُفعَّلة',
+    captionsOff: 'ترجمات مُعطَّلة',
     cheatScenes: '🎭 المشاهد',
     cheatScene: 'تغيير المشهد',
     cheatText: '✏️ النص المحدد',
@@ -8975,6 +8984,7 @@ const KeyBindings = {
     rec: 'r', pause: 'p', marker: 'm', snapshot: 's',
     laser: 'l', freeze: 'f', draw: 'd', zoom: 'z',
     quiz: 'q', teleprompter: 't',
+    captions: 'c',  // v0.7.75
   },
   current: {},
 
@@ -9066,6 +9076,7 @@ const RebindModal = {
       zoom: '🔍 Zoom',
       quiz: '❓ Quiz',
       teleprompter: '📜 Teleprompter',
+      captions: '💬 ' + (t('captionsLabel') || 'Captions'),
     };
     list.innerHTML = '';
     Object.keys(KeyBindings.DEFAULTS).forEach(action => {
@@ -9247,6 +9258,21 @@ function setupHotkeys() {
           case 'zoom': Zoom.toggle(); break;
           case 'quiz': QuizCard.prompt(); break;
           case 'teleprompter': Teleprompter.toggle(); break;
+          case 'captions': {
+            // v0.7.75: 'C' toggles LiveCaptions.enabled at runtime,
+            // bypassing the persisted setting for the current session.
+            // If a recording is in progress, captions start/stop in
+            // real-time so they appear (or disappear) immediately.
+            LiveCaptions.setEnabled(!LiveCaptions.enabled);
+            if (Recorder.state === 'recording' || Recorder.state === 'paused') {
+              if (LiveCaptions.enabled) LiveCaptions.start();
+              else LiveCaptions.stop();
+            }
+            const capEl = $('tcCaptionsToggle');
+            if (capEl) capEl.checked = LiveCaptions.enabled;
+            showToast(LiveCaptions.enabled ? '💬 ' + (t('captionsOn') || 'Sous-titres on') : '💬 ' + (t('captionsOff') || 'Sous-titres off'), 1200);
+            break;
+          }
         }
         e.preventDefault();
         return;
