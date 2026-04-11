@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.52 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.53 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.52';
+const APP_VERSION = '0.7.53';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 02:15';
+const BUILD_DATE = '2026-04-12 02:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -197,6 +197,7 @@ const LANG = {
     cheatMisc: '✨ Divers',
     cheatMiscFree: "Étire libre d'une source",
     cheatMiscGrid: 'Snap à la grille',
+    cheatMiscWheelZoom: 'Zoom molette',
     cheatMiscThis: 'Afficher ce panneau',
     cheatMiscEsc: 'Fermer panneaux',
     cheatMiscDebug: 'Debug HUD',
@@ -677,6 +678,7 @@ const LANG = {
     cheatMisc: '✨ Misc',
     cheatMiscFree: 'Free stretch a source',
     cheatMiscGrid: 'Snap to grid',
+    cheatMiscWheelZoom: 'Wheel zoom',
     cheatMiscThis: 'Show this panel',
     cheatMiscEsc: 'Close panels',
     cheatMiscDebug: 'Debug HUD',
@@ -1149,6 +1151,7 @@ const LANG = {
     cheatMisc: '✨ متنوع',
     cheatMiscFree: 'تمدد حر لمصدر',
     cheatMiscGrid: 'التقاط بالشبكة',
+    cheatMiscWheelZoom: 'تكبير بالعجلة',
     cheatMiscThis: 'عرض هذه اللوحة',
     cheatMiscEsc: 'إغلاق اللوحات',
     cheatMiscDebug: 'Debug HUD',
@@ -4034,6 +4037,23 @@ const Drag = {
     this.stage.addEventListener('mousedown', (e) => this._onDown(e));
     window.addEventListener('mousemove', (e) => this._onMove(e));
     window.addEventListener('mouseup', (e) => this._onUp(e));
+    // v0.7.53: Ctrl+wheel on the stage = smooth zoom toward the cursor.
+    // Without Ctrl, let the page scroll normally.
+    this.stage.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;  // plain wheel = page scroll
+      e.preventDefault();
+      const [mx, my] = this._stageToCanvas(e);
+      Zoom.cx = mx;
+      Zoom.cy = my;
+      // e.deltaY > 0 = scroll down = zoom OUT, < 0 = zoom IN.
+      // Each wheel tick = 0.15 zoom delta, clamped to [1, 4].
+      const delta = -Math.sign(e.deltaY) * 0.15;
+      const current = Zoom.target ?? Zoom.current ?? 1;
+      const next = Math.max(1, Math.min(4, current + delta));
+      Zoom.target = next;
+      // Show a small label briefly
+      showToast(`🔍 ${next.toFixed(1)}×`, 900);
+    }, { passive: false });
     // v0.7.50: touch support — forward single-finger touch to the existing
     // mouse handlers. Pinch-zoom is out of scope (two fingers fall through
     // to the browser default).
