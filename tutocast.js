@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.91 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.96 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.95';
+const APP_VERSION = '0.7.96';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 13:00';
+const BUILD_DATE = '2026-04-12 13:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -237,6 +237,12 @@ const LANG = {
     bulkDl: 'Tout télécharger',
     bulkFiles: 'fichiers',
     bulkNoTake: '⚠ Aucun tuto à télécharger',
+    shareTake: 'Partager',
+    shareText: 'Mon tuto fait avec TutoCast 🎬',
+    shareDone: 'Partagé',
+    shareError: '❌ Erreur de partage',
+    shareNotSupported: '❌ Partage natif non supporté — utilise Télécharger',
+    shareNoTake: '⚠ Aucun tuto à partager',
     cheatRecBig: 'Big marker (★)',
     bigMarker: 'Big marker',
     cheatTools: '🛠 Outils live',
@@ -837,6 +843,12 @@ const LANG = {
     bulkDl: 'Download all',
     bulkFiles: 'files',
     bulkNoTake: '⚠ No take to download',
+    shareTake: 'Share',
+    shareText: 'My tuto made with TutoCast 🎬',
+    shareDone: 'Shared',
+    shareError: '❌ Share error',
+    shareNotSupported: '❌ Web Share not supported — use Download',
+    shareNoTake: '⚠ No take to share',
     cheatRecBig: 'Big marker (★)',
     bigMarker: 'Big marker',
     cheatTools: '🛠 Live tools',
@@ -1429,6 +1441,12 @@ const LANG = {
     bulkDl: 'تحميل الكل',
     bulkFiles: 'ملفات',
     bulkNoTake: '⚠ لا يوجد درس للتحميل',
+    shareTake: 'مشاركة',
+    shareText: 'درسي المصنوع بـ TutoCast 🎬',
+    shareDone: 'تمت المشاركة',
+    shareError: '❌ خطأ في المشاركة',
+    shareNotSupported: '❌ المشاركة الأصلية غير مدعومة — استخدم تنزيل',
+    shareNoTake: '⚠ لا يوجد درس للمشاركة',
     cheatRecBig: 'علامة كبيرة (★)',
     bigMarker: 'علامة كبيرة',
     cheatTools: '🛠 الأدوات المباشرة',
@@ -7657,6 +7675,51 @@ const BulkDownload = {
   },
 };
 
+/* v0.7.96 — Web Share API integration: trigger the OS-native share
+   sheet (AirDrop, iMessage, WhatsApp, email…) with the recorded
+   take's blob as a File. Falls back to a toast + dimmed button when
+   Web Share API or file-sharing isn't supported. */
+const ShareTake = {
+  supported() {
+    try {
+      // Need share + canShare for files
+      return !!(navigator.share && navigator.canShare && navigator.canShare({
+        files: [new File([new Blob([''])], 'test.webm', { type: 'video/webm' })],
+      }));
+    } catch { return false; }
+  },
+
+  async share() {
+    if (!this.supported()) {
+      showToast(t('shareNotSupported') || '❌ Partage natif non supporté — utilise Télécharger', 2800);
+      return;
+    }
+    if (!Recorder._lastBlob) {
+      showToast(t('shareNoTake') || '⚠ Aucun tuto à partager', 1800);
+      return;
+    }
+    const ext = (Recorder._lastMime && Recorder._lastMime.includes('mp4')) ? 'mp4' : 'webm';
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const name = `tutocast-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.${ext}`;
+    const file = new File([Recorder._lastBlob], name, { type: Recorder._lastBlob.type });
+    try {
+      await navigator.share({
+        title: 'TutoCast',
+        text: t('shareText') || 'Mon tuto fait avec TutoCast 🎬',
+        files: [file],
+      });
+      showToast('📤 ' + (t('shareDone') || 'Partagé'), 1500);
+    } catch (e) {
+      // User cancellation is expected — don't spam an error
+      if (e && e.name !== 'AbortError') {
+        log('share error: ' + e.message, 'error');
+        showToast(t('shareError') || '❌ Erreur de partage', 2500);
+      }
+    }
+  },
+};
+
 /* Snapshot — download current canvas as PNG */
 function snapshot() {
   // v0.7.54: if annotation mode is on, open the modal instead of
@@ -10851,6 +10914,15 @@ function wireEvents() {
 
   // v0.7.87: bulk download button
   $('tcBulkDlBtn')?.addEventListener('click', () => BulkDownload.all());
+
+  // v0.7.96: Web Share API button
+  $('tcShareBtn')?.addEventListener('click', () => ShareTake.share());
+  // Hide if not supported
+  const shareBtn = $('tcShareBtn');
+  if (shareBtn && !ShareTake.supported()) {
+    shareBtn.style.opacity = '.5';
+    shareBtn.title = 'Web Share API not supported in this browser';
+  }
 
   // Trim wiring
   $('tcTrimBtn').addEventListener('click', () => Trim.open());
