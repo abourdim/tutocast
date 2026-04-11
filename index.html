@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.58</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.59</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -216,6 +216,8 @@
                   <button class="tc-tele-btn" id="tcTeleFontUp" title="A+">A+</button>
                   <button class="tc-tele-btn" id="tcTeleWidthDown" title="Narrower">↔−</button>
                   <button class="tc-tele-btn" id="tcTeleWidthUp" title="Wider">↔+</button>
+                  <button class="tc-tele-btn" id="tcTeleImportBtn" title="Import .txt/.md/.vtt">📂</button>
+                  <input type="file" id="tcTeleImportInput" accept=".txt,.md,.vtt,text/plain,text/markdown,text/vtt" style="display:none" />
                   <button class="tc-tele-btn" id="tcTeleResetBtn" title="Reset scroll">↻</button>
                 </div>
                 <div class="tc-tele-inner" id="tcTeleInner" data-i18n="promptTelePlaceholder" contenteditable="true">Colle ton script ici…</div>
@@ -945,7 +947,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.58</strong></span>
+      <span class="badge"><strong>v0.7.59</strong></span>
     </div>
   </aside>
 
@@ -1204,7 +1206,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.58</strong></span>
+      <span class="badge"><strong>v0.7.59</strong></span>
     </div>
   </aside>
 
@@ -1236,7 +1238,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.58</strong></span>
+      <span class="badge"><strong>v0.7.59</strong></span>
     </div>
   </aside>
 

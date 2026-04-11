@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.58 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.59 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.58';
+const APP_VERSION = '0.7.59';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 03:45';
+const BUILD_DATE = '2026-04-12 04:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -86,6 +86,9 @@ const LANG = {
     drawOff: '✏️ Mode dessin désactivé',
     teleOn: '📜 Teleprompter visible',
     teleOff: '📜 Teleprompter caché',
+    teleImportDone: '📂 Script importé',
+    teleImportEmpty: '⚠ Fichier vide',
+    teleImportError: '❌ Erreur de lecture',
     promptTelePlaceholder: 'Colle ton script ici…', promptFreeText: 'Texte à afficher :',
     btConnected: '📡 micro:bit connecté !',
     btError: '❌ Connexion micro:bit échouée',
@@ -588,6 +591,9 @@ const LANG = {
     drawOff: '✏️ Draw mode off',
     teleOn: '📜 Teleprompter on',
     teleOff: '📜 Teleprompter off',
+    teleImportDone: '📂 Script imported',
+    teleImportEmpty: '⚠ Empty file',
+    teleImportError: '❌ Read error',
     promptTelePlaceholder: 'Paste your script here…', promptFreeText: 'Text to display:',
     btConnected: '📡 micro:bit connected!',
     btError: '❌ micro:bit connection failed',
@@ -1083,6 +1089,9 @@ const LANG = {
     ripplesOn: 'الموجات مُفعَّلة', ripplesOff: 'الموجات مُعطَّلة',
     drawOn: '✏️ وضع الرسم', drawOff: '✏️ إيقاف الرسم',
     teleOn: '📜 تيليبرومبتر', teleOff: '📜 مخفي',
+    teleImportDone: '📂 تم استيراد النص',
+    teleImportEmpty: '⚠ ملف فارغ',
+    teleImportError: '❌ خطأ في القراءة',
     promptTelePlaceholder: 'الصق النص هنا…', promptFreeText: 'النص المراد عرضه:',
     btConnected: '📡 micro:bit متصل!', btError: '❌ فشل الاتصال',
     permissionDenied: '🔒 تم رفض الإذن.',
@@ -5053,9 +5062,73 @@ const Teleprompter = {
     $('tcTeleWidthDown')?.addEventListener('click', () => this.setWidth(this.widthPct - 5));
     $('tcTeleWidthUp')?.addEventListener('click', () => this.setWidth(this.widthPct + 5));
     $('tcTeleResetBtn')?.addEventListener('click', () => this.reset());
+    // v0.7.59: 📂 Import .txt/.md/.vtt into the teleprompter
+    $('tcTeleImportBtn')?.addEventListener('click', () => {
+      $('tcTeleImportInput')?.click();
+    });
+    $('tcTeleImportInput')?.addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      if (f) this.importFile(f);
+      e.target.value = '';  // reset so the same file can be re-imported
+    });
     // The control strip should not propagate mousedown to .tc-stage
     // (same bug class as v0.7.18 floating toolbars).
     $('tcTeleControls')?.addEventListener('mousedown', (e) => e.stopPropagation());
+  },
+
+  importFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = String(reader.result || '');
+      const text = this._extractScriptFromText(raw, file.name);
+      if (!text) {
+        showToast(t('teleImportEmpty') || '⚠ Fichier vide', 2000);
+        return;
+      }
+      const inner = $('tcTeleInner');
+      if (inner) inner.textContent = text;
+      this.script = text;
+      this._userEdited = true;
+      try { localStorage.setItem('tc-tele-script', text); } catch {}
+      this.reset();
+      showToast(t('teleImportDone') || '📂 Script importé', 1800);
+    };
+    reader.onerror = () => {
+      showToast(t('teleImportError') || '❌ Erreur de lecture', 2500);
+    };
+    reader.readAsText(file);
+  },
+
+  _extractScriptFromText(raw, filename) {
+    // If it's a WebVTT file, strip the header + timestamp lines and
+    // keep just the cue text.
+    if (raw.trim().startsWith('WEBVTT')) {
+      const lines = raw.split(/\r?\n/);
+      const textLines = [];
+      let skipHeader = true;
+      for (const line of lines) {
+        if (skipHeader) {
+          if (line.trim() === '') skipHeader = false;
+          continue;
+        }
+        // Skip NOTE blocks, cue identifiers, timestamps
+        if (/^\d{2}:\d{2}/.test(line)) continue;     // timestamp
+        if (/-->/.test(line)) continue;
+        if (/^NOTE\b/.test(line)) continue;
+        if (line.trim() === '') {
+          // Blank line = end of cue block; add a newline separator
+          if (textLines.length && textLines[textLines.length - 1] !== '') textLines.push('');
+          continue;
+        }
+        // If the line is purely an integer cue number, skip it
+        if (/^\d+$/.test(line.trim())) continue;
+        textLines.push(line);
+      }
+      return textLines.join('\n').trim();
+    }
+    // Plain text or markdown — return as-is, trimmed
+    return raw.trim();
   },
 
   toggle() {
