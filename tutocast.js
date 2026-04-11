@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.37 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.38 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.37';
+const APP_VERSION = '0.7.38';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 22:15';
+const BUILD_DATE = '2026-04-11 22:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -194,6 +194,8 @@ const LANG = {
     cheatMiscThis: 'Afficher ce panneau',
     cheatMiscEsc: 'Fermer panneaux',
     cheatMiscDebug: 'Debug HUD',
+    cheatMiscRetry: 'Retry 30s (pendant enregistrement)',
+    softRewindToast: '↶ Retry — 30 dernières secondes marquées',
     introOutroLabel: "🎬 Cartes intro/outro cinématiques",
     outroTitle: 'Merci !',
     outroBadges: 'badges',
@@ -627,6 +629,8 @@ const LANG = {
     cheatMiscThis: 'Show this panel',
     cheatMiscEsc: 'Close panels',
     cheatMiscDebug: 'Debug HUD',
+    cheatMiscRetry: 'Retry last 30s (while recording)',
+    softRewindToast: '↶ Retry — last 30s flagged',
     introOutroLabel: '🎬 Cinematic intro/outro cards',
     outroTitle: 'Thank you!',
     outroBadges: 'badges',
@@ -1052,6 +1056,8 @@ const LANG = {
     cheatMiscThis: 'عرض هذه اللوحة',
     cheatMiscEsc: 'إغلاق اللوحات',
     cheatMiscDebug: 'Debug HUD',
+    cheatMiscRetry: 'إعادة آخر 30 ثانية (أثناء التسجيل)',
+    softRewindToast: '↶ إعادة — آخر 30 ثانية مُعلّمة',
     introOutroLabel: '🎬 بطاقات مقدمة/خاتمة سينمائية',
     outroTitle: 'شكرًا!',
     outroBadges: 'شارات',
@@ -1514,6 +1520,17 @@ const Engine = {
     // after so ripples are baked into the final recording.
     Ripples.render();
     ctx.drawImage(Ripples.canvas, 0, 0);
+
+    // v0.7.38: soft-rewind visual flash — briefly pulse the stage with
+    // an orange border when Ctrl+Z flags the last 30s as a retry.
+    if (Recorder._retryFlashUntil && performance.now() < Recorder._retryFlashUntil) {
+      const age = (Recorder._retryFlashUntil - performance.now()) / 700;
+      ctx.save();
+      ctx.strokeStyle = `rgba(251, 146, 60, ${age * 0.9})`;
+      ctx.lineWidth = 24;
+      ctx.strokeRect(0, 0, width, height);
+      ctx.restore();
+    }
 
     // v0.7.1: reposition the floating text color toolbar each frame so it
     // follows the selected overlay during drag/resize/rotation
@@ -2846,6 +2863,7 @@ const Recorder = {
         }
       }
       this.chunks = [];
+      this.retryRegions = [];
       this._chunkCount = 0;
       this._totalBytes = 0;
       this.recorder.ondataavailable = e => {
@@ -2950,6 +2968,37 @@ const Recorder = {
       Sfx.play('click');
     }
     this.updateUI();
+  },
+
+  // v0.7.38: Soft-rewind marker. True rewind of a MediaRecorder stream
+  // is impossible — you can't drop encoded chunks mid-stream without
+  // breaking the bitstream. Instead, we record a pair of markers
+  // (retry-N start/end) into Chapters.items AND push them into
+  // Recorder.retryRegions so a future Trim editor can auto-cut them.
+  softRewind() {
+    if (this.state !== 'recording' && this.state !== 'paused') return;
+    const now = this.elapsed() / 1000;
+    const back = 30;  // seconds to rewind
+    const start = Math.max(0, now - back);
+    if (!this.retryRegions) this.retryRegions = [];
+    const n = this.retryRegions.length + 1;
+    this.retryRegions.push({ start, end: now, n });
+    // Mirror into chapters so the user sees them in the ChapterList
+    Chapters.items.push({
+      time: start,
+      label: `↶ Retry ${n} start`,
+      retry: true,
+    });
+    Chapters.items.push({
+      time: now,
+      label: `↶ Retry ${n} end`,
+      retry: true,
+    });
+    Sfx.play('mark');
+    showToast(t('softRewindToast') || '↶ Retry — last 30s flagged', 2000);
+    log(`↶ soft-rewind: ${start.toFixed(1)}s → ${now.toFixed(1)}s`, 'info');
+    // Canvas-side visual flash — briefly pulse the whole stage border
+    Recorder._retryFlashUntil = performance.now() + 700;
   },
 
   // v0.7.26: Auto-pause triggered by visibilitychange when the tab is
@@ -3323,6 +3372,8 @@ const ChapterList = {
     items.forEach((c, i) => {
       const row = document.createElement('button');
       row.className = 'tc-chapter-row';
+      // v0.7.38: soft-rewind retry markers get an orange tint
+      if (c.retry) row.classList.add('tc-chapter-retry');
       row.innerHTML = `
         <span class="tc-chapter-idx">${i + 1}</span>
         <span class="tc-chapter-time">${this._fmtHHMMSS(c.time)}</span>
@@ -6699,6 +6750,16 @@ function setupHotkeys() {
           TextOverlays.selectedId = copy.id;
           showToast(t('overlayDuplicated'), 1500);
         }
+        e.preventDefault();
+      }
+      return;
+    }
+    // v0.7.38: Ctrl/Cmd+Z during recording = soft rewind 30s (drop the
+    // last 30s in the post-recording trim). Only intercepted during
+    // recording/paused so normal Ctrl+Z undo still works elsewhere.
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && k === 'z') {
+      if (Recorder.state === 'recording' || Recorder.state === 'paused') {
+        Recorder.softRewind();
         e.preventDefault();
       }
       return;

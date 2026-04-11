@@ -2651,6 +2651,15 @@ body.log-open .app {
   background: rgba(163, 230, 53, .22);
   border-color: rgba(163, 230, 53, .6);
 }
+/* v0.7.38: soft-rewind retry markers — orange tint to distinguish them
+   from normal chapter marks in the take-panel chapter list. */
+.tc-chapter-row.tc-chapter-retry {
+  background: rgba(251, 146, 60, .08);
+  border-color: rgba(251, 146, 60, .3);
+}
+.tc-chapter-row.tc-chapter-retry .tc-chapter-label {
+  color: #fdba74;
+}
 .tc-chapter-idx {
   display: inline-block;
   min-width: 22px;
