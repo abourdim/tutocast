@@ -2384,7 +2384,13 @@ body.log-open .app {
   border-radius: 12px;
   background: rgba(255, 255, 255, .025);
   border: 1px solid rgba(255, 255, 255, .06);
-  overflow: hidden;
+  /* v0.7.67 hotfix: was overflow:hidden, which combined with the
+     translateY animation on .tc-set-body and the flex-column parent's
+     shrinking behaviour at higher browser zoom levels caused the last
+     control in each section (Logo filter/silhouette, Slogan badge URL,
+     Recording output format) to get clipped. The background-clip does
+     the border-radius anyway. */
+  flex-shrink: 0;
 }
 .tc-set-section[open] {
   background: rgba(255, 255, 255, .04);
@@ -2425,8 +2431,10 @@ body.log-open .app {
   animation: tcSetFade .22s ease-out;
 }
 @keyframes tcSetFade {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  /* v0.7.67: dropped the translateY that was causing the bottom row of
+     each section to disappear behind the section's clip box when zoomed. */
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .tc-set-body .sidebar-group { margin-bottom: 8px; }
 .tc-set-body .sidebar-group:last-child { margin-bottom: 0; }
