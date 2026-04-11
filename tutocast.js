@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.57 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.58 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.57';
+const APP_VERSION = '0.7.58';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 03:30';
+const BUILD_DATE = '2026-04-12 03:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -99,6 +99,9 @@ const LANG = {
     fullscreen: 'Plein écran',
     outputFormat: '🎞 Format de sortie',
     formatAuto: 'Auto (MP4 si possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
+    stageAspect: '📐 Format de la scène',
+    stageAspectHint: "Ne change pas pendant un enregistrement",
+    aspectLockedDuringRec: '⚠ Impossible de changer pendant un enregistrement',
     trim: 'Couper', trimTitle: 'Couper le tuto',
     trimIn: 'Début', trimOut: 'Fin', trimDuration: 'Durée finale :',
     trimPreviewIn: '▶ début', trimPreviewOut: '▶ fin',
@@ -598,6 +601,9 @@ const LANG = {
     fullscreen: 'Fullscreen',
     outputFormat: '🎞 Output format',
     formatAuto: 'Auto (MP4 if possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
+    stageAspect: '📐 Stage format',
+    stageAspectHint: "Doesn't change during recording",
+    aspectLockedDuringRec: "⚠ Can't change during recording",
     trim: 'Trim', trimTitle: 'Trim the tutorial',
     trimIn: 'Start', trimOut: 'End', trimDuration: 'Final duration:',
     trimPreviewIn: '▶ start', trimPreviewOut: '▶ end',
@@ -1089,6 +1095,9 @@ const LANG = {
     fullscreen: 'ملء الشاشة',
     outputFormat: '🎞 تنسيق الإخراج',
     formatAuto: 'تلقائي (MP4 إن أمكن)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
+    stageAspect: '📐 صيغة المسرح',
+    stageAspectHint: 'لا يتغير أثناء التسجيل',
+    aspectLockedDuringRec: '⚠ لا يمكن التغيير أثناء التسجيل',
     trim: 'قص', trimTitle: 'قص الدرس',
     trimIn: 'البداية', trimOut: 'النهاية', trimDuration: 'المدة النهائية:',
     trimPreviewIn: '▶ البداية', trimPreviewOut: '▶ النهاية',
@@ -1646,6 +1655,65 @@ function closeAllPanels() {
 }
 
 /* ─────────── 3. Engine: sources + renderer ─────────── */
+
+/* v0.7.58: aspect ratio presets for the stage. Switches Engine.width/height,
+   #tcCanvas / #tcOverlayCanvas internal dimensions, and the .tc-stage CSS
+   aspect-ratio. Blocked during active recording to avoid breaking the
+   MediaRecorder stream. Persisted in localStorage tc-stage-aspect. */
+const StageAspect = {
+  presets: [
+    { key: '16:9',  w: 1920, h: 1080, label: '16:9 landscape' },
+    { key: '9:16',  w: 1080, h: 1920, label: '9:16 portrait'  },
+    { key: '1:1',   w: 1080, h: 1080, label: '1:1 square'     },
+    { key: '4:3',   w: 1440, h: 1080, label: '4:3 classic'    },
+  ],
+  current: '16:9',
+
+  load() {
+    try {
+      const saved = localStorage.getItem('tc-stage-aspect');
+      if (saved && this.presets.find(p => p.key === saved)) this.current = saved;
+    } catch {}
+    // Apply on load (AFTER Engine.init has set initial dimensions)
+    this.apply(this.current, true);
+  },
+
+  set(key) {
+    if (!this.presets.find(p => p.key === key)) return;
+    if (typeof Recorder !== 'undefined' && Recorder && Recorder.state === 'recording') {
+      showToast(t('aspectLockedDuringRec') || '⚠ Impossible de changer pendant un enregistrement', 2500);
+      return;
+    }
+    this.current = key;
+    try { localStorage.setItem('tc-stage-aspect', key); } catch {}
+    this.apply(key, false);
+  },
+
+  apply(key, initial) {
+    const preset = this.presets.find(p => p.key === key);
+    if (!preset) return;
+    Engine.width = preset.w;
+    Engine.height = preset.h;
+    const canvas = $('tcCanvas');
+    const overlay = $('tcOverlayCanvas');
+    if (canvas) { canvas.width = preset.w; canvas.height = preset.h; }
+    if (overlay) { overlay.width = preset.w; overlay.height = preset.h; }
+    // Keep the offscreen laser canvas in sync with the new bounds
+    if (Engine.laserCanvas) {
+      Engine.laserCanvas.width = preset.w;
+      Engine.laserCanvas.height = preset.h;
+    }
+    // Update the .tc-stage aspect-ratio via inline style
+    const stage = $('tcStage');
+    if (stage) stage.style.aspectRatio = `${preset.w} / ${preset.h}`;
+    // Re-apply the active scene so sources fit the new bounds
+    if (!initial && typeof Scenes !== 'undefined' && Scenes.reapply) {
+      Scenes.reapply();
+    }
+    // Force one render
+    if (typeof Engine !== 'undefined' && Engine.render) Engine.render();
+  },
+};
 
 const Engine = {
   canvas: null, ctx: null,
@@ -8318,6 +8386,17 @@ function wireEvents() {
     });
   }
 
+  // v0.7.58: stage aspect ratio preset
+  const stageAspectEl = $('tcStageAspectSelect');
+  if (stageAspectEl) {
+    stageAspectEl.value = StageAspect.current;
+    stageAspectEl.addEventListener('change', (e) => {
+      StageAspect.set(e.target.value);
+      // Guard: if the change was blocked (recording), revert the UI
+      stageAspectEl.value = StageAspect.current;
+    });
+  }
+
   // Sources
   $('srcScreenBtn').addEventListener('click', () => Engine.addScreen());
   $('srcCamBtn').addEventListener('click', () => {
@@ -8647,6 +8726,7 @@ async function init() {
   // ctx.drawImage(Ripples.canvas, 0, 0) — if canvas is null it throws.
   Ripples.setup();
   Engine.init();
+  StageAspect.load();  // v0.7.58: restore stage aspect ratio preset
   Laser.setup();
   Whiteboard.setup();
   Zoom.setup();

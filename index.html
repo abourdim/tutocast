@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.57</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.58</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -945,7 +945,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.57</strong></span>
+      <span class="badge"><strong>v0.7.58</strong></span>
     </div>
   </aside>
 
@@ -1081,6 +1081,17 @@
               <option value="webm" data-i18n="formatWebm">WebM (VP9/Opus)</option>
             </select>
           </div>
+          <!-- v0.7.58: stage aspect ratio presets -->
+          <div class="sidebar-group">
+            <label class="sidebar-label" data-i18n="stageAspect">📐 Format de la scène</label>
+            <select id="tcStageAspectSelect" class="sidebar-select">
+              <option value="16:9">16:9 — 1920×1080 (défaut)</option>
+              <option value="9:16">9:16 — 1080×1920 (portrait / TikTok)</option>
+              <option value="1:1">1:1 — 1080×1080 (square / Instagram)</option>
+              <option value="4:3">4:3 — 1440×1080 (classique)</option>
+            </select>
+            <div class="tc-ticker-hint" data-i18n="stageAspectHint">Ne change pas pendant un enregistrement</div>
+          </div>
         </div>
       </details>
 
@@ -1193,7 +1204,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.57</strong></span>
+      <span class="badge"><strong>v0.7.58</strong></span>
     </div>
   </aside>
 
@@ -1225,7 +1236,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.57</strong></span>
+      <span class="badge"><strong>v0.7.58</strong></span>
     </div>
   </aside>
 
