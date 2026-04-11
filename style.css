@@ -1714,6 +1714,32 @@ body.log-open .app {
   padding: 1px 4px;
   border-radius: 3px;
 }
+/* v0.7.32: drag-to-reorder scenes */
+.tc-scene-btn[draggable="true"] { cursor: grab; }
+.tc-scene-btn[draggable="true"]:active { cursor: grabbing; }
+.tc-scene-btn .tc-scene-grip {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  font-size: .65rem;
+  opacity: 0;
+  color: rgba(255, 255, 255, .55);
+  letter-spacing: -2px;
+  font-family: ui-monospace, monospace;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+.tc-scene-btn:hover .tc-scene-grip { opacity: .7; }
+.tc-scene-btn.dragging {
+  opacity: .4;
+  transform: scale(.96);
+}
+.tc-scene-btn.drop-before {
+  box-shadow: 0 -3px 0 0 var(--accent, #a3e635);
+}
+.tc-scene-btn.drop-after {
+  box-shadow: 0 3px 0 0 var(--accent, #a3e635);
+}
 .tc-scene-btn:hover { background: var(--glow); border-color: var(--accent); transform: translateY(-1px); }
 .tc-scene-btn.active {
   background: var(--accent); color: var(--bg); border-color: var(--accent);

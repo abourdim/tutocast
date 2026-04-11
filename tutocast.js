@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.31 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.32 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.31';
+const APP_VERSION = '0.7.32';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 20:45';
+const BUILD_DATE = '2026-04-11 21:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -200,6 +200,7 @@ const LANG = {
     sensorChartTitle: 'Capteurs micro:bit',
     sensorBtnsLegend: 'Boutons',
     chapterListTitle: 'Chapitres',
+    sceneReordered: 'Scènes réordonnées',
     historyTitle: 'Mes tutos',
     historyEmpty: 'Aucun tuto encore. Clique 🔴 ENREGISTRER pour commencer !',
     historyClear: "🗑 Vider l'historique",
@@ -613,6 +614,7 @@ const LANG = {
     sensorChartTitle: 'micro:bit sensors',
     sensorBtnsLegend: 'Buttons',
     chapterListTitle: 'Chapters',
+    sceneReordered: 'Scenes reordered',
     historyTitle: 'My tutorials',
     historyEmpty: 'No tutorial yet. Click 🔴 RECORD to start!',
     historyClear: '🗑 Clear history',
@@ -1018,6 +1020,7 @@ const LANG = {
     sensorChartTitle: 'مستشعرات micro:bit',
     sensorBtnsLegend: 'الأزرار',
     chapterListTitle: 'الفصول',
+    sceneReordered: 'تمت إعادة ترتيب المشاهد',
     historyTitle: 'دروسي',
     historyEmpty: 'لا دروس بعد. اضغط 🔴 تسجيل للبدء!',
     historyClear: '🗑 مسح السجل',
@@ -2174,6 +2177,50 @@ const Scenes = {
     if (s) s.apply(Engine);
   },
 
+  /* v0.7.32: reorder scenes by drag-and-drop. Persists the order to
+     localStorage tc-scene-order as an array of keys. The 1-9 hotkey
+     mapping follows the new order automatically because it's indexed
+     off Scenes.presets. */
+  reorder(movedKey, targetKey, before) {
+    const from = this.presets.findIndex(p => p.key === movedKey);
+    const to = this.presets.findIndex(p => p.key === targetKey);
+    if (from < 0 || to < 0 || from === to) return;
+    const [moved] = this.presets.splice(from, 1);
+    // After removing, the target index may have shifted by 1
+    let insertAt = this.presets.findIndex(p => p.key === targetKey);
+    if (!before) insertAt += 1;
+    this.presets.splice(insertAt, 0, moved);
+    this.saveOrder();
+    this.render();
+    showToast('🎭 ' + (t('sceneReordered') || 'Scenes reordered'), 1400);
+  },
+
+  saveOrder() {
+    try {
+      const keys = this.presets.map(p => p.key);
+      localStorage.setItem('tc-scene-order', JSON.stringify(keys));
+    } catch {}
+  },
+
+  loadOrder() {
+    try {
+      const raw = localStorage.getItem('tc-scene-order');
+      if (!raw) return;
+      const keys = JSON.parse(raw);
+      if (!Array.isArray(keys)) return;
+      // Sort presets so they match the saved order. Unknown keys stay
+      // at the end so adding a new scene preset in future releases
+      // doesn't silently disappear.
+      const byKey = {};
+      this.presets.forEach(p => { byKey[p.key] = p; });
+      const ordered = [];
+      keys.forEach(k => { if (byKey[k]) { ordered.push(byKey[k]); delete byKey[k]; } });
+      // Append any new presets that weren't in the saved order
+      Object.values(byKey).forEach(p => ordered.push(p));
+      this.presets = ordered;
+    } catch {}
+  },
+
   render() { renderScenes(); }
 };
 
@@ -2222,13 +2269,46 @@ function renderScenes() {
   Scenes.presets.forEach((s, i) => {
     const btn = document.createElement('button');
     btn.className = 'tc-scene-btn' + (Scenes.active === s.key ? ' active' : '');
+    btn.draggable = true;
+    btn.dataset.sceneKey = s.key;
     btn.innerHTML = `
       ${sceneThumbSvg(s.preview)}
       <span class="tc-scene-icon">${s.icon}</span>
       <span class="tc-scene-label">${t('scene_' + s.key)}</span>
       <kbd class="tc-scene-kbd">${i + 1}</kbd>
+      <span class="tc-scene-grip" aria-hidden="true">⋮⋮</span>
     `;
     btn.addEventListener('click', () => Scenes.switch(s.key));
+    // v0.7.32: drag-to-reorder via native HTML5 drag API
+    btn.addEventListener('dragstart', (e) => {
+      btn.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/scene', s.key);
+    });
+    btn.addEventListener('dragend', () => {
+      btn.classList.remove('dragging');
+      document.querySelectorAll('.tc-scene-btn.drop-before, .tc-scene-btn.drop-after')
+        .forEach(b => b.classList.remove('drop-before', 'drop-after'));
+    });
+    btn.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const r = btn.getBoundingClientRect();
+      const before = (e.clientY - r.top) < r.height / 2;
+      btn.classList.toggle('drop-before', before);
+      btn.classList.toggle('drop-after', !before);
+    });
+    btn.addEventListener('dragleave', () => {
+      btn.classList.remove('drop-before', 'drop-after');
+    });
+    btn.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const movedKey = e.dataTransfer.getData('text/scene');
+      if (!movedKey || movedKey === s.key) return;
+      const r = btn.getBoundingClientRect();
+      const before = (e.clientY - r.top) < r.height / 2;
+      Scenes.reorder(movedKey, s.key, before);
+    });
     el.appendChild(btn);
   });
 }
@@ -6521,6 +6601,7 @@ async function init() {
   Jingle.load();
   IntroOutro.load();
   History.load();
+  Scenes.loadOrder();  // v0.7.32: restore persisted scene order before first render
   Brand.load();
   Badges.load();
 
