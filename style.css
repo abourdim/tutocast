@@ -2558,6 +2558,15 @@ body.log-open .app {
   border: 2px solid var(--bg);
   cursor: grab;
 }
+/* v0.7.69: numeric readout under brand range sliders (mic boost / gate) */
+.tc-slider-value {
+  display: block;
+  font-size: .7rem;
+  text-align: right;
+  color: rgba(255, 255, 255, .55);
+  font-family: ui-monospace, monospace;
+  margin-top: 2px;
+}
 .tc-brand-color-row {
   display: flex;
   flex-wrap: wrap;

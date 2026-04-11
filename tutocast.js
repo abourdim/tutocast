@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.68 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.69 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.68';
+const APP_VERSION = '0.7.69';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 06:15';
+const BUILD_DATE = '2026-04-12 06:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -144,6 +144,8 @@ const LANG = {
     silenceChip: 'Tu es silencieux…',
     quizPromptLabel: 'Quelle question veux-tu poser à tes élèves ?',
     sensorOverlayLabel: '🤖 Overlay auto si le robot bouge fort',
+    micBoost: '🎚 Boost du micro',
+    micGate: '🔇 Seuil silence (dB)',
     jingleLabel: '🎵 Jingle d\'intro (1.5s)',
     timeGoalLabel: '⏳ Objectif de durée',
     timeGoalMinutes: 'Minutes :',
@@ -669,6 +671,8 @@ const LANG = {
     silenceChip: 'You\'re silent…',
     quizPromptLabel: 'What question do you want to ask your students?',
     sensorOverlayLabel: '🤖 Auto-overlay when the robot jolts',
+    micBoost: '🎚 Mic boost',
+    micGate: '🔇 Noise gate (dB)',
     jingleLabel: '🎵 Intro jingle (1.5s)',
     timeGoalLabel: '⏳ Duration goal',
     timeGoalMinutes: 'Minutes:',
@@ -1186,6 +1190,8 @@ const LANG = {
     silenceChip: 'أنت صامت…',
     quizPromptLabel: 'ما السؤال الذي تريد طرحه على طلابك؟',
     sensorOverlayLabel: '🤖 طبقة تلقائية عند اهتزاز الروبوت',
+    micBoost: '🎚 تعزيز الميكروفون',
+    micGate: '🔇 بوابة الصمت (dB)',
     jingleLabel: '🎵 جينغل المقدمة (1.5ث)',
     timeGoalLabel: '⏳ هدف المدة',
     timeGoalMinutes: 'الدقائق:',
@@ -1784,51 +1790,100 @@ const StageAspect = {
   },
 };
 
-/* v0.7.68: ChromaKey — per-source green-screen pre-processor.
-   When src.chromaKey is set, every frame the source's video is drawn
-   into a WeakMap-cached offscreen canvas (sized to the video's intrinsic
-   resolution for clean edges) and a per-pixel ImageData pass zeros alpha
-   on any pixel within RGB-distance² threshold of the key colour, so the
-   keyed colour becomes transparent and underlying layers show through. */
-const ChromaKey = {
-  _canvases: new WeakMap(),  // source → offscreen canvas
+/* v0.7.69: mic boost + noise gate. Sits between the raw mic source node
+   and Engine.audioDest. The gain is applied via a GainNode (smoothed via
+   setTargetAtTime so slider drags don't click). The noise gate runs an
+   AnalyserNode tap on the raw signal, computes per-frame RMS via rAF,
+   and ramps the gain to 0 when RMS dips below the threshold. */
+const MicBoost = {
+  gain: 1.0,
+  gateDb: -50,  // -60 (strict) to -20 (loose). Default -50 = very permissive.
+  _gainNode: null,
+  _gateAnalyser: null,
+  _gateBuf: null,
+  _rafId: null,
+  _muted: false,
 
-  // Returns an HTMLCanvasElement containing the keyed frame for this source,
-  // or null if chromaKey isn't set. The canvas matches the source's CURRENT
-  // w/h so we don't waste pixels.
-  process(src) {
-    if (!src.chromaKey || !src.video) return null;
-    const { color, threshold } = src.chromaKey;
-    const tr = parseInt(color.slice(1, 3), 16);
-    const tg = parseInt(color.slice(3, 5), 16);
-    const tb = parseInt(color.slice(5, 7), 16);
-    const t2 = threshold * threshold;
-
-    // Use the source's VIDEO intrinsic size, not its display w/h — we want
-    // to process at source resolution for clean edges.
-    const vw = src.video.videoWidth || 640;
-    const vh = src.video.videoHeight || 360;
-    let off = this._canvases.get(src);
-    if (!off || off.width !== vw || off.height !== vh) {
-      off = document.createElement('canvas');
-      off.width = vw;
-      off.height = vh;
-      this._canvases.set(src, off);
-    }
-    const ctx = off.getContext('2d', { willReadFrequently: true });
+  load() {
     try {
-      ctx.drawImage(src.video, 0, 0, vw, vh);
-    } catch { return null; }
-    const img = ctx.getImageData(0, 0, vw, vh);
-    const data = img.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const dr = data[i] - tr;
-      const dg = data[i + 1] - tg;
-      const db = data[i + 2] - tb;
-      if (dr * dr + dg * dg + db * db < t2) data[i + 3] = 0;
+      const g = parseFloat(localStorage.getItem('tc-mic-gain'));
+      if (!isNaN(g)) this.gain = Math.max(0, Math.min(4, g));
+      const d = parseFloat(localStorage.getItem('tc-mic-gate-db'));
+      if (!isNaN(d)) this.gateDb = Math.max(-60, Math.min(-20, d));
+    } catch {}
+  },
+
+  setGain(v) {
+    this.gain = Math.max(0, Math.min(4, parseFloat(v) || 1));
+    try { localStorage.setItem('tc-mic-gain', String(this.gain)); } catch {}
+    this._applyGain();
+  },
+
+  setGate(db) {
+    this.gateDb = Math.max(-60, Math.min(-20, parseFloat(db) || -50));
+    try { localStorage.setItem('tc-mic-gate-db', String(this.gateDb)); } catch {}
+  },
+
+  _applyGain() {
+    if (!this._gainNode) return;
+    const target = this._muted ? 0 : this.gain;
+    try {
+      this._gainNode.gain.setTargetAtTime(target, Engine.audioCtx.currentTime, 0.015);
+    } catch {
+      this._gainNode.gain.value = target;
     }
-    ctx.putImageData(img, 0, 0);
-    return off;
+  },
+
+  // Called from Engine.setMic when a mic source is ready. Builds a chain:
+  //   srcNode → gainNode → audioDest
+  //           \
+  //            → gateAnalyser (split for RMS read, no output connection)
+  // The gate analyser is on the INPUT side so gate decisions are based on
+  // the raw mic signal.
+  attach(srcNode) {
+    const ac = Engine.audioCtx;
+    if (!ac) return srcNode;  // fallback
+    this._gainNode = ac.createGain();
+    this._gainNode.gain.value = this.gain;
+    this._gateAnalyser = ac.createAnalyser();
+    this._gateAnalyser.fftSize = 512;
+    this._gateBuf = new Uint8Array(this._gateAnalyser.frequencyBinCount);
+    // Wire: src → gain, src → analyser (analyser is a "read-only" tap)
+    srcNode.connect(this._gainNode);
+    srcNode.connect(this._gateAnalyser);
+    // gain → audioDest (caller expects attach() to return the node to
+    // connect into audioDest, so we return the gain node)
+    this._startGateLoop();
+    return this._gainNode;
+  },
+
+  detach() {
+    if (this._rafId) cancelAnimationFrame(this._rafId);
+    this._rafId = null;
+    this._gainNode = null;
+    this._gateAnalyser = null;
+    this._muted = false;
+  },
+
+  _startGateLoop() {
+    const tick = () => {
+      if (!this._gateAnalyser) return;
+      this._gateAnalyser.getByteTimeDomainData(this._gateBuf);
+      let sum = 0;
+      for (let i = 0; i < this._gateBuf.length; i++) {
+        const v = (this._gateBuf[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / this._gateBuf.length);
+      const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+      const shouldMute = db < this.gateDb;
+      if (shouldMute !== this._muted) {
+        this._muted = shouldMute;
+        this._applyGain();
+      }
+      this._rafId = requestAnimationFrame(tick);
+    };
+    this._rafId = requestAnimationFrame(tick);
   },
 };
 
@@ -2456,6 +2511,9 @@ const Engine = {
   },
 
   async setMic(deviceId) {
+    // v0.7.69: tear down any previous MicBoost chain so the new mic builds
+    // a fresh gain/analyser pair instead of orphaning the old ones.
+    try { MicBoost.detach(); } catch {}
     // remove previous mic
     this.sources = this.sources.filter(s => {
       if (s.type === 'mic') {
@@ -2473,7 +2531,11 @@ const Engine = {
       this.sources.push(src);
       // hook into audio graph
       const node = this.audioCtx.createMediaStreamSource(stream);
-      node.connect(this.audioDest);
+      // v0.7.69: route the mic through MicBoost (gain + noise gate) before
+      // it reaches audioDest. The VU analyser still taps the raw pre-gain
+      // signal so the meter reflects what the user is actually saying.
+      const gainedOrSrc = MicBoost.attach(node);
+      gainedOrSrc.connect(this.audioDest);
       node.connect(this.analyser);
       this.onSourcesChanged();
       log('+ Mic', 'success');
@@ -9103,6 +9165,28 @@ function wireEvents() {
     });
   }
 
+  // v0.7.69: mic boost + noise gate sliders
+  const mbEl = $('tcMicBoostSlider');
+  if (mbEl) {
+    mbEl.value = MicBoost.gain;
+    const label = $('tcMicBoostValue');
+    if (label) label.textContent = MicBoost.gain.toFixed(1) + '×';
+    mbEl.addEventListener('input', (e) => {
+      MicBoost.setGain(e.target.value);
+      if (label) label.textContent = MicBoost.gain.toFixed(1) + '×';
+    });
+  }
+  const gtEl = $('tcMicGateSlider');
+  if (gtEl) {
+    gtEl.value = MicBoost.gateDb;
+    const label = $('tcMicGateValue');
+    if (label) label.textContent = MicBoost.gateDb + ' dB';
+    gtEl.addEventListener('input', (e) => {
+      MicBoost.setGate(e.target.value);
+      if (label) label.textContent = MicBoost.gateDb + ' dB';
+    });
+  }
+
   // Sources
   $('srcScreenBtn').addEventListener('click', () => Engine.addScreen());
   $('srcCamBtn').addEventListener('click', () => {
@@ -9504,6 +9588,7 @@ async function init() {
 
   Sfx.load();
   Jingle.load();
+  MicBoost.load();  // v0.7.69
   TimeGoal.load();
   LiveCaptions.load();
   SceneIntroText.load();
