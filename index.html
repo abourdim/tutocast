@@ -87,7 +87,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.1.0</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.1.2</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -137,7 +137,7 @@
               <div class="tc-stage-hint" id="tcStageHint" data-i18n="stageHint">👆 Ajoute une source pour commencer</div>
               <div class="tc-countdown" id="tcCountdown"></div>
               <div class="tc-teleprompter" id="tcTeleprompter" style="display:none">
-                <div class="tc-tele-inner" id="tcTeleInner">Colle ton script ici…</div>
+                <div class="tc-tele-inner" id="tcTeleInner" data-i18n="promptTelePlaceholder">Colle ton script ici…</div>
               </div>
             </div>
           </div>
@@ -250,7 +250,7 @@
         </details>
         <details class="help-item">
           <summary data-i18n="faq_q4">Quels sont les raccourcis clavier ?</summary>
-          <p data-i18n="faq_a4">R = Rec/Stop · P = Pause · M = Marker · 1-9 = Changer de scène · L = Laser (maintenir) · F = Geler l'écran · D = Dessiner · S = Capture photo · T = Texte rapide · Espace = Afficher/masquer ta webcam</p>
+          <p data-i18n="faq_a4">R = Rec/Stop · P = Pause · M = Marker · 1-6 = Changer de scène · L = Laser (on/off) · F = Geler l'écran · D = Dessiner · S = Capture photo · Échap = Fermer les panneaux</p>
         </details>
         <details class="help-item">
           <summary data-i18n="faq_q5">Mes vidéos sont privées ?</summary>
@@ -304,6 +304,28 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
+          <h3>🆕 v0.1.2 — 11 avril 2026</h3>
+          <p data-i18n="news_012">Audit complet et correctifs majeurs 🔧</p>
+          <ul>
+            <li data-i18n="news_012_1">Fix critique : les traits du tableau blanc étaient effacés en continu par le laser</li>
+            <li data-i18n="news_012_2">Effets sonores activables dans les paramètres (démarrage, stop, pause, marker)</li>
+            <li data-i18n="news_012_3">HUD de debug (FPS + mémoire) via Ctrl+Shift+D</li>
+            <li data-i18n="news_012_4">i18n complet du placeholder teleprompter et du prompt texte libre</li>
+            <li data-i18n="news_012_5">Les libellés des caméras/micros se rafraîchissent après autorisation</li>
+            <li data-i18n="news_012_6">Nettoyage automatique des flux et blobs à la fermeture de l'onglet</li>
+            <li data-i18n="news_012_7">Reset des outils (laser/gel/dessin/textes) entre les prises</li>
+            <li data-i18n="news_012_8">Thèmes traduits, raccourcis FAQ alignés sur le code réel</li>
+          </ul>
+        </div>
+        <div class="wiki-entry">
+          <h3>🆕 v0.1.1 — 10 avril 2026</h3>
+          <p data-i18n="news_011">Premier test complet en runtime : 2 bugs corrigés 🧪</p>
+          <ul>
+            <li data-i18n="news_011_1">Double emoji corrigé dans les boutons de scène</li>
+            <li data-i18n="news_011_2">41 clés i18n manquantes ajoutées (FAQ, wiki, how-to, changelog)</li>
+          </ul>
+        </div>
+        <div class="wiki-entry">
           <h3>🆕 v0.1.0 — 10 avril 2026</h3>
           <p data-i18n="news_010">Première version de TutoCast 🎉</p>
           <ul>
@@ -323,7 +345,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.1.0</strong></span>
+      <span class="badge"><strong>v0.1.2</strong></span>
     </div>
   </aside>
 
@@ -347,14 +369,14 @@
       <div class="sidebar-group">
         <label class="sidebar-label" data-i18n="theme">Thème</label>
         <select id="themeSelect" class="sidebar-select" aria-label="Theme">
-          <option value="jungle" selected>Jungle</option>
-          <option value="mosque-gold">Mosque</option>
-          <option value="zellige">Zellige</option>
-          <option value="andalus">Andalus</option>
-          <option value="riad">Riad</option>
-          <option value="medina">Medina</option>
-          <option value="space">Space</option>
-          <option value="robot">Robot</option>
+          <option value="jungle" selected data-i18n="t_jungle">Jungle</option>
+          <option value="mosque-gold" data-i18n="t_mosque">Mosque</option>
+          <option value="zellige" data-i18n="t_zellige">Zellige</option>
+          <option value="andalus" data-i18n="t_andalus">Andalus</option>
+          <option value="riad" data-i18n="t_riad">Riad</option>
+          <option value="medina" data-i18n="t_medina">Medina</option>
+          <option value="space" data-i18n="t_space">Space</option>
+          <option value="robot" data-i18n="t_robot">Robot</option>
         </select>
       </div>
       <div class="sidebar-group">
@@ -379,7 +401,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.1.0</strong></span>
+      <span class="badge"><strong>v0.1.2</strong></span>
     </div>
   </aside>
 
@@ -411,7 +433,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.1.0</strong></span>
+      <span class="badge"><strong>v0.1.2</strong></span>
     </div>
   </aside>
 

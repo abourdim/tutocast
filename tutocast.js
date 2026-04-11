@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.1.0 — kids-friendly multi-cam screen recorder
+   TutoCast v0.1.2 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -9,11 +9,11 @@
      4. Recorder (MediaRecorder + chapters VTT)
      5. Live tools (laser, freeze, whiteboard, teleprompter, snapshot)
      6. micro:bit sensors (Web Bluetooth)
-     7. Kid polish (pet, badges, confetti, ticker)
+     7. Kid polish (sfx, debug HUD, badges, confetti, ticker)
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.1.2';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -56,7 +56,6 @@ const LANG = {
     tip_9: '🧠 Commence par la scène "Toi" pour ton intro',
     tip_10: '🎬 Appuie sur R pour démarrer/arrêter l\'enregistrement',
     news: 'Nouveautés',
-    disconnected: 'Déconnecté', connected: 'Connecté',
     activityLog: '📜 Journal', eventsMsg: 'Événements et messages',
     clear: 'Effacer', copy: 'Copier', theme: 'Thème',
     settings: '⚙️ Paramètres', language: 'Langue',
@@ -64,10 +63,9 @@ const LANG = {
     soundEffects: '🔊 Effets sonores',
     splashHint: 'appuyer pour passer',
     export: 'Exporter', filterAll: 'Tout',
-    working: 'En cours…', copied: 'Copié !', copyFail: 'Échec',
+    copied: 'Copié !', copyFail: 'Échec',
     logCleared: 'Journal effacé',
     ready: '🚀 TutoCast prêt !',
-    readyToRecord: '✅ Prêt à enregistrer',
     needSources: '⚠️ Ajoute au moins une source avant d\'enregistrer',
     recStarted: '🔴 Enregistrement démarré',
     recStopped: '⏹ Enregistrement terminé',
@@ -77,17 +75,18 @@ const LANG = {
     snapshotSaved: '📸 Photo téléchargée',
     sceneChanged: '🎭 Scène',
     textAdded: '✏️ Texte ajouté',
-    laserOn: '🔴 Laser activé',
+    laserOn: '🔴 Laser activé', laserOff: '⚪ Laser désactivé',
     freezeOn: '❄️ Écran gelé',
     freezeOff: '▶ Écran repris',
     drawOn: '✏️ Mode dessin',
     drawOff: '✏️ Mode dessin désactivé',
     teleOn: '📜 Teleprompter visible',
     teleOff: '📜 Teleprompter caché',
-    promptTelePlaceholder: 'Colle ton script ici…',
+    promptTelePlaceholder: 'Colle ton script ici…', promptFreeText: 'Texte à afficher :',
     btConnected: '📡 micro:bit connecté !',
     btError: '❌ Connexion micro:bit échouée',
     permissionDenied: '🔒 Permission refusée. Autorise la caméra dans les réglages du navigateur.',
+    needCamSelected: '⚠️ Choisis une caméra dans la liste d\'abord',
     badge_first: 'Premier tuto',
     badge_long: 'Plus de 5 min',
     badge_multi: 'Multi-caméras',
@@ -101,7 +100,7 @@ const LANG = {
     faq_q3: "Je peux lire les capteurs de mon micro:bit ?",
     faq_a3: "Oui ! Clique sur « 📡 Connecter micro:bit » dans le panneau de gauche. Ton navigateur va demander l'autorisation de se connecter en Bluetooth. Une fois connecté, les valeurs des capteurs (accéléromètre, luminosité, boutons) s'affichent en overlay sur ta vidéo. ⚠️ Chrome/Edge uniquement.",
     faq_q4: "Quels sont les raccourcis clavier ?",
-    faq_a4: "R = Rec/Stop · P = Pause · M = Marker · 1-9 = Changer de scène · L = Laser (maintenir) · F = Geler l'écran · D = Dessiner · S = Capture photo · T = Texte rapide · Espace = Afficher/masquer ta webcam",
+    faq_a4: "R = Rec/Stop · P = Pause · M = Marker · 1-6 = Changer de scène · L = Laser (on/off) · F = Geler l'écran · D = Dessiner · S = Capture photo · Échap = Fermer les panneaux",
     faq_q5: "Mes vidéos sont privées ?",
     faq_a5: "100%. Rien ne quitte ton ordi. L'enregistrement reste dans la mémoire du navigateur et se télécharge directement sur ton disque. Aucun compte, aucune analytique, aucun serveur.",
     faq_q6: "Quel format de sortie ?",
@@ -135,6 +134,18 @@ const LANG = {
     news_010_7: "Markers live (touche M) + captures photo (touche S)",
     news_010_8: "Badges de progression + confetti à la fin",
     news_010_9: "Trilingue FR/EN/AR, 8 thèmes visuels",
+    news_011: "Premier test complet en runtime : 2 bugs corrigés 🧪",
+    news_011_1: "Double emoji corrigé dans les boutons de scène",
+    news_011_2: "41 clés i18n manquantes ajoutées (FAQ, wiki, how-to, changelog)",
+    news_012: "Audit complet et correctifs majeurs 🔧",
+    news_012_1: "Fix critique : les traits du tableau blanc étaient effacés en continu par le laser",
+    news_012_2: "Effets sonores activables dans les paramètres (démarrage, stop, pause, marker)",
+    news_012_3: "HUD de debug (FPS + mémoire) via Ctrl+Shift+D",
+    news_012_4: "i18n complet du placeholder teleprompter et du prompt texte libre",
+    news_012_5: "Les libellés des caméras/micros se rafraîchissent après autorisation",
+    news_012_6: "Nettoyage automatique des flux et blobs à la fermeture de l'onglet",
+    news_012_7: "Reset des outils (laser/gel/dessin/textes) entre les prises",
+    news_012_8: "Thèmes traduits, raccourcis FAQ alignés sur le code réel",
     t_mosque: 'Mosque', t_zellige: 'Zellige', t_andalus: 'Andalus',
     t_riad: 'Riad', t_medina: 'Médina', t_space: 'Espace', t_jungle: 'Jungle', t_robot: 'Robot',
   },
@@ -175,7 +186,6 @@ const LANG = {
     tip_9: '🧠 Start with the "You" scene for your intro',
     tip_10: '🎬 Press R to start/stop recording',
     news: 'News',
-    disconnected: 'Disconnected', connected: 'Connected',
     activityLog: '📜 Activity Log', eventsMsg: 'Events & messages',
     clear: 'Clear', copy: 'Copy', theme: 'Theme',
     settings: '⚙️ Settings', language: 'Language',
@@ -183,10 +193,9 @@ const LANG = {
     soundEffects: '🔊 Sound effects',
     splashHint: 'tap to skip',
     export: 'Export', filterAll: 'All',
-    working: 'Working…', copied: 'Copied!', copyFail: 'Copy failed',
+    copied: 'Copied!', copyFail: 'Copy failed',
     logCleared: 'Log cleared',
     ready: '🚀 TutoCast ready!',
-    readyToRecord: '✅ Ready to record',
     needSources: '⚠️ Add at least one source before recording',
     recStarted: '🔴 Recording started',
     recStopped: '⏹ Recording stopped',
@@ -196,17 +205,18 @@ const LANG = {
     snapshotSaved: '📸 Photo saved',
     sceneChanged: '🎭 Scene',
     textAdded: '✏️ Text added',
-    laserOn: '🔴 Laser on',
+    laserOn: '🔴 Laser on', laserOff: '⚪ Laser off',
     freezeOn: '❄️ Screen frozen',
     freezeOff: '▶ Screen live',
     drawOn: '✏️ Draw mode',
     drawOff: '✏️ Draw mode off',
     teleOn: '📜 Teleprompter on',
     teleOff: '📜 Teleprompter off',
-    promptTelePlaceholder: 'Paste your script here…',
+    promptTelePlaceholder: 'Paste your script here…', promptFreeText: 'Text to display:',
     btConnected: '📡 micro:bit connected!',
     btError: '❌ micro:bit connection failed',
     permissionDenied: '🔒 Permission denied. Allow camera in browser settings.',
+    needCamSelected: '⚠️ Pick a camera from the list first',
     badge_first: 'First tutorial',
     badge_long: 'Over 5 minutes',
     badge_multi: 'Multi-camera',
@@ -220,7 +230,7 @@ const LANG = {
     faq_q3: "Can I read my micro:bit sensors?",
     faq_a3: "Yes! Click 📡 Connect micro:bit in the left panel. Your browser will ask for Bluetooth permission. Once connected, sensor values (accelerometer, light, buttons) appear as overlay on your video. ⚠️ Chrome/Edge only.",
     faq_q4: "What are the keyboard shortcuts?",
-    faq_a4: "R = Rec/Stop · P = Pause · M = Marker · 1-9 = Switch scene · L = Laser (hold) · F = Freeze screen · D = Draw · S = Photo snapshot · T = Quick text · Space = Show/hide webcam",
+    faq_a4: "R = Rec/Stop · P = Pause · M = Marker · 1-6 = Switch scene · L = Laser (toggle) · F = Freeze screen · D = Draw · S = Photo snapshot · Esc = Close panels",
     faq_q5: "Are my videos private?",
     faq_a5: "100%. Nothing leaves your computer. The recording stays in the browser memory and downloads directly to your disk. No account, no analytics, no server.",
     faq_q6: "What output format?",
@@ -254,6 +264,18 @@ const LANG = {
     news_010_7: "Live markers (M key) + photo snapshots (S key)",
     news_010_8: "Progress badges + confetti at the end",
     news_010_9: "Trilingual FR/EN/AR, 8 visual themes",
+    news_011: "First full runtime test pass: 2 bugs fixed 🧪",
+    news_011_1: "Double emoji in scene buttons fixed",
+    news_011_2: "41 missing i18n keys added (FAQ, wiki, how-to, changelog)",
+    news_012: "Full audit pass + major fixes 🔧",
+    news_012_1: "Critical fix: whiteboard strokes were being wiped by the laser every frame",
+    news_012_2: "Sound effects toggle in settings (start, stop, pause, marker)",
+    news_012_3: "Debug HUD (FPS + memory) via Ctrl+Shift+D",
+    news_012_4: "Teleprompter placeholder and free-text prompt fully i18n",
+    news_012_5: "Camera/mic labels refresh automatically after permission grant",
+    news_012_6: "Clean shutdown of streams and blobs on tab close",
+    news_012_7: "Tools (laser/freeze/draw/texts) reset between takes",
+    news_012_8: "Themes translated, FAQ hotkeys aligned with actual code",
     t_mosque: 'Mosque', t_zellige: 'Zellige', t_andalus: 'Andalus',
     t_riad: 'Riad', t_medina: 'Medina', t_space: 'Space', t_jungle: 'Jungle', t_robot: 'Robot',
   },
@@ -292,7 +314,6 @@ const LANG = {
     tip_9: '🧠 ابدأ بمشهد "أنت"',
     tip_10: '🎬 اضغط R للتسجيل',
     news: 'جديد',
-    disconnected: 'غير متصل', connected: 'متصل',
     activityLog: '📜 سجل النشاط', eventsMsg: 'الأحداث والرسائل',
     clear: 'مسح', copy: 'نسخ', theme: 'المظهر',
     settings: '⚙️ الإعدادات', language: 'اللغة',
@@ -300,10 +321,9 @@ const LANG = {
     soundEffects: '🔊 مؤثرات صوتية',
     splashHint: 'انقر للتخطي',
     export: 'تصدير', filterAll: 'الكل',
-    working: 'جارٍ…', copied: 'تم النسخ!', copyFail: 'فشل',
+    copied: 'تم النسخ!', copyFail: 'فشل',
     logCleared: 'تم المسح',
     ready: '🚀 TutoCast جاهز!',
-    readyToRecord: '✅ جاهز للتسجيل',
     needSources: '⚠️ أضف مصدرًا أولاً',
     recStarted: '🔴 بدأ التسجيل',
     recStopped: '⏹ انتهى التسجيل',
@@ -312,12 +332,13 @@ const LANG = {
     snapshotSaved: '📸 حفظ اللقطة',
     sceneChanged: '🎭 المشهد',
     textAdded: '✏️ نص مُضاف',
-    laserOn: '🔴 الليزر', freezeOn: '❄️ مُجمَّد', freezeOff: '▶ مباشر',
+    laserOn: '🔴 الليزر', laserOff: '⚪ إيقاف الليزر', freezeOn: '❄️ مُجمَّد', freezeOff: '▶ مباشر',
     drawOn: '✏️ وضع الرسم', drawOff: '✏️ إيقاف الرسم',
     teleOn: '📜 تيليبرومبتر', teleOff: '📜 مخفي',
-    promptTelePlaceholder: 'الصق النص هنا…',
+    promptTelePlaceholder: 'الصق النص هنا…', promptFreeText: 'النص المراد عرضه:',
     btConnected: '📡 micro:bit متصل!', btError: '❌ فشل الاتصال',
     permissionDenied: '🔒 تم رفض الإذن.',
+    needCamSelected: '⚠️ اختر كاميرا من القائمة أولاً',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
     faq_q1: "ما هو TutoCast؟",
@@ -327,7 +348,7 @@ const LANG = {
     faq_q3: "هل يمكنني قراءة مستشعرات micro:bit؟",
     faq_a3: "نعم! اضغط على « 📡 اتصال micro:bit » في اللوحة اليسرى. سيطلب متصفحك إذن الاتصال عبر Bluetooth. بعد الاتصال، تظهر قيم المستشعرات (مقياس التسارع، الضوء، الأزرار) كطبقة فوق الفيديو. ⚠️ Chrome/Edge فقط.",
     faq_q4: "ما هي اختصارات لوحة المفاتيح؟",
-    faq_a4: "R = تسجيل/إيقاف · P = إيقاف مؤقت · M = علامة · 1-9 = تبديل المشهد · L = ليزر (اضغط مطوّلاً) · F = تجميد الشاشة · D = رسم · S = لقطة · T = نص سريع · مسافة = إظهار/إخفاء الكاميرا",
+    faq_a4: "R = تسجيل/إيقاف · P = إيقاف مؤقت · M = علامة · 1-6 = تبديل المشهد · L = ليزر (تبديل) · F = تجميد الشاشة · D = رسم · S = لقطة · Esc = إغلاق اللوحات",
     faq_q5: "هل فيديوهاتي خاصة؟",
     faq_a5: "100%. لا شيء يغادر حاسوبك. يبقى التسجيل في ذاكرة المتصفح ويُحمَّل مباشرة إلى قرصك. بدون حساب، بدون تحليلات، بدون خادم.",
     faq_q6: "ما هي صيغة الإخراج؟",
@@ -361,6 +382,18 @@ const LANG = {
     news_010_7: "علامات مباشرة (مفتاح M) + لقطات فوتوغرافية (مفتاح S)",
     news_010_8: "شارات تقدّم + كونفيتي في النهاية",
     news_010_9: "ثلاثي اللغات FR/EN/AR، 8 مظاهر بصرية",
+    news_011: "أول اختبار تشغيل كامل: إصلاح خطأين 🧪",
+    news_011_1: "تصحيح الإيموجي المكرر في أزرار المشاهد",
+    news_011_2: "إضافة 41 مفتاح ترجمة مفقود (FAQ، wiki، الدليل، السجل)",
+    news_012: "تدقيق كامل وإصلاحات كبرى 🔧",
+    news_012_1: "إصلاح حرج: كانت خطوط لوح الرسم تُمحى باستمرار بسبب الليزر",
+    news_012_2: "تفعيل المؤثرات الصوتية في الإعدادات (بدء، إيقاف، توقف، علامة)",
+    news_012_3: "لوحة تصحيح (FPS + الذاكرة) عبر Ctrl+Shift+D",
+    news_012_4: "ترجمة كاملة لتلميحات التيليبرومبتر ونص الإدخال الحر",
+    news_012_5: "تحديث تلقائي لأسماء الكاميرات والميكروفونات بعد الإذن",
+    news_012_6: "تنظيف تلقائي للتدفقات والبيانات عند إغلاق التبويب",
+    news_012_7: "إعادة تعيين الأدوات (ليزر/تجميد/رسم/نصوص) بين التسجيلات",
+    news_012_8: "ترجمة المظاهر ومواءمة اختصارات FAQ مع الشيفرة الفعلية",
     t_mosque: 'مسجد', t_zellige: 'زليج', t_andalus: 'أندلس',
     t_riad: 'رياض', t_medina: 'مدينة', t_space: 'فضاء', t_jungle: 'أدغال', t_robot: 'روبوت',
   }
@@ -374,7 +407,10 @@ function applyI18n() {
   const s = LANG[currentLang];
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.dataset.i18n;
-    if (s[k] != null) el.textContent = s[k];
+    if (s[k] == null) return;
+    // Don't clobber the teleprompter content if the user has typed their own
+    if (el.id === 'tcTeleInner' && typeof Teleprompter !== 'undefined' && Teleprompter.hasUserText()) return;
+    el.textContent = s[k];
   });
   document.title = `${s.title} — ${s.slogan}`;
   document.documentElement.lang = currentLang;
@@ -420,11 +456,11 @@ function log(msg, type = 'info') {
 }
 
 function showToast(msg, ms = 2000) {
-  const t = $('toastIndicator'), m = $('toastMessage'); if (!t || !m) return;
+  const toast = $('toastIndicator'), m = $('toastMessage'); if (!toast || !m) return;
   m.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(showToast._t);
-  if (ms > 0) showToast._t = setTimeout(() => t.classList.remove('show'), ms);
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  if (ms > 0) showToast._timer = setTimeout(() => toast.classList.remove('show'), ms);
 }
 
 function openPanel(id) {
@@ -445,7 +481,8 @@ function closeAllPanels() {
 
 const Engine = {
   canvas: null, ctx: null,
-  overlayCanvas: null, overlayCtx: null,
+  overlayCanvas: null, overlayCtx: null,   // whiteboard strokes — persist across frames
+  laserCanvas: null, laserCtx: null,       // laser dot — redrawn every frame, offscreen
   width: 1920, height: 1080,
   sources: [],        // {id, type:'screen'|'cam'|'mic', stream, video, label, x, y, w, h, shape, mirrored}
   nextId: 1,
@@ -453,16 +490,23 @@ const Engine = {
   frozenFrame: null,  // ImageData when frozen
   audioCtx: null, audioDest: null, analyser: null,
   masterStream: null,
+  fps: 0, _fpsFrames: 0, _fpsLast: 0,
 
   init() {
     this.canvas = $('tcCanvas');
     this.overlayCanvas = $('tcOverlayCanvas');
     this.ctx = this.canvas.getContext('2d', { alpha: false });
     this.overlayCtx = this.overlayCanvas.getContext('2d');
+    // Dedicated offscreen canvas for the laser so it never touches whiteboard strokes
+    this.laserCanvas = document.createElement('canvas');
+    this.laserCanvas.width = this.width;
+    this.laserCanvas.height = this.height;
+    this.laserCtx = this.laserCanvas.getContext('2d');
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     this.audioDest = this.audioCtx.createMediaStreamDestination();
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.fftSize = 256;
+    this._fpsLast = performance.now();
     this.loop();
   },
 
@@ -491,13 +535,23 @@ const Engine = {
     // draw sensor overlay if active
     Sensors.drawOverlay(ctx);
 
-    // overlay canvas for laser + whiteboard (separate so it stays across frames for whiteboard)
-    // (the overlay is composited by CSS on top, not in canvas stream directly,
-    //  BUT we also need it in the recording — so we draw it onto the main canvas too)
+    // Whiteboard strokes (persist across frames)
     ctx.drawImage(this.overlayCanvas, 0, 0);
 
-    // update VU meter
+    // Laser dot — redraw its offscreen canvas then composite
+    Laser.render();
+    ctx.drawImage(this.laserCanvas, 0, 0);
+
+    // update VU meter + FPS stats
     this.updateVU();
+    this._fpsFrames++;
+    const now = performance.now();
+    if (now - this._fpsLast >= 1000) {
+      this.fps = Math.round((this._fpsFrames * 1000) / (now - this._fpsLast));
+      this._fpsFrames = 0;
+      this._fpsLast = now;
+      DebugHud.update();
+    }
   },
 
   drawSource(src) {
@@ -580,6 +634,8 @@ const Engine = {
       this.onSourcesChanged();
       log(`+ ${src.label}`, 'success');
       Badges.unlockIfMultiCam();
+      // After a successful permission grant, labels become available — refresh
+      this.refreshDeviceList();
     } catch (e) {
       log(`✗ cam: ${e.message}`, 'error');
       if (e.name === 'NotAllowedError') showToast(t('permissionDenied'), 3500);
@@ -590,7 +646,7 @@ const Engine = {
     // remove previous mic
     this.sources = this.sources.filter(s => {
       if (s.type === 'mic') {
-        try { s.stream.getTracks().forEach(t => t.stop()); } catch {}
+        try { s.stream.getTracks().forEach(tr => tr.stop()); } catch {}
         return false;
       }
       return true;
@@ -608,8 +664,51 @@ const Engine = {
       node.connect(this.analyser);
       this.onSourcesChanged();
       log('+ Mic', 'success');
+      this.refreshDeviceList();
     } catch (e) {
       log(`✗ mic: ${e.message}`, 'error');
+    }
+  },
+
+  /* Refresh the camera and mic dropdowns.
+     Labels are only populated after at least one getUserMedia permission
+     has been granted, so we call this after addCamera / setMic succeeds. */
+  async refreshDeviceList() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      const mics = devices.filter(d => d.kind === 'audioinput');
+      const camSel = $('camSelect'), micSel = $('micSelect');
+      if (camSel) {
+        const prev = camSel.value;
+        camSel.innerHTML = '';
+        const opt0 = document.createElement('option');
+        opt0.value = ''; opt0.textContent = t('selectCam');
+        camSel.appendChild(opt0);
+        cams.forEach(d => {
+          const o = document.createElement('option');
+          o.value = d.deviceId;
+          o.textContent = d.label || `Camera ${d.deviceId.slice(0, 4) || 'default'}`;
+          camSel.appendChild(o);
+        });
+        if (prev) camSel.value = prev;
+      }
+      if (micSel) {
+        const prev = micSel.value;
+        micSel.innerHTML = '';
+        const opt0 = document.createElement('option');
+        opt0.value = ''; opt0.textContent = t('selectMic');
+        micSel.appendChild(opt0);
+        mics.forEach(d => {
+          const o = document.createElement('option');
+          o.value = d.deviceId;
+          o.textContent = d.label || `Mic ${d.deviceId.slice(0, 4) || 'default'}`;
+          micSel.appendChild(o);
+        });
+        if (prev) micSel.value = prev;
+      }
+    } catch (e) {
+      log(`enumerateDevices: ${e.message}`, 'error');
     }
   },
 
@@ -629,8 +728,11 @@ const Engine = {
       this.sources.forEach(s => {
         const li = document.createElement('li');
         const icon = s.type === 'screen' ? '🖥' : s.type === 'cam' ? '🎥' : '🎤';
-        li.innerHTML = `<span>${icon}</span><span class="tc-src-name">${s.label}</span><button title="Remove">✕</button>`;
-        li.querySelector('button').addEventListener('click', () => this.removeSource(s.id));
+        const iconEl = document.createElement('span'); iconEl.textContent = icon;
+        const nameEl = document.createElement('span'); nameEl.className = 'tc-src-name'; nameEl.textContent = s.label;
+        const btn = document.createElement('button'); btn.title = 'Remove'; btn.textContent = '✕';
+        btn.addEventListener('click', () => this.removeSource(s.id));
+        li.append(iconEl, nameEl, btn);
         list.appendChild(li);
       });
     }
@@ -840,10 +942,16 @@ const Recorder = {
     }
     const stream = Engine.getMasterStream();
     const mime = this.pickMime();
+    const bitrate = 4_000_000;
     try {
-      this.recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+      this.recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate });
     } catch (e) {
-      this.recorder = new MediaRecorder(stream);
+      // Try again without mimeType but keep the bitrate target
+      try {
+        this.recorder = new MediaRecorder(stream, { videoBitsPerSecond: bitrate });
+      } catch (e2) {
+        this.recorder = new MediaRecorder(stream);
+      }
     }
     this.chunks = [];
     this.recorder.ondataavailable = e => { if (e.data && e.data.size) this.chunks.push(e.data); };
@@ -858,7 +966,7 @@ const Recorder = {
     this.startTimer();
     log(t('recStarted'), 'success');
     showToast(t('recStarted'), 1500);
-    Pet.setMood('happy');
+    Sfx.play('start');
   },
 
   pickMime() {
@@ -892,11 +1000,13 @@ const Recorder = {
       this.pausedAt = Date.now();
       this.state = 'paused';
       log(t('recPaused'), 'info');
+      Sfx.play('click');
     } else if (this.state === 'paused') {
       this.recorder.resume();
       this.pausedDuration += Date.now() - this.pausedAt;
       this.state = 'recording';
       log(t('recResumed'), 'info');
+      Sfx.play('click');
     }
     this.updateUI();
   },
@@ -912,6 +1022,9 @@ const Recorder = {
     const blob = new Blob(this.chunks, { type: this.chunks[0]?.type || 'video/webm' });
     const url = URL.createObjectURL(blob);
     const video = $('tcTakeVideo');
+    // revoke previous take URLs if any
+    if (this._prevUrls) this._prevUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+    this._prevUrls = [url];
     video.src = url;
     $('tcTake').style.display = 'block';
     const now = new Date();
@@ -923,17 +1036,31 @@ const Recorder = {
     const vtt = Chapters.toVTT();
     const vttBlob = new Blob([vtt], { type: 'text/vtt' });
     const vttUrl = URL.createObjectURL(vttBlob);
+    this._prevUrls.push(vttUrl);
     const dlVtt = $('tcDownloadVtt');
     dlVtt.href = vttUrl; dlVtt.download = `${fname}.vtt`;
     // trigger auto-download of webm
     setTimeout(() => dl.click(), 200);
     log(t('recStopped'), 'success');
     showToast('🎉 ' + t('recStopped'), 2500);
+    Sfx.play('stop');
     Confetti.burst();
     Badges.unlockFirst();
     Badges.unlockLong(this.elapsed());
-    Pet.setMood('happy');
     this.updateUI();
+    // Reset transient scene state so the next take starts clean
+    this.resetSceneState();
+  },
+
+  /* Reset visual state that shouldn't leak between takes */
+  resetSceneState() {
+    this.frozen = false;
+    Engine.frozenFrame = null;
+    if (Freeze) $('tcFreezeBtn')?.classList.remove('active');
+    if (Whiteboard.on) Whiteboard.toggle();
+    Whiteboard.clear();
+    if (Laser.on) Laser.toggle();
+    TextOverlays.items = [];
   },
 
   elapsed() {
@@ -984,8 +1111,8 @@ const Chapters = {
 
   add(label) {
     if (Recorder.state !== 'recording') return;
-    const t = Recorder.elapsed() / 1000;
-    this.items.push({ time: t, label });
+    const elapsedSec = Recorder.elapsed() / 1000;
+    this.items.push({ time: elapsedSec, label });
   },
 
   fmtTime(s) {
@@ -1007,18 +1134,20 @@ const Chapters = {
   },
 
   addMarker() {
+    if (Recorder.state !== 'recording' && Recorder.state !== 'paused') return;
     const label = `Marker ${this.items.filter(i => i.label.startsWith('Marker')).length + 1}`;
     this.items.push({ time: Recorder.elapsed() / 1000, label });
     log(`${t('markerAdded')} — ${label}`, 'info');
+    Sfx.play('mark');
     Badges.unlockMarker(this.items.length);
   }
 };
 
 /* ─────────── 5. Live tools ─────────── */
 
-/* Laser pointer — drawn on overlay canvas, fades after release */
+/* Laser pointer — drawn on its own offscreen canvas, composited by Engine.render */
 const Laser = {
-  on: false, x: 0, y: 0, lastMove: 0,
+  on: false, x: 0, y: 0, lastMove: 0, _lastDirty: false,
   setup() {
     const stage = $('tcStage');
     stage.addEventListener('mousemove', (e) => {
@@ -1028,12 +1157,18 @@ const Laser = {
       this.y = ((e.clientY - r.top) / r.height) * Engine.height;
       this.lastMove = Date.now();
     });
-    // render loop integration
-    setInterval(() => this.render(), 33);
+    // No setInterval — Engine.render calls Laser.render each frame
   },
   render() {
-    if (!this.on) { Engine.overlayCtx.clearRect(0, 0, Engine.width, Engine.height); return; }
-    const c = Engine.overlayCtx;
+    const c = Engine.laserCtx;
+    if (!this.on) {
+      // Only clear once on transition off, not every frame
+      if (this._lastDirty) {
+        c.clearRect(0, 0, Engine.width, Engine.height);
+        this._lastDirty = false;
+      }
+      return;
+    }
     c.clearRect(0, 0, Engine.width, Engine.height);
     c.save();
     const grd = c.createRadialGradient(this.x, this.y, 4, this.x, this.y, 40);
@@ -1043,10 +1178,11 @@ const Laser = {
     c.fillStyle = grd;
     c.beginPath(); c.arc(this.x, this.y, 40, 0, Math.PI * 2); c.fill();
     c.restore();
+    this._lastDirty = true;
   },
   toggle() {
     this.on = !this.on;
-    log(this.on ? t('laserOn') : '⚪ Laser off', 'info');
+    log(this.on ? t('laserOn') : t('laserOff'), 'info');
     $('tcLaserBtn').classList.toggle('active', this.on);
   }
 };
@@ -1068,24 +1204,26 @@ const Freeze = {
   }
 };
 
-/* Whiteboard — draws on the overlay canvas, persists */
+/* Whiteboard — draws on the overlay canvas, persists across frames */
 const Whiteboard = {
   on: false, drawing: false, lastX: 0, lastY: 0,
   setup() {
     const stage = $('tcStage');
-    const ov = Engine.overlayCanvas;
-    const down = (e) => {
+    const toStageXY = (e) => {
+      const r = stage.getBoundingClientRect();
+      return [
+        ((e.clientX - r.left) / r.width) * Engine.width,
+        ((e.clientY - r.top) / r.height) * Engine.height,
+      ];
+    };
+    stage.addEventListener('mousedown', (e) => {
       if (!this.on) return;
       this.drawing = true;
-      const r = stage.getBoundingClientRect();
-      this.lastX = ((e.clientX - r.left) / r.width) * Engine.width;
-      this.lastY = ((e.clientY - r.top) / r.height) * Engine.height;
-    };
-    const move = (e) => {
+      [this.lastX, this.lastY] = toStageXY(e);
+    });
+    stage.addEventListener('mousemove', (e) => {
       if (!this.drawing) return;
-      const r = stage.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width) * Engine.width;
-      const y = ((e.clientY - r.top) / r.height) * Engine.height;
+      const [x, y] = toStageXY(e);
       const c = Engine.overlayCtx;
       c.strokeStyle = '#fbbf24';
       c.lineWidth = 8;
@@ -1096,39 +1234,39 @@ const Whiteboard = {
       c.lineTo(x, y);
       c.stroke();
       this.lastX = x; this.lastY = y;
-    };
-    const up = () => { this.drawing = false; };
-    stage.addEventListener('mousedown', down);
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
+    });
+    // Stop on mouseup anywhere (covers mouse leaving stage mid-stroke)
+    window.addEventListener('mouseup', () => { this.drawing = false; });
+    stage.addEventListener('mouseleave', () => { this.drawing = false; });
   },
   toggle() {
     this.on = !this.on;
     $('tcStage').classList.toggle('drawing', this.on);
     $('tcWhiteboardBtn').classList.toggle('active', this.on);
     log(this.on ? t('drawOn') : t('drawOff'), 'info');
-    if (!this.on && Laser.on === false) {
-      // keep drawings visible but stop drawing events
-    }
   },
   clear() { Engine.overlayCtx.clearRect(0, 0, Engine.width, Engine.height); }
 };
 
 /* Teleprompter — overlay visible on stage only, NOT drawn to canvas */
 const Teleprompter = {
-  on: false,
+  on: false, _userEdited: false,
   toggle() {
     this.on = !this.on;
     const el = $('tcTeleprompter');
     el.style.display = this.on ? 'block' : 'none';
     const inner = $('tcTeleInner');
-    if (this.on && inner.textContent === 'Colle ton script ici…') {
-      inner.textContent = t('promptTelePlaceholder');
-    }
     inner.contentEditable = 'true';
+    // Track whether the user has typed their own text. applyI18n() will only
+    // refresh the placeholder when the user hasn't edited yet.
+    if (!this._wired) {
+      inner.addEventListener('input', () => { this._userEdited = true; });
+      this._wired = true;
+    }
     $('tcTeleBtn').classList.toggle('active', this.on);
     log(this.on ? t('teleOn') : t('teleOff'), 'info');
-  }
+  },
+  hasUserText() { return this._userEdited; }
 };
 
 /* Snapshot — download current canvas as PNG */
@@ -1247,12 +1385,70 @@ const Sensors = {
   }
 };
 
-/* ─────────── 7. Kid polish: pet, badges, confetti, ticker ─────────── */
+/* ─────────── 7. Kid polish: sfx, debug hud, badges, confetti, ticker ─────────── */
 
-const Pet = {
-  setMood(mood) {
-    // Placeholder — could animate a DOM element, for now just log
-    // In a fuller impl, a pixel pet in the corner changes emoji
+/* Tiny Web Audio SFX — respects the soundToggle checkbox */
+const Sfx = {
+  _ctx: null,
+  enabled: true,
+  ctx() {
+    if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return this._ctx;
+  },
+  play(kind) {
+    if (!this.enabled) return;
+    try {
+      const ac = this.ctx();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      const map = {
+        start:  { f1: 440, f2: 880, d: 0.18, type: 'sine'     },
+        stop:   { f1: 660, f2: 220, d: 0.22, type: 'sine'     },
+        mark:   { f1: 880, f2: 880, d: 0.08, type: 'triangle' },
+        click:  { f1: 520, f2: 520, d: 0.04, type: 'square'   },
+      };
+      const p = map[kind] || map.click;
+      o.type = p.type;
+      o.frequency.setValueAtTime(p.f1, ac.currentTime);
+      o.frequency.linearRampToValueAtTime(p.f2, ac.currentTime + p.d);
+      g.gain.setValueAtTime(0.0001, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.12, ac.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + p.d);
+      o.start();
+      o.stop(ac.currentTime + p.d + 0.02);
+    } catch {}
+  },
+  setEnabled(v) {
+    this.enabled = !!v;
+    try { localStorage.setItem('tc-sfx', v ? '1' : '0'); } catch {}
+  },
+  load() {
+    try {
+      const v = localStorage.getItem('tc-sfx');
+      if (v !== null) this.enabled = v === '1';
+    } catch {}
+  }
+};
+
+/* Small debug HUD — FPS + JS heap, toggled with Ctrl+Shift+D */
+const DebugHud = {
+  on: false,
+  toggle() {
+    this.on = !this.on;
+    $('debugPanel')?.classList.toggle('active', this.on);
+    if (this.on) this.update();
+  },
+  update() {
+    if (!this.on) return;
+    const fps = $('debugFps'); if (fps) fps.textContent = `${Engine.fps} FPS`;
+    const mem = $('debugMem');
+    if (mem && performance.memory) {
+      const mb = performance.memory.usedJSHeapSize / 1048576;
+      mem.textContent = `${mb.toFixed(1)} MB`;
+    } else if (mem) {
+      mem.textContent = '— MB';
+    }
   }
 };
 
@@ -1392,8 +1588,12 @@ function setupHotkeys() {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase();
+    // Ctrl/Cmd + Shift + D toggles the debug HUD
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && k === 'd') {
+      DebugHud.toggle(); e.preventDefault(); return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (k >= '1' && k <= '9') {
       const idx = parseInt(k) - 1;
       if (Scenes.presets[idx]) { Scenes.switch(Scenes.presets[idx].key); e.preventDefault(); }
@@ -1439,11 +1639,20 @@ function wireEvents() {
   $('langSelect').addEventListener('change', (e) => setLanguage(e.target.value));
   $('themeSelect').addEventListener('change', (e) => setTheme(e.target.value));
 
+  // Sound effects toggle
+  const sndEl = $('soundToggle');
+  if (sndEl) {
+    sndEl.checked = Sfx.enabled;
+    sndEl.addEventListener('change', (e) => Sfx.setEnabled(e.target.checked));
+  }
+
   // Sources
   $('srcScreenBtn').addEventListener('click', () => Engine.addScreen());
   $('srcCamBtn').addEventListener('click', () => {
     const sel = $('camSelect');
+    if (!sel || sel.selectedIndex < 0) { showToast(t('needCamSelected'), 2200); return; }
     const deviceId = sel.value;
+    if (!deviceId) { showToast(t('needCamSelected'), 2200); return; }
     const label = sel.options[sel.selectedIndex].textContent;
     Engine.addCamera(deviceId, label);
   });
@@ -1452,7 +1661,7 @@ function wireEvents() {
 
   // Text free
   $('tcAddTextBtn').addEventListener('click', () => {
-    const text = prompt('Texte à afficher :', '');
+    const text = prompt(t('promptFreeText'), '');
     if (text) TextOverlays.add(text, { ttl: 0 });
   });
 
@@ -1474,12 +1683,16 @@ function wireEvents() {
   $('tcNewTakeBtn').addEventListener('click', () => {
     $('tcTake').style.display = 'none';
     $('tcTakeVideo').src = '';
+    if (Recorder._prevUrls) {
+      Recorder._prevUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+      Recorder._prevUrls = null;
+    }
   });
 
   // Ticker pause
   $('tcTickerPause').addEventListener('click', () => {
-    const t = $('tcTicker'); t.classList.toggle('paused');
-    $('tcTickerPause').textContent = t.classList.contains('paused') ? '▶' : '⏸';
+    const ticker = $('tcTicker'); ticker.classList.toggle('paused');
+    $('tcTickerPause').textContent = ticker.classList.contains('paused') ? '▶' : '⏸';
   });
 
   // Mirror toggle re-applies to cams
@@ -1495,9 +1708,11 @@ async function init() {
     const theme = localStorage.getItem('tc-theme'); if (theme) setTheme(theme);
   } catch {}
   $('langSelect').value = currentLang;
-  applyI18n();
 
+  Sfx.load();
   Badges.load();
+
+  applyI18n();  // after Sfx/Badges so Teleprompter.hasUserText() is safe
 
   Engine.init();
   Laser.setup();
@@ -1517,20 +1732,30 @@ async function init() {
   Scenes.active = 'code';
   Recorder.updateUI();
 
-  // Enumerate devices on user gesture (button click below). Do a best-effort non-prompting first pass.
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cams = devices.filter(d => d.kind === 'videoinput');
-    const mics = devices.filter(d => d.kind === 'audioinput');
-    const camSel = $('camSelect'), micSel = $('micSelect');
-    cams.forEach(d => { const o = document.createElement('option'); o.value = d.deviceId; o.textContent = d.label || `Camera ${d.deviceId.slice(0, 4) || 'default'}`; camSel.appendChild(o); });
-    mics.forEach(d => { const o = document.createElement('option'); o.value = d.deviceId; o.textContent = d.label || `Mic ${d.deviceId.slice(0, 4) || 'default'}`; micSel.appendChild(o); });
-  } catch (e) {
-    log(`enumerateDevices: ${e.message}`, 'error');
-  }
+  // First-pass device list — labels are blank until the user grants permission,
+  // then refreshDeviceList() is called automatically after addCamera/setMic.
+  await Engine.refreshDeviceList();
 
   log(t('ready'), 'success');
 }
+
+/* Stop all active streams / recording when the tab is closed so the camera
+   and mic lights turn off promptly instead of at GC time. */
+window.addEventListener('beforeunload', () => {
+  try {
+    if (Recorder && Recorder.recorder && Recorder.state !== 'idle') {
+      try { Recorder.recorder.stop(); } catch {}
+    }
+    if (Engine && Engine.sources) {
+      Engine.sources.forEach(s => {
+        try { s.stream && s.stream.getTracks().forEach(tr => tr.stop()); } catch {}
+      });
+    }
+    if (Recorder && Recorder._prevUrls) {
+      Recorder._prevUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+    }
+  } catch {}
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

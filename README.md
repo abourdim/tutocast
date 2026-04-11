@@ -30,7 +30,7 @@ one video with scene presets for every stage of the tutorial:
 | 5 | 🎬 **Studio** | 2×2 grid: screen + all cams |
 | 6 | 👋 **Toi** | Face cam full (intro/outro) |
 
-Switch between them in real time during the recording using number keys **1-9**.
+Switch between them in real time during the recording using number keys **1-6**.
 
 ---
 
@@ -127,7 +127,7 @@ python3 -m http.server 8000
 4. Pick your microphone
 5. Click a scene preset on the right (💻 Code, 🤖 Robot, etc.)
 6. Hit the big 🔴 **ENREGISTRER** button
-7. Use keys **1-9** to switch scenes, **L** for laser, **F** to freeze, **D** to draw
+7. Use keys **1-6** to switch scenes, **L** for laser, **F** to freeze, **D** to draw
 8. Click **⏹ Stop** — your tutorial downloads automatically
 
 ---
@@ -139,12 +139,13 @@ python3 -m http.server 8000
 | `R` | Start / Stop recording |
 | `P` | Pause / Resume |
 | `M` | Add a marker (creates a chapter) |
-| `1` – `9` | Switch to scene N |
+| `1` – `6` | Switch to scene N |
 | `L` | Toggle laser pointer |
 | `F` | Freeze / unfreeze screen |
 | `D` | Toggle whiteboard drawing mode |
 | `S` | Take a photo snapshot |
 | `Esc` | Close all panels |
+| `Ctrl+Shift+D` | Toggle debug HUD (FPS + memory) |
 
 ---
 
