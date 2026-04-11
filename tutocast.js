@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.86 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.87 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.86';
+const APP_VERSION = '0.7.87';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 10:45';
+const BUILD_DATE = '2026-04-12 11:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -228,6 +228,10 @@ const LANG = {
     cheatRecPause: 'Pause / reprendre',
     cheatRecMark: 'Ajouter un marker chapitre',
     cheatRecSnap: 'Capture photo',
+    cheatRecSaveAll: 'Tout télécharger',
+    bulkDl: 'Tout télécharger',
+    bulkFiles: 'fichiers',
+    bulkNoTake: '⚠ Aucun tuto à télécharger',
     cheatRecBig: 'Big marker (★)',
     bigMarker: 'Big marker',
     cheatTools: '🛠 Outils live',
@@ -804,6 +808,10 @@ const LANG = {
     cheatRecPause: 'Pause / resume',
     cheatRecMark: 'Add a chapter marker',
     cheatRecSnap: 'Photo snapshot',
+    cheatRecSaveAll: 'Download all',
+    bulkDl: 'Download all',
+    bulkFiles: 'files',
+    bulkNoTake: '⚠ No take to download',
     cheatRecBig: 'Big marker (★)',
     bigMarker: 'Big marker',
     cheatTools: '🛠 Live tools',
@@ -1372,6 +1380,10 @@ const LANG = {
     cheatRecPause: 'إيقاف مؤقت / استئناف',
     cheatRecMark: 'إضافة علامة فصل',
     cheatRecSnap: 'لقطة صورة',
+    cheatRecSaveAll: 'تحميل الكل',
+    bulkDl: 'تحميل الكل',
+    bulkFiles: 'ملفات',
+    bulkNoTake: '⚠ لا يوجد درس للتحميل',
     cheatRecBig: 'علامة كبيرة (★)',
     bigMarker: 'علامة كبيرة',
     cheatTools: '🛠 الأدوات المباشرة',
@@ -7518,6 +7530,34 @@ const QuizCard = {
   },
 };
 
+/* v0.7.87 — Bulk download: trigger every visible download link in the
+   take panel (.webm + .vtt + .md + .csv) with a small stagger so the
+   browser doesn't ask "allow multiple downloads?". Bound to Ctrl/Cmd+S
+   when the take panel is visible, and to a visible button at the top
+   of the take actions row. */
+const BulkDownload = {
+  all() {
+    const take = $('tcTake');
+    if (!take || take.style.display === 'none') {
+      showToast(t('bulkNoTake') || '⚠ Aucun tuto à télécharger', 1800);
+      return;
+    }
+    const ids = ['tcDownloadBtn', 'tcDownloadVtt', 'tcDownloadMd', 'tcDownloadCsv'];
+    let fired = 0;
+    ids.forEach((id, i) => {
+      const el = $(id);
+      if (!el || el.style.display === 'none' || !el.href) return;
+      fired++;
+      setTimeout(() => {
+        el.click();
+      }, i * 350);  // stagger so Chrome doesn't ask "allow multiple downloads?"
+    });
+    if (fired > 0) {
+      showToast(`💾 ${fired} ` + (t('bulkFiles') || 'fichiers'), 1500);
+    }
+  },
+};
+
 /* Snapshot — download current canvas as PNG */
 function snapshot() {
   // v0.7.54: if annotation mode is on, open the modal instead of
@@ -9726,6 +9766,16 @@ function setupHotkeys() {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
     const k = e.key.toLowerCase();
+    // v0.7.87: Ctrl/Cmd+S saves every file of the current take at once
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      const take = $('tcTake');
+      if (take && take.style.display !== 'none') {
+        BulkDownload.all();
+        e.preventDefault();
+        return;
+      }
+      // else fall through — let the browser save-page action happen
+    }
     // Ctrl/Cmd + Shift + D toggles the debug HUD
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && k === 'd') {
       DebugHud.toggle(); e.preventDefault(); return;
@@ -10487,6 +10537,9 @@ function wireEvents() {
       try { localStorage.setItem('tc-countdown-secs', String(v)); } catch {}
     });
   }
+
+  // v0.7.87: bulk download button
+  $('tcBulkDlBtn')?.addEventListener('click', () => BulkDownload.all());
 
   // Trim wiring
   $('tcTrimBtn').addEventListener('click', () => Trim.open());

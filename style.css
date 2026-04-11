@@ -4104,3 +4104,13 @@ body.log-open .app {
   box-shadow: 0 0 0 3px rgba(163, 230, 53, .15);
 }
 .help-search::placeholder { color: rgba(255, 255, 255, .4); }
+
+/* v0.7.87 — Bulk download button at the top of the take actions */
+.tc-bulk-dl {
+  background: linear-gradient(180deg, var(--accent, #a3e635), color-mix(in srgb, var(--accent, #a3e635) 70%, black));
+  color: var(--bg, #000);
+  font-weight: 700;
+}
+.tc-bulk-dl:hover {
+  filter: brightness(1.1);
+}
