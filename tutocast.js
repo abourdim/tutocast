@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.60 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.61 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.60';
+const APP_VERSION = '0.7.61';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 04:15';
+const BUILD_DATE = '2026-04-12 04:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -208,6 +208,8 @@ const LANG = {
     cheatMiscEsc: 'Fermer panneaux',
     cheatMiscDebug: 'Debug HUD',
     cheatMiscRetry: 'Retry 30s (pendant enregistrement)',
+    cheatMiscInstantRec: 'Rec instantané (saute le compte)',
+    instantRec: '⚡ Démarrage instantané',
     softRewindToast: '↶ Retry — 30 dernières secondes marquées',
     undoDone: '↩ Annulé',
     redoDone: '↪ Rétabli',
@@ -713,6 +715,8 @@ const LANG = {
     cheatMiscEsc: 'Close panels',
     cheatMiscDebug: 'Debug HUD',
     cheatMiscRetry: 'Retry last 30s (while recording)',
+    cheatMiscInstantRec: 'Instant rec (skip countdown)',
+    instantRec: '⚡ Instant start',
     softRewindToast: '↶ Retry — last 30s flagged',
     undoDone: '↩ Undone',
     redoDone: '↪ Redone',
@@ -1210,6 +1214,8 @@ const LANG = {
     cheatMiscEsc: 'إغلاق اللوحات',
     cheatMiscDebug: 'Debug HUD',
     cheatMiscRetry: 'إعادة آخر 30 ثانية (أثناء التسجيل)',
+    cheatMiscInstantRec: 'تسجيل فوري (تخطي العد)',
+    instantRec: '⚡ بدء فوري',
     softRewindToast: '↶ إعادة — آخر 30 ثانية مُعلّمة',
     undoDone: '↩ تم التراجع',
     redoDone: '↪ تمت الإعادة',
@@ -3417,6 +3423,21 @@ const Recorder = {
       IntroOutro.startIntro();
     } finally {
       this._starting = false;
+    }
+  },
+
+  async startInstant() {
+    // v0.7.61: like start() but bypasses the countdown. Preserves
+    // every other side effect (jingle, intro/outro card, chapters reset).
+    // Simplest approach: flip the countdown flag off, call start, flip back.
+    const el = $('tcCountdownEnabled');
+    const wasChecked = el ? el.checked : false;
+    if (el) el.checked = false;
+    try {
+      showToast(t('instantRec') || '⚡ Démarrage instantané', 1100);
+      await this.start();
+    } finally {
+      if (el) el.checked = wasChecked;
     }
   },
 
@@ -8325,7 +8346,16 @@ function setupHotkeys() {
     if (k >= '1' && k <= '9') {
       const idx = parseInt(k) - 1;
       if (Scenes.presets[idx]) { Scenes.switch(Scenes.presets[idx].key); e.preventDefault(); }
-    } else if (k === 'r') { Recorder.state === 'idle' ? Recorder.start() : Recorder.stop(); e.preventDefault(); }
+    } else if (k === 'r') {
+      if (e.shiftKey) {
+        // v0.7.61: Shift+R = instant record (skip countdown)
+        if (Recorder.state === 'idle') Recorder.startInstant();
+        else Recorder.stop();
+      } else {
+        Recorder.state === 'idle' ? Recorder.start() : Recorder.stop();
+      }
+      e.preventDefault();
+    }
     else if (k === 'p') { Recorder.togglePause(); e.preventDefault(); }
     else if (k === 'm') { Chapters.addMarker(); e.preventDefault(); }
     else if (k === 's') { snapshot(); e.preventDefault(); }
@@ -8547,10 +8577,40 @@ function wireEvents() {
   $('tcSnapBtn').addEventListener('click', () => snapshot());
 
   // Rec bar
-  $('tcRecBtn').addEventListener('click', () => {
-    if (Recorder.state === 'idle') Recorder.start();
-    else Recorder.stop();
-  });
+  // v0.7.61: long-press REC (600ms) = instant record, short press = normal start
+  (() => {
+    const btn = $('tcRecBtn');
+    if (!btn) return;
+    let pressStart = 0;
+    let longPressFired = false;
+    let longPressTimer = null;
+    const LONG_PRESS_MS = 600;
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button && e.button !== 0) return;
+      pressStart = performance.now();
+      longPressFired = false;
+      longPressTimer = setTimeout(() => {
+        longPressFired = true;
+        btn.classList.add('long-pressing');
+        if (Recorder.state === 'idle') Recorder.startInstant();
+      }, LONG_PRESS_MS);
+    });
+    const cancel = () => {
+      clearTimeout(longPressTimer);
+      btn.classList.remove('long-pressing');
+    };
+    btn.addEventListener('pointerup', () => {
+      const held = performance.now() - pressStart;
+      clearTimeout(longPressTimer);
+      btn.classList.remove('long-pressing');
+      if (longPressFired) return;  // already triggered during hold
+      // Normal short-click behavior: start with countdown OR stop if recording
+      if (Recorder.state === 'idle') Recorder.start();
+      else Recorder.stop();
+    });
+    btn.addEventListener('pointercancel', cancel);
+    btn.addEventListener('pointerleave', cancel);
+  })();
   $('tcPauseBtn').addEventListener('click', () => Recorder.togglePause());
   $('tcMarkBtn').addEventListener('click', () => Chapters.addMarker());
   $('tcStopBtn').addEventListener('click', () => Recorder.stop());
