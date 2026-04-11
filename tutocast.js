@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.13 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.14 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.13';
+const APP_VERSION = '0.7.14';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -143,6 +143,12 @@ const LANG = {
     brandLogoFilter: '🎨 Filtre du logo',
     tickerCustomLabel: '📰 Messages du ticker (un par ligne)',
     tickerCustomHint: 'Laisse vide pour utiliser les 10 conseils par défaut.',
+    setSecGeneral: 'Général',
+    setSecRecording: 'Enregistrement',
+    setSecLogo: 'Logo',
+    setSecSlogan: 'Slogan & effet',
+    setSecTicker: 'Ticker',
+    textFont: 'Aa Police par défaut',
     brandSloganFont: 'Aa Police du slogan',
     brandSloganSize: '📐 Taille du slogan',
     brandLogoTint: '🎨 Couleur du logo (silhouette)',
@@ -453,6 +459,12 @@ const LANG = {
     brandLogoFilter: '🎨 Logo filter',
     tickerCustomLabel: '📰 Ticker messages (one per line)',
     tickerCustomHint: 'Leave empty to use the 10 default tips.',
+    setSecGeneral: 'General',
+    setSecRecording: 'Recording',
+    setSecLogo: 'Logo',
+    setSecSlogan: 'Slogan & effect',
+    setSecTicker: 'Ticker',
+    textFont: 'Aa Default font',
     brandSloganFont: 'Aa Slogan font',
     brandSloganSize: '📐 Slogan size',
     brandLogoTint: '🎨 Logo color (silhouette)',
@@ -755,6 +767,12 @@ const LANG = {
     brandLogoFilter: '🎨 فلتر الشعار',
     tickerCustomLabel: '📰 رسائل الشريط (سطر لكل رسالة)',
     tickerCustomHint: 'اتركه فارغًا لاستخدام النصائح العشر الافتراضية.',
+    setSecGeneral: 'عام',
+    setSecRecording: 'تسجيل',
+    setSecLogo: 'الشعار',
+    setSecSlogan: 'النص والتأثير',
+    setSecTicker: 'الشريط',
+    textFont: 'Aa الخط الافتراضي',
     brandSloganFont: 'Aa خط الشعار النصي',
     brandSloganSize: '📐 حجم الشعار النصي',
     brandLogoTint: '🎨 لون الشعار (ظلّي)',
@@ -1294,14 +1312,37 @@ const Engine = {
 
     const ctx = this.ctx;
     const { x, y, w, h } = s;
+    const accent = this._accentColor || '#a3e635';
 
     ctx.save();
     // Dashed outline — slightly outside the source box
-    ctx.strokeStyle = this._accentColor || '#a3e635';
+    ctx.strokeStyle = accent;
     ctx.lineWidth = 4;
     ctx.setLineDash([16, 10]);
     ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
     ctx.setLineDash([]);
+
+    // v0.7.14: visible corner resize handles so users can see where to
+    // grab. Hit-test in Drag._nearCorner uses a 36px canvas-space radius,
+    // so the visual chiclet is 28×28 to match the feel.
+    const hs = 28;
+    const corners = [
+      [x,     y],     // TL
+      [x + w, y],     // TR
+      [x,     y + h], // BL
+      [x + w, y + h], // BR
+    ];
+    corners.forEach(([cx, cy]) => {
+      // White knob with accent border — unmissable
+      ctx.shadowColor = 'rgba(0,0,0,.55)';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(cx - hs / 2, cy - hs / 2, hs, hs);
+    });
     ctx.restore();
   },
 
@@ -1935,10 +1976,12 @@ const TextOverlays = {
   items: [],  // { id, text, x, y, w, h, size, color, bg, transparency, font, _ttlTimer?, pinned? }
   nextId: 1,
   selectedId: null,
+  defaultFont: 0,  // v0.7.14: index into TEXT_FONTS — applied to NEW overlays
+                   // unless caller passes opts.font. Bound to #tcTextFontSelect.
 
   add(text, opts = {}) {
     const size = opts.size ?? 80;
-    const font = opts.font ?? 0;                 // index into TEXT_FONTS
+    const font = opts.font ?? this.defaultFont;  // v0.7.14: respect picker
     const { w, h } = this._measure(text, size, font);
     const cx = opts.x ?? Engine.width / 2;
     const cy = opts.y ?? 160;
@@ -3847,14 +3890,14 @@ const SourceToolbar = {
       const s = sel(); if (!s) return;
       s.hidden = !s.hidden;
       showToast(s.hidden ? '👁 ' + t('sourceHidden') : '👁 ' + t('sourceShown'), 1400);
-      renderActiveSources();
+      Engine.onSourcesChanged();
     });
     $('tcSrcToolbarPin')?.addEventListener('click', (e) => {
       e.stopPropagation();
       const s = sel(); if (!s) return;
       s.pinned = !s.pinned;
       showToast(s.pinned ? '📌 pinned' : '🔓 unpinned', 1400);
-      renderActiveSources();
+      Engine.onSourcesChanged();
     });
     $('tcSrcToolbarShape')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3863,7 +3906,7 @@ const SourceToolbar = {
       const i = shapes.indexOf(s.shape || 'rect');
       s.shape = shapes[(i + 1) % shapes.length];
       showToast('◻ ' + s.shape, 1200);
-      renderActiveSources();
+      Engine.onSourcesChanged();
     });
     $('tcSrcToolbarDel')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4623,6 +4666,24 @@ function wireEvents() {
     const text = prompt(t('promptFreeText'), '');
     if (text) TextOverlays.add(text, { ttl: 0 });
   });
+  // v0.7.14: text default font picker — applies to subsequent text overlays.
+  // Existing overlays can still cycle their font via the floating Aa button.
+  const tfs = $('tcTextFontSelect');
+  if (tfs) {
+    try {
+      const saved = parseInt(localStorage.getItem('tc-text-default-font') || '0', 10);
+      if (!isNaN(saved)) {
+        TextOverlays.defaultFont = saved;
+        tfs.value = String(saved);
+      }
+    } catch {}
+    tfs.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.value, 10) || 0;
+      TextOverlays.defaultFont = idx;
+      try { localStorage.setItem('tc-text-default-font', String(idx)); } catch {}
+      showToast('Aa ' + (TEXT_FONTS[idx]?.name || 'font'), 1400);
+    });
+  }
 
   // Tools
   $('tcLaserBtn').addEventListener('click', () => Laser.toggle());

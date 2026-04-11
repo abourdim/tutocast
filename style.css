@@ -1881,6 +1881,60 @@ body.log-open .app {
   font-size: 1rem;
 }
 
+/* v0.7.14: Settings panel sections (collapsible via <details>).
+   Each section has a bold summary header and an indented body. */
+.tc-set-section {
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .025);
+  border: 1px solid rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.tc-set-section[open] {
+  background: rgba(255, 255, 255, .04);
+  border-color: rgba(255, 255, 255, .1);
+}
+.tc-set-summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-family: var(--font-h), Righteous, sans-serif;
+  font-size: .88rem;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: color-mix(in srgb, var(--accent2, #fb923c) 80%, white);
+  text-transform: uppercase;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background .15s;
+}
+.tc-set-summary::-webkit-details-marker { display: none; }
+.tc-set-summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: .75rem;
+  opacity: .7;
+  transition: transform .18s;
+}
+.tc-set-section[open] > .tc-set-summary::before {
+  transform: rotate(90deg);
+}
+.tc-set-summary:hover {
+  background: rgba(255, 255, 255, .04);
+}
+.tc-set-body {
+  padding: 4px 12px 12px;
+  animation: tcSetFade .22s ease-out;
+}
+@keyframes tcSetFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tc-set-body .sidebar-group { margin-bottom: 8px; }
+.tc-set-body .sidebar-group:last-child { margin-bottom: 0; }
+
 /* ═══════════════════════════════════════════════════════════════════
    v0.7.0 — Source row 2-line layout + brand settings + maximize mode
    ═══════════════════════════════════════════════════════════════════ */

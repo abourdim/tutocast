@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.13</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.14</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -173,7 +173,7 @@
               </div>
               <!-- Silence warning chip — appears (teacher-only, never in the recording) when mic is quiet >1.8s -->
               <div class="tc-silence-chip" id="tcSilenceChip">⚠ <span data-i18n="silenceChip">Tu es silencieux…</span></div>
-              <!-- v0.7.13: Floating HTML toolbar for the selected SOURCE (video / screen).
+              <!-- v0.7.14: Floating HTML toolbar for the selected SOURCE (video / screen).
                    Replaces the canvas-drawn ✕/👁 buttons that used to overlap the video. -->
               <div class="tc-source-toolbar" id="tcSourceToolbar" style="display:none">
                 <button class="tc-toolbar-btn" id="tcSrcToolbarHide" title="Hide (eye)">👁</button>
@@ -211,6 +211,17 @@
             <div class="tc-side-title" style="margin-top:14px">✏️ <span data-i18n="texts">Textes</span></div>
             <div class="tc-text-presets" id="tcTextPresets"></div>
             <button class="tc-btn-full" id="tcAddTextBtn">+ <span data-i18n="addText">Texte libre</span></button>
+            <!-- v0.7.14: Text default font picker — applies to NEW text overlays
+                 (existing ones can be cycled via the floating Aa toolbar button). -->
+            <label class="sidebar-label" style="margin-top:10px;font-size:.7rem;opacity:.75" data-i18n="textFont">Aa Police par défaut</label>
+            <select id="tcTextFontSelect" class="sidebar-select" style="font-size:.78rem;padding:6px 8px">
+              <option value="0">Bangers (BD)</option>
+              <option value="1">Righteous</option>
+              <option value="2">Orbitron</option>
+              <option value="3">Amiri</option>
+              <option value="4">Tajawal</option>
+              <option value="5">Arial</option>
+            </select>
 
             <div class="tc-side-title" style="margin-top:14px">🛠 <span data-i18n="tools">Outils</span></div>
             <button class="tc-btn-full" id="tcLaserBtn">🔴 <span data-i18n="laser">Laser</span> <kbd>L</kbd></button>
@@ -571,7 +582,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.13</strong></span>
+      <span class="badge"><strong>v0.7.14</strong></span>
     </div>
   </aside>
 
@@ -584,162 +595,185 @@
     </div>
 
     <div class="sidebar-body">
-      <div class="sidebar-group">
-        <label class="sidebar-label" data-i18n="language">Langue</label>
-        <select id="langSelect" class="sidebar-select" aria-label="Language">
-          <option value="en">🇬🇧 EN</option>
-          <option value="fr" selected>🇫🇷 FR</option>
-          <option value="ar">🇩🇿 عربي</option>
-        </select>
-      </div>
-      <div class="sidebar-group">
-        <label class="sidebar-label" data-i18n="theme">Thème</label>
-        <select id="themeSelect" class="sidebar-select" aria-label="Theme">
-          <option value="jungle" selected data-i18n="t_jungle">Jungle</option>
-          <option value="mosque-gold" data-i18n="t_mosque">Mosque</option>
-          <option value="zellige" data-i18n="t_zellige">Zellige</option>
-          <option value="andalus" data-i18n="t_andalus">Andalus</option>
-          <option value="riad" data-i18n="t_riad">Riad</option>
-          <option value="medina" data-i18n="t_medina">Medina</option>
-          <option value="space" data-i18n="t_space">Space</option>
-          <option value="robot" data-i18n="t_robot">Robot</option>
-        </select>
-      </div>
-      <div class="sidebar-group">
-        <label class="toggle-ctrl">
-          <input type="checkbox" id="soundToggle" class="checkbox-ctrl" checked />
-          <span data-i18n="soundEffects">🔊 Effets sonores</span>
-        </label>
-      </div>
-      <div class="sidebar-group">
-        <label class="toggle-ctrl">
-          <input type="checkbox" id="tcMirrorCam" class="checkbox-ctrl" />
-          <span data-i18n="mirrorCam">🪞 Miroir webcam</span>
-        </label>
-      </div>
-      <div class="sidebar-group">
-        <label class="toggle-ctrl">
-          <input type="checkbox" id="tcCountdownEnabled" class="checkbox-ctrl" checked />
-          <span data-i18n="countdownOn">⏱ Compte à rebours 3-2-1</span>
-        </label>
-      </div>
-      <div class="sidebar-group">
-        <label class="toggle-ctrl">
-          <input type="checkbox" id="tcSensorOverlayToggle" class="checkbox-ctrl" />
-          <span data-i18n="sensorOverlayLabel">🤖 Overlay auto si la robot bouge fort</span>
-        </label>
-      </div>
-      <div class="sidebar-group">
-        <label class="toggle-ctrl">
-          <input type="checkbox" id="tcJingleToggle" class="checkbox-ctrl" />
-          <span data-i18n="jingleLabel">🎵 Jingle d'intro (1.5s)</span>
-        </label>
-      </div>
-      <!-- ═══ Brand watermark (v0.7.0, expanded v0.7.4) ═══ -->
-      <div class="sidebar-group brand-group">
-        <label class="sidebar-label" data-i18n="brandSection">🏷 Marque (logo + slogan)</label>
-        <label class="tc-file-btn" for="tcBrandLogoInput">
-          📁 <span data-i18n="brandUploadLogo">Charger un logo (PNG/SVG)</span>
-        </label>
-        <input type="file" id="tcBrandLogoInput" accept="image/*" style="display:none" />
-        <button id="tcBrandClearBtn" class="tc-btn-full" style="margin-top:6px">
-          🗑 <span data-i18n="brandClearLogo">Retirer le logo</span>
-        </button>
-        <label class="toggle-ctrl" style="margin-top:8px">
-          <input type="checkbox" id="tcBrandBgRemoveToggle" class="checkbox-ctrl" />
-          <span data-i18n="brandBgRemove">✂ Retirer le fond du logo (JPG à fond uni)</span>
-        </label>
+      <!-- v0.7.14: collapsible sections to break up the formerly flat list -->
 
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSize">📐 Taille du logo</label>
-        <input type="range" id="tcBrandSizeSlider" min="60" max="500" step="10" value="180" class="tc-brand-range" />
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoOpacity">💧 Transparence du logo</label>
-        <input type="range" id="tcBrandOpacitySlider" min="0" max="100" step="5" value="100" class="tc-brand-range" />
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoFilter">🎨 Filtre du logo</label>
-        <select id="tcBrandLogoFilterSelect" class="sidebar-select">
-          <option value="none">— Aucun —</option>
-          <option value="bw">N&B</option>
-          <option value="sepia">Sépia</option>
-          <option value="bright">Lumineux</option>
-          <option value="contrast">Contraste</option>
-          <option value="vintage">Vintage</option>
-          <option value="cool">Froid</option>
-          <option value="warm">Chaud</option>
-        </select>
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoTint">🎨 Couleur du logo (silhouette)</label>
-        <div class="tc-brand-color-row" id="tcBrandLogoTintRow">
-          <button class="tc-brand-swatch active" data-bt="" title="— none —" style="background:linear-gradient(135deg,#888 45%,#fff 55%)">∅</button>
-          <button class="tc-brand-swatch" data-bt="#ffffff" style="background:#ffffff" title="white"></button>
-          <button class="tc-brand-swatch" data-bt="#fbbf24" style="background:#fbbf24" title="yellow"></button>
-          <button class="tc-brand-swatch" data-bt="#fb923c" style="background:#fb923c" title="orange"></button>
-          <button class="tc-brand-swatch" data-bt="#ef4444" style="background:#ef4444" title="red"></button>
-          <button class="tc-brand-swatch" data-bt="#a3e635" style="background:#a3e635" title="lime"></button>
-          <button class="tc-brand-swatch" data-bt="#38bdf8" style="background:#38bdf8" title="cyan"></button>
-          <button class="tc-brand-swatch" data-bt="#e879f9" style="background:#e879f9" title="pink"></button>
-          <button class="tc-brand-swatch" data-bt="#000000" style="background:#000000" title="black"></button>
+      <details class="tc-set-section" open>
+        <summary class="tc-set-summary">🌐 <span data-i18n="setSecGeneral">Général</span></summary>
+        <div class="tc-set-body">
+          <div class="sidebar-group">
+            <label class="sidebar-label" data-i18n="language">Langue</label>
+            <select id="langSelect" class="sidebar-select" aria-label="Language">
+              <option value="en">🇬🇧 EN</option>
+              <option value="fr" selected>🇫🇷 FR</option>
+              <option value="ar">🇩🇿 عربي</option>
+            </select>
+          </div>
+          <div class="sidebar-group">
+            <label class="sidebar-label" data-i18n="theme">Thème</label>
+            <select id="themeSelect" class="sidebar-select" aria-label="Theme">
+              <option value="jungle" selected data-i18n="t_jungle">Jungle</option>
+              <option value="mosque-gold" data-i18n="t_mosque">Mosque</option>
+              <option value="zellige" data-i18n="t_zellige">Zellige</option>
+              <option value="andalus" data-i18n="t_andalus">Andalus</option>
+              <option value="riad" data-i18n="t_riad">Riad</option>
+              <option value="medina" data-i18n="t_medina">Medina</option>
+              <option value="space" data-i18n="t_space">Space</option>
+              <option value="robot" data-i18n="t_robot">Robot</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <!-- ═══ Ticker custom messages (v0.7.8) ═══ -->
-      <div class="sidebar-group">
-        <label class="sidebar-label" data-i18n="tickerCustomLabel">📰 Messages du ticker (un par ligne)</label>
-        <textarea id="tcTickerCustomInput" class="sidebar-select tc-ticker-textarea"
-          rows="4"
-          placeholder="💡 Mon message perso&#10;🎬 Tuto du jour&#10;⭐ Bonne humeur !"></textarea>
-        <div class="tc-ticker-hint" data-i18n="tickerCustomHint">Laisse vide pour utiliser les 10 conseils par défaut.</div>
+      </details>
 
-        <input type="text" id="tcBrandSloganInput" class="sidebar-select" placeholder="Ton slogan…" style="margin-top:10px" />
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganFont">Aa Police du slogan</label>
-        <select id="tcBrandSloganFontSelect" class="sidebar-select">
-          <option value="0">Bangers (BD)</option>
-          <option value="1">Righteous</option>
-          <option value="2">Orbitron (futuriste)</option>
-          <option value="3">Amiri (serif)</option>
-          <option value="4">Tajawal</option>
-          <option value="5">Arial (système)</option>
-        </select>
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganSize">📐 Taille du slogan</label>
-        <input type="range" id="tcBrandSloganSizeSlider" min="20" max="160" step="2" value="48" class="tc-brand-range" />
-
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganColor">🎨 Couleur du slogan</label>
-        <div class="tc-brand-color-row" id="tcBrandColorRow">
-          <button class="tc-brand-swatch" data-bc="#ffffff" style="background:#ffffff" title="white"></button>
-          <button class="tc-brand-swatch" data-bc="#fbbf24" style="background:#fbbf24" title="yellow"></button>
-          <button class="tc-brand-swatch" data-bc="#fb923c" style="background:#fb923c" title="orange"></button>
-          <button class="tc-brand-swatch" data-bc="#ef4444" style="background:#ef4444" title="red"></button>
-          <button class="tc-brand-swatch" data-bc="#a3e635" style="background:#a3e635" title="lime"></button>
-          <button class="tc-brand-swatch" data-bc="#38bdf8" style="background:#38bdf8" title="cyan"></button>
-          <button class="tc-brand-swatch" data-bc="#e879f9" style="background:#e879f9" title="pink"></button>
-          <button class="tc-brand-swatch" data-bc="#000000" style="background:#000000" title="black"></button>
+      <details class="tc-set-section" open>
+        <summary class="tc-set-summary">🎬 <span data-i18n="setSecRecording">Enregistrement</span></summary>
+        <div class="tc-set-body">
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="soundToggle" class="checkbox-ctrl" checked />
+              <span data-i18n="soundEffects">🔊 Effets sonores</span>
+            </label>
+          </div>
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcMirrorCam" class="checkbox-ctrl" />
+              <span data-i18n="mirrorCam">🪞 Miroir webcam</span>
+            </label>
+          </div>
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcCountdownEnabled" class="checkbox-ctrl" checked />
+              <span data-i18n="countdownOn">⏱ Compte à rebours 3-2-1</span>
+            </label>
+          </div>
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcSensorOverlayToggle" class="checkbox-ctrl" />
+              <span data-i18n="sensorOverlayLabel">🤖 Overlay auto si la robot bouge fort</span>
+            </label>
+          </div>
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcJingleToggle" class="checkbox-ctrl" />
+              <span data-i18n="jingleLabel">🎵 Jingle d'intro (1.5s)</span>
+            </label>
+          </div>
+          <div class="sidebar-group">
+            <label class="sidebar-label" data-i18n="outputFormat">🎞 Format de sortie</label>
+            <select id="tcFormatSelect" class="sidebar-select" aria-label="Output format">
+              <option value="auto" data-i18n="formatAuto">Auto (MP4 si possible)</option>
+              <option value="mp4" data-i18n="formatMp4">MP4 (H.264/AAC)</option>
+              <option value="webm" data-i18n="formatWebm">WebM (VP9/Opus)</option>
+            </select>
+          </div>
         </div>
+      </details>
 
-        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandEffect">Effet fun</label>
-        <select id="tcBrandEffectSelect" class="sidebar-select">
-          <option value="none">— Aucun —</option>
-          <option value="spin">🌀 Tourne</option>
-          <option value="pulse">💓 Pulse</option>
-          <option value="bounce">🏀 Rebond</option>
-          <option value="wiggle">〰 Wiggle</option>
-          <option value="glow">✨ Halo</option>
-          <option value="rainbow">🌈 Arc-en-ciel</option>
-        </select>
-      </div>
-      <div class="sidebar-group">
-        <label class="sidebar-label" data-i18n="outputFormat">🎞 Format de sortie</label>
-        <select id="tcFormatSelect" class="sidebar-select" aria-label="Output format">
-          <option value="auto" data-i18n="formatAuto">Auto (MP4 si possible)</option>
-          <option value="mp4" data-i18n="formatMp4">MP4 (H.264/AAC)</option>
-          <option value="webm" data-i18n="formatWebm">WebM (VP9/Opus)</option>
-        </select>
-      </div>
+      <details class="tc-set-section">
+        <summary class="tc-set-summary">🏷 <span data-i18n="setSecLogo">Logo</span></summary>
+        <div class="tc-set-body brand-group">
+          <label class="tc-file-btn" for="tcBrandLogoInput">
+            📁 <span data-i18n="brandUploadLogo">Charger un logo (PNG/SVG)</span>
+          </label>
+          <input type="file" id="tcBrandLogoInput" accept="image/*" style="display:none" />
+          <button id="tcBrandClearBtn" class="tc-btn-full" style="margin-top:6px">
+            🗑 <span data-i18n="brandClearLogo">Retirer le logo</span>
+          </button>
+          <label class="toggle-ctrl" style="margin-top:8px">
+            <input type="checkbox" id="tcBrandBgRemoveToggle" class="checkbox-ctrl" />
+            <span data-i18n="brandBgRemove">✂ Retirer le fond du logo (JPG à fond uni)</span>
+          </label>
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSize">📐 Taille du logo</label>
+          <input type="range" id="tcBrandSizeSlider" min="60" max="500" step="10" value="180" class="tc-brand-range" />
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoOpacity">💧 Transparence du logo</label>
+          <input type="range" id="tcBrandOpacitySlider" min="0" max="100" step="5" value="100" class="tc-brand-range" />
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoFilter">🎨 Filtre du logo</label>
+          <select id="tcBrandLogoFilterSelect" class="sidebar-select">
+            <option value="none">— Aucun —</option>
+            <option value="bw">N&B</option>
+            <option value="sepia">Sépia</option>
+            <option value="bright">Lumineux</option>
+            <option value="contrast">Contraste</option>
+            <option value="vintage">Vintage</option>
+            <option value="cool">Froid</option>
+            <option value="warm">Chaud</option>
+          </select>
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoTint">🎨 Couleur du logo (silhouette)</label>
+          <div class="tc-brand-color-row" id="tcBrandLogoTintRow">
+            <button class="tc-brand-swatch active" data-bt="" title="— none —" style="background:linear-gradient(135deg,#888 45%,#fff 55%)">∅</button>
+            <button class="tc-brand-swatch" data-bt="#ffffff" style="background:#ffffff" title="white"></button>
+            <button class="tc-brand-swatch" data-bt="#fbbf24" style="background:#fbbf24" title="yellow"></button>
+            <button class="tc-brand-swatch" data-bt="#fb923c" style="background:#fb923c" title="orange"></button>
+            <button class="tc-brand-swatch" data-bt="#ef4444" style="background:#ef4444" title="red"></button>
+            <button class="tc-brand-swatch" data-bt="#a3e635" style="background:#a3e635" title="lime"></button>
+            <button class="tc-brand-swatch" data-bt="#38bdf8" style="background:#38bdf8" title="cyan"></button>
+            <button class="tc-brand-swatch" data-bt="#e879f9" style="background:#e879f9" title="pink"></button>
+            <button class="tc-brand-swatch" data-bt="#000000" style="background:#000000" title="black"></button>
+          </div>
+        </div>
+      </details>
+
+      <details class="tc-set-section">
+        <summary class="tc-set-summary">✍️ <span data-i18n="setSecSlogan">Slogan &amp; effet</span></summary>
+        <div class="tc-set-body">
+          <input type="text" id="tcBrandSloganInput" class="sidebar-select" placeholder="Ton slogan…" />
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganFont">Aa Police du slogan</label>
+          <select id="tcBrandSloganFontSelect" class="sidebar-select">
+            <option value="0">Bangers (BD)</option>
+            <option value="1">Righteous</option>
+            <option value="2">Orbitron (futuriste)</option>
+            <option value="3">Amiri (serif)</option>
+            <option value="4">Tajawal</option>
+            <option value="5">Arial (système)</option>
+          </select>
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganSize">📐 Taille du slogan</label>
+          <input type="range" id="tcBrandSloganSizeSlider" min="20" max="160" step="2" value="48" class="tc-brand-range" />
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganColor">🎨 Couleur du slogan</label>
+          <div class="tc-brand-color-row" id="tcBrandColorRow">
+            <button class="tc-brand-swatch" data-bc="#ffffff" style="background:#ffffff" title="white"></button>
+            <button class="tc-brand-swatch" data-bc="#fbbf24" style="background:#fbbf24" title="yellow"></button>
+            <button class="tc-brand-swatch" data-bc="#fb923c" style="background:#fb923c" title="orange"></button>
+            <button class="tc-brand-swatch" data-bc="#ef4444" style="background:#ef4444" title="red"></button>
+            <button class="tc-brand-swatch" data-bc="#a3e635" style="background:#a3e635" title="lime"></button>
+            <button class="tc-brand-swatch" data-bc="#38bdf8" style="background:#38bdf8" title="cyan"></button>
+            <button class="tc-brand-swatch" data-bc="#e879f9" style="background:#e879f9" title="pink"></button>
+            <button class="tc-brand-swatch" data-bc="#000000" style="background:#000000" title="black"></button>
+          </div>
+
+          <label class="sidebar-label" style="margin-top:10px" data-i18n="brandEffect">Effet fun</label>
+          <select id="tcBrandEffectSelect" class="sidebar-select">
+            <option value="none">— Aucun —</option>
+            <option value="spin">🌀 Tourne</option>
+            <option value="pulse">💓 Pulse</option>
+            <option value="bounce">🏀 Rebond</option>
+            <option value="wiggle">〰 Wiggle</option>
+            <option value="glow">✨ Halo</option>
+            <option value="rainbow">🌈 Arc-en-ciel</option>
+          </select>
+        </div>
+      </details>
+
+      <details class="tc-set-section">
+        <summary class="tc-set-summary">📰 <span data-i18n="setSecTicker">Ticker</span></summary>
+        <div class="tc-set-body">
+          <label class="sidebar-label" data-i18n="tickerCustomLabel">📰 Messages du ticker (un par ligne)</label>
+          <textarea id="tcTickerCustomInput" class="sidebar-select tc-ticker-textarea"
+            rows="4"
+            placeholder="💡 Mon message perso&#10;🎬 Tuto du jour&#10;⭐ Bonne humeur !"></textarea>
+          <div class="tc-ticker-hint" data-i18n="tickerCustomHint">Laisse vide pour utiliser les 10 conseils par défaut.</div>
+        </div>
+      </details>
     </div>
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.13</strong></span>
+      <span class="badge"><strong>v0.7.14</strong></span>
     </div>
   </aside>
 
@@ -771,7 +805,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.13</strong></span>
+      <span class="badge"><strong>v0.7.14</strong></span>
     </div>
   </aside>
 

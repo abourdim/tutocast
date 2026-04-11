@@ -3,6 +3,45 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.14 — 2026-04-11 (Settings sections + visible resize handles + text font picker)
+
+Three live-feedback fixes pushed together.
+
+### Added
+- **Visible source resize handles** — `_drawSelectedSourceChrome` now
+  draws 4 white-and-accent corner chiclets (28×28 canvas px) on the
+  selected video/screen source. The hit-test radius (`Drag.CORNER_RADIUS`
+  = 36 canvas px) hasn't changed — the chiclets just make it discoverable.
+  Fixes user feedback "not resizable" — the handles existed under the
+  hood, you just couldn't see them.
+- **Text default font picker** — new `<select id="tcTextFontSelect">`
+  in the right sidebar under the text presets. Bound to a new
+  `TextOverlays.defaultFont` field that `add()` reads when the caller
+  doesn't pass an explicit `opts.font`. Persisted in
+  `localStorage['tc-text-default-font']`. Existing overlays can still
+  cycle their font via the floating Aa button.
+
+### Changed
+- **Settings panel reorganized into 5 collapsible sections** using
+  native `<details>` elements:
+  1. 🌐 **Général** — language, theme  *(open by default)*
+  2. 🎬 **Enregistrement** — sound, mirror, countdown, sensor overlay,
+     jingle, output format  *(open by default)*
+  3. 🏷 **Logo** — upload, bg-remove, size, opacity, filter, tint
+  4. ✍️ **Slogan & effet** — slogan input, font, size, color, fun effect
+  5. 📰 **Ticker** — custom messages textarea
+  - New `.tc-set-section` / `.tc-set-summary` / `.tc-set-body` styles
+    with rotating ▸ marker, hover background, fade-in animation.
+  - Fixes user feedback *"flat, may be in sections independent."*
+
+### Verified (Preview MCP harness)
+- 5 sections present in the settings panel, summaries match labels.
+- General (193 px) and Recording (251 px) open by default; Logo,
+  Slogan, Ticker collapsed (41 px each).
+- `TextOverlays.defaultFont` initializes to 0, picker bound to it.
+- `SourceToolbar` still wired and positioning correctly.
+- No console errors on load.
+
 ## v0.7.13 — 2026-04-11 (Ticker dedup + floating source toolbar)
 
 Two live-screenshot fixes from user feedback.
