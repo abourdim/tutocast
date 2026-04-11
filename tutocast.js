@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.38 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.39 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.38';
+const APP_VERSION = '0.7.39';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 22:30';
+const BUILD_DATE = '2026-04-11 22:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -151,6 +151,7 @@ const LANG = {
     brandBgRestored: '↩ Fond original restauré',
     brandSize: '📐 Taille du logo',
     brandSloganColor: '🎨 Couleur du slogan',
+    brandQrUrl: '🔗 URL du badge card',
     brandLogoOpacity: '💧 Transparence du logo',
     brandLogoFilter: '🎨 Filtre du logo',
     tickerCustomLabel: '📰 Messages du ticker (un par ligne)',
@@ -586,6 +587,7 @@ const LANG = {
     brandBgRestored: '↩ Original background restored',
     brandSize: '📐 Logo size',
     brandSloganColor: '🎨 Slogan color',
+    brandQrUrl: '🔗 Badge card URL',
     brandLogoOpacity: '💧 Logo opacity',
     brandLogoFilter: '🎨 Logo filter',
     tickerCustomLabel: '📰 Ticker messages (one per line)',
@@ -1013,6 +1015,7 @@ const LANG = {
     brandBgRestored: '↩ استُعيدت الخلفية الأصلية',
     brandSize: '📐 حجم الشعار',
     brandSloganColor: '🎨 لون الشعار النصي',
+    brandQrUrl: '🔗 رابط بطاقة الشارة',
     brandLogoOpacity: '💧 شفافية الشعار',
     brandLogoFilter: '🎨 فلتر الشعار',
     tickerCustomLabel: '📰 رسائل الشريط (سطر لكل رسالة)',
@@ -5199,6 +5202,27 @@ const BadgeCard = {
     const dt = `${s.date.getFullYear()}-${pad2(s.date.getMonth() + 1)}-${pad2(s.date.getDate())}`;
     ctx.fillText(`${t('slogan')}    ·    ${dt}`, 60, this.H - 60);
 
+    // v0.7.39: badge card URL (for scanning / linking to the lesson).
+    // Text fallback — a full QR encoder would violate the single-file
+    // zero-dep mission. Teachers can set the URL in Settings > Brand.
+    let badgeUrl = '';
+    try { badgeUrl = localStorage.getItem('tc-brand-url') || ''; } catch {}
+    if (badgeUrl) {
+      ctx.save();
+      ctx.font = '18px ui-monospace, "Consolas", "Courier New", monospace';
+      ctx.fillStyle = 'rgba(255, 255, 255, .75)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      // Clamp to reasonable width — truncate with ellipsis if too long
+      const maxW = canvas.width - 60;
+      let displayUrl = badgeUrl;
+      while (ctx.measureText(displayUrl).width > maxW && displayUrl.length > 4) {
+        displayUrl = displayUrl.slice(0, -4) + '…';
+      }
+      ctx.fillText('🔗 ' + displayUrl, canvas.width / 2, canvas.height - 22);
+      ctx.restore();
+    }
+
     // Export
     canvas.toBlob((blob) => {
       if (!blob) { showToast(t('badgeError'), 3000); return; }
@@ -7073,6 +7097,15 @@ function wireEvents() {
   if (sloganSizeSlider) {
     sloganSizeSlider.value = Brand.slogan.size || 48;
     sloganSizeSlider.addEventListener('input', (e) => Brand.setSloganSize(parseInt(e.target.value)));
+  }
+  // v0.7.39: badge card link URL — text fallback (see BadgeCard.exportPng).
+  // Persisted separately from Brand so non-recording flows don't touch it.
+  const urlEl = $('tcBrandUrlInput');
+  if (urlEl) {
+    try { urlEl.value = localStorage.getItem('tc-brand-url') || ''; } catch {}
+    urlEl.addEventListener('input', (e) => {
+      try { localStorage.setItem('tc-brand-url', e.target.value); } catch {}
+    });
   }
   // Custom ticker messages (v0.7.8)
   const tickerTA = $('tcTickerCustomInput');
