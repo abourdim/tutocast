@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.73 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.74 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.73';
+const APP_VERSION = '0.7.74';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 07:30';
+const BUILD_DATE = '2026-04-12 07:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -358,6 +358,9 @@ const LANG = {
     badge_all_scenes: 'Toutes les scènes',
     badge_marker_king: 'Roi des markers',
     badge_micro: 'micro:bit branché',
+    badge_veteran: 'Vétéran (10 tutos)',
+    badge_marathon: 'Marathon (30 min)',
+    badge_library: 'Bibliothèque (5 scènes)',
     faq_q1: "Qu'est-ce que TutoCast ?",
     faq_a1: "TutoCast est un outil web pour enregistrer des tutos vidéo avec plusieurs caméras (écran + webcams + micro) directement depuis ton navigateur. Zéro install, zéro compte, tout reste chez toi.",
     faq_q2: "Comment ajouter plusieurs caméras ?",
@@ -908,6 +911,9 @@ const LANG = {
     badge_all_scenes: 'All scenes used',
     badge_marker_king: 'Marker king',
     badge_micro: 'micro:bit plugged',
+    badge_veteran: 'Veteran (10 tutos)',
+    badge_marathon: 'Marathon (30 min)',
+    badge_library: 'Library (5 scenes)',
     faq_q1: "What is TutoCast?",
     faq_a1: "TutoCast is a web tool to record tutorial videos with multiple cameras (screen + webcams + mic) directly from your browser. Zero install, zero account, everything stays on your computer.",
     faq_q2: "How do I add multiple cameras?",
@@ -1446,6 +1452,7 @@ const LANG = {
     transparency_ghost: 'نص شبحي',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
+    badge_veteran: 'متمرس (10 دروس)', badge_marathon: 'ماراثون (30 دقيقة)', badge_library: 'مكتبة (5 مشاهد)',
     faq_q1: "ما هو TutoCast؟",
     faq_a1: "TutoCast أداة ويب لتسجيل دروس فيديو بعدة كاميرات (شاشة + كاميرات + ميكروفون) مباشرة من متصفحك. بدون تثبيت، بدون حساب، كل شيء يبقى على حاسوبك.",
     faq_q2: "كيف أضيف عدة كاميرات؟",
@@ -4176,6 +4183,8 @@ const Recorder = {
     Confetti.burst();
     Badges.unlockFirst();
     Badges.unlockLong(this.elapsed());
+    Badges.unlockLibrary();              // v0.7.74
+    Badges._incCounters(this.elapsed() / 1000);  // v0.7.74
     this.updateUI();
     // Reset transient scene state so the next take starts clean
     this.resetSceneState();
@@ -8699,6 +8708,10 @@ const Badges = {
     { key: 'all_scenes', icon: '🎭', i18n: 'badge_all_scenes' },
     { key: 'marker_king', icon: '🏷', i18n: 'badge_marker_king' },
     { key: 'micro', icon: '🤖', i18n: 'badge_micro' },
+    // v0.7.74: cumulative across all sessions
+    { key: 'veteran', icon: '📽', i18n: 'badge_veteran' },
+    { key: 'marathon', icon: '⏰', i18n: 'badge_marathon' },
+    { key: 'library', icon: '📚', i18n: 'badge_library' },
   ],
   unlocked: new Set(),
   scenesUsed: new Set(),
@@ -8731,6 +8744,23 @@ const Badges = {
   },
   unlockMarker(n) { if (n >= 5) this.unlock('marker_king'); },
   unlockMicrobit() { this.unlock('micro'); },
+
+  /* v0.7.74: persistent cumulative counters for recordings + total time.
+     Incremented in Recorder.finish(), survive History's 10-entry cap. */
+  _incCounters(durSec) {
+    try {
+      const n = parseInt(localStorage.getItem('tc-total-recordings') || '0', 10) + 1;
+      const s = parseFloat(localStorage.getItem('tc-total-seconds') || '0') + (durSec || 0);
+      localStorage.setItem('tc-total-recordings', String(n));
+      localStorage.setItem('tc-total-seconds', String(s));
+      if (n >= 10) this.unlock('veteran');
+      if (s >= 30 * 60) this.unlock('marathon');
+    } catch {}
+  },
+
+  unlockLibrary() {
+    if (this.scenesUsed && this.scenesUsed.size >= 5) this.unlock('library');
+  },
 };
 
 /* v0.7.72: Tip of the day — fires once per calendar day on first launch.
