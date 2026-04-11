@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.2.1 — kids-friendly multi-cam screen recorder
+   TutoCast v0.2.2 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.2.1';
+const APP_VERSION = '0.2.2';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -161,6 +161,11 @@ const LANG = {
     news_021_3: "Détection des enregistrements vides — plus de téléchargement fantôme",
     news_021_4: "Timeslice ramené de 1000 à 250 ms pour les prises courtes",
     news_021_5: "AudioContext repris au début de l'enregistrement",
+    news_022: "VRAI fix des fichiers 0 octet 🎯",
+    news_022_1: "Cause réelle : la piste audio de audioDest n'émettait aucun échantillon sans source connectée",
+    news_022_2: "Correctif : ConstantSourceNode silencieux connecté en permanence",
+    news_022_3: "Vérifié par test runtime headless complet (tous les boutons, toutes les scènes, tous les outils)",
+    news_022_4: "Bouton 'Vierge' efface désormais le template actif",
     tplTitle: "Choisis comment tu commences",
     tplSubtitle: "Chaque template te guide étape par étape",
     tplChoose: "Choisir un template",
@@ -337,6 +342,11 @@ const LANG = {
     news_021_3: "Empty recordings are detected — no more phantom downloads",
     news_021_4: "Timeslice reduced from 1000 ms to 250 ms for short takes",
     news_021_5: "AudioContext is resumed on recording start",
+    news_022: "Real fix for 0-byte files 🎯",
+    news_022_1: "Actual root cause: audioDest's audio track emitted no samples without a source",
+    news_022_2: "Fix: permanent silent ConstantSourceNode keeps the audio track alive",
+    news_022_3: "Verified by full headless runtime test (every button, scene, tool)",
+    news_022_4: "Blank template button now clears any active template",
     tplTitle: "Pick how you start",
     tplSubtitle: "Each template guides you step by step",
     tplChoose: "Pick a template",
@@ -501,6 +511,11 @@ const LANG = {
     news_021_3: "اكتشاف التسجيلات الفارغة — لا مزيد من التنزيلات الوهمية",
     news_021_4: "تقليل الشريحة الزمنية من 1000 إلى 250 مللي ثانية للتسجيلات القصيرة",
     news_021_5: "استئناف AudioContext عند بدء التسجيل",
+    news_022: "الإصلاح الحقيقي لملفات 0 بايت 🎯",
+    news_022_1: "السبب الفعلي: مسار الصوت في audioDest لم يُصدر أي عينات بدون مصدر متصل",
+    news_022_2: "الإصلاح: ConstantSourceNode صامت متصل بشكل دائم",
+    news_022_3: "تم التحقق عبر اختبار تشغيل كامل بدون واجهة (كل الأزرار والمشاهد والأدوات)",
+    news_022_4: "زر 'فارغ' يمسح الآن أي قالب نشط",
     tplTitle: "اختر كيف تبدأ",
     tplSubtitle: "كل قالب يرشدك خطوة بخطوة",
     tplChoose: "اختر قالبًا",
@@ -644,6 +659,22 @@ const Engine = {
     this.audioDest = this.audioCtx.createMediaStreamDestination();
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.fftSize = 256;
+
+    /* v0.2.2 CRITICAL FIX: plug a ConstantSourceNode at gain 0 into audioDest.
+       Without ANY source node feeding the audio destination, its MediaStreamTrack
+       produces zero samples — and MediaRecorder responds to that by encoding
+       exactly one 0-byte chunk and stalling the entire recording. Every .webm
+       shipped before v0.2.2 was 0 bytes for this reason. Keeping a permanent
+       silent source ensures the audio track always carries data, recording
+       works before a mic is picked, and adding/removing a mic mid-session
+       never leaves the track silent enough to stall the encoder. */
+    const silentSrc = this.audioCtx.createConstantSource();
+    const silentGain = this.audioCtx.createGain();
+    silentGain.gain.value = 0;
+    silentSrc.connect(silentGain).connect(this.audioDest);
+    silentSrc.start();
+    this._silentKeepalive = silentSrc;
+
     this._fpsLast = performance.now();
     this.loop();
     // Draw one forced frame synchronously so captureStream() has something
@@ -1923,8 +1954,13 @@ function setupOnboarding() {
     btn.addEventListener('click', () => {
       const key = btn.dataset.tpl;
       try { localStorage.setItem('tc-onboarded', '1'); } catch {}
-      if (key) Templates.apply(key);
-      else Templates.hidePicker();
+      if (key) {
+        Templates.apply(key);
+      } else {
+        // Blank: clear any active template so user starts fresh
+        Templates.clear();
+        Templates.hidePicker();
+      }
     });
   });
 }

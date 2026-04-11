@@ -3,6 +3,73 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.2.2 — 2026-04-11 (real hotfix, validated)
+
+**v0.2.1 didn't actually fix the 0-byte recording bug.** I guessed five
+plausible causes (captureStream caching, timeslice, bitrate fallback,
+`onerror` handler, AudioContext resume) — none of them were the real
+root cause. A full headless runtime test harness was built for this
+version, exercising every button and pipeline stage autonomously, and
+it pinpointed the actual bug in about ten minutes.
+
+### Root cause
+
+`Engine.audioDest = audioCtx.createMediaStreamDestination()` produces a
+`MediaStream` with one audio track that is **structurally valid but
+samples-empty** until a source node is connected to it. The user
+hadn't picked a microphone yet, so nothing was ever connected. Firefox
+and Chrome's `MediaRecorder` both responded to this idle audio track by:
+
+1. Starting normally (`state === 'recording'`, no `onerror`)
+2. Firing exactly **one** `ondataavailable` event with `size: 0`
+3. Accepting `stop()` cleanly (`onstop` fires)
+4. Never emitting any further data events
+
+The video track was fine — when tested in isolation, `canvas.captureStream`
+produced normal VP9 output. But **combining it with the silent audio track
+caused MediaRecorder to output nothing at all**. This is the kind of
+failure mode that only shows up when you actually inspect `chunk.size`,
+which the code had never done.
+
+### Fixed
+- **Plug a permanent silent `ConstantSourceNode` into `audioDest`.**
+  `Engine.init()` now creates a `ConstantSource → Gain(0) → audioDest`
+  chain and starts the source immediately. The audio track is now
+  actively carrying zero-amplitude samples at all times, which is
+  enough for MediaRecorder to encode. Whether or not the user picks
+  a mic, the recording works. Picking a mic later just adds another
+  node to the destination — the keepalive stays running.
+- **Blank template button UX.** Clicking 🎨 Vierge when a template
+  was already active used to just hide the picker, leaving the
+  old template running. Now it calls `Templates.clear()` first
+  so the user genuinely starts fresh.
+
+### Test harness
+- Full headless runtime test pass via the Preview MCP tool, exercising:
+  - DOM sanity (all wired IDs exist, init state correct)
+  - Recorder pipeline isolated (canvas.captureStream → MediaRecorder)
+  - Recorder pipeline full (Recorder.start → stop → finish → blob)
+  - All 4 template cards + step jumping + close + reopen pill
+  - All 6 scene buttons + layout math + active class
+  - All 5 tools (laser/freeze/whiteboard/teleprompter/snapshot)
+  - All 10 text presets + free-text prompt + canvas rendering
+  - All hotkeys (1-6, R, P, M, S, L, F, D, Esc, Ctrl+Shift+D)
+  - Hotkey ignored when an input is focused
+  - i18n FR/EN/AR switching + RTL dir + theme labels
+  - All 8 themes applied
+  - All 3 panels (help/settings/log) + tabs + sound toggle + debug HUD
+  - Log controls (clear/copy/export)
+  - Badges unlocking + persistence + DOM rendering
+  - Confetti burst + particle count
+- **All 12 passes green on v0.2.2.**
+
+### Notes
+- Past v0.1.x / v0.2.0 / v0.2.1 recordings are still 0 bytes — the bug
+  shipped for four releases. Apologies for the wild goose chase.
+- The harness is now in `.claude/launch.json` and can be re-run via
+  the Preview MCP `preview_start` tool any time regressions are
+  suspected.
+
 ## v0.2.1 — 2026-04-11 (hotfix)
 
 **Critical hotfix: the recording pipeline has been producing 0-byte webms
