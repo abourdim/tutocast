@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.8 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.9 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.8';
+const APP_VERSION = '0.7.9';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -91,6 +91,7 @@ const LANG = {
     recEmpty: '⚠️ Fichier vide — l\'encodeur n\'a rien produit. Ouvre le journal 📜 pour le détail.',
     recNoStream: '✗ Pas de flux vidéo — relance la page',
     zoom: 'Zoom', zoomOn: '🔍 Zoom activé', zoomOff: '🔍 Zoom désactivé',
+    fullscreen: 'Plein écran',
     outputFormat: '🎞 Format de sortie',
     formatAuto: 'Auto (MP4 si possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
     trim: 'Couper', trimTitle: 'Couper le tuto',
@@ -397,6 +398,7 @@ const LANG = {
     recEmpty: '⚠️ Empty file — the encoder produced nothing. Open the log 📜 for details.',
     recNoStream: '✗ No video stream — reload the page',
     zoom: 'Zoom', zoomOn: '🔍 Zoom on', zoomOff: '🔍 Zoom off',
+    fullscreen: 'Fullscreen',
     outputFormat: '🎞 Output format',
     formatAuto: 'Auto (MP4 if possible)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
     trim: 'Trim', trimTitle: 'Trim the tutorial',
@@ -695,6 +697,7 @@ const LANG = {
     recEmpty: '⚠️ ملف فارغ — لم ينتج المُرمِّز شيئًا. افتح السجل 📜 للتفاصيل.',
     recNoStream: '✗ لا يوجد تدفق فيديو — أعد تحميل الصفحة',
     zoom: 'تكبير', zoomOn: '🔍 تم التكبير', zoomOff: '🔍 تم الإلغاء',
+    fullscreen: 'ملء الشاشة',
     outputFormat: '🎞 تنسيق الإخراج',
     formatAuto: 'تلقائي (MP4 إن أمكن)', formatMp4: 'MP4 (H.264/AAC)', formatWebm: 'WebM (VP9/Opus)',
     trim: 'قص', trimTitle: 'قص الدرس',
@@ -4693,6 +4696,9 @@ function wireEvents() {
   // Maximize mode (v0.7.0): press the ⛶ button or the F hotkey
   const maxBtn = $('tcMaxBtn');
   if (maxBtn) maxBtn.addEventListener('click', () => toggleMaximize());
+  // v0.7.9: also wire the big labeled button in the Tools sidebar
+  const fsBtn = $('tcFullscreenBtn');
+  if (fsBtn) fsBtn.addEventListener('click', () => toggleMaximize());
 
   // Jingle toggle (v0.6.0) — opt-in in Settings
   const jingleEl = $('tcJingleToggle');
