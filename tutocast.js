@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.25 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.26 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.25';
+const APP_VERSION = '0.7.26';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 19:15';
+const BUILD_DATE = '2026-04-11 19:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -194,6 +194,9 @@ const LANG = {
     outroBadges: 'badges',
     outroTagline: 'Ton tuto est prêt',
     outroPlaying: '🎬 Outro en cours…',
+    autoPauseLabel: "⏸ Pause auto quand tu changes d'onglet",
+    autoPaused: '⏸ Enregistrement suspendu',
+    autoResumed: '▶ Enregistrement repris',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Réinitialiser les badges',
     clearCache: 'Vider le cache complet',
@@ -590,6 +593,9 @@ const LANG = {
     outroBadges: 'badges',
     outroTagline: 'Your tutorial is ready',
     outroPlaying: '🎬 Outro playing…',
+    autoPauseLabel: '⏸ Auto-pause when you switch tab',
+    autoPaused: '⏸ Recording paused',
+    autoResumed: '▶ Recording resumed',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Reset badges',
     clearCache: 'Clear all local data',
@@ -978,6 +984,9 @@ const LANG = {
     outroBadges: 'شارات',
     outroTagline: 'درسك جاهز',
     outroPlaying: '🎬 الخاتمة قيد التشغيل…',
+    autoPauseLabel: '⏸ إيقاف مؤقت تلقائي عند تبديل علامة التبويب',
+    autoPaused: '⏸ تم إيقاف التسجيل مؤقتًا',
+    autoResumed: '▶ استُؤنف التسجيل',
     setSecDanger: '♻ الصيانة',
     resetBadges: 'إعادة تعيين الشارات',
     clearCache: 'مسح جميع البيانات المحلية',
@@ -2634,6 +2643,31 @@ const Recorder = {
       Sfx.play('click');
     }
     this.updateUI();
+  },
+
+  // v0.7.26: Auto-pause triggered by visibilitychange when the tab is
+  // hidden. Uses the same underlying pause() but flags _autoPaused so
+  // autoResume() can tell user pauses from visibility pauses — a user
+  // who manually paused BEFORE tabbing away should not be auto-resumed.
+  autoPause() {
+    if (this.state !== 'recording') return;
+    try { this.recorder.pause(); } catch {}
+    this.pausedAt = Date.now();
+    this.state = 'paused';
+    this._autoPaused = true;
+    this.updateUI();
+    log('⏸ auto-pause (tab hidden)', 'info');
+    showToast(t('autoPaused') || '⏸ Enregistrement suspendu', 2000);
+  },
+  autoResume() {
+    if (!this._autoPaused || this.state !== 'paused') return;
+    try { this.recorder.resume(); } catch {}
+    this.pausedDuration += Date.now() - this.pausedAt;
+    this.state = 'recording';
+    this._autoPaused = false;
+    this.updateUI();
+    log('▶ auto-resume (tab visible)', 'info');
+    showToast(t('autoResumed') || '▶ Enregistrement repris', 1800);
   },
 
   stop() {
@@ -5796,6 +5830,22 @@ function wireEvents() {
   $('tcPauseBtn').addEventListener('click', () => Recorder.togglePause());
   $('tcMarkBtn').addEventListener('click', () => Chapters.addMarker());
   $('tcStopBtn').addEventListener('click', () => Recorder.stop());
+
+  // v0.7.26: auto-pause on tab-hidden, auto-resume on tab-visible.
+  // Opt-in via Settings > Recording > Auto-pause. Uses document
+  // visibilitychange (works in every browser we support). A user who
+  // manually paused before tabbing away stays paused (autoResume only
+  // fires if _autoPaused flag is set).
+  document.addEventListener('visibilitychange', () => {
+    try {
+      if (localStorage.getItem('tc-auto-pause') !== '1') return;
+    } catch { return; }
+    if (document.hidden) {
+      Recorder.autoPause();
+    } else {
+      Recorder.autoResume();
+    }
+  });
   $('tcNewTakeBtn').addEventListener('click', () => {
     $('tcTake').style.display = 'none';
     $('tcTakeVideo').src = '';
@@ -5933,6 +5983,16 @@ function wireEvents() {
   if (ioEl) {
     ioEl.checked = IntroOutro.enabled;
     ioEl.addEventListener('change', (e) => IntroOutro.setEnabled(e.target.checked));
+  }
+  // v0.7.26: Auto-pause on tab focus loss — opt-in in Settings.
+  // Reads localStorage directly in the visibilitychange listener so
+  // no dedicated object is needed.
+  const apEl = $('tcAutoPauseToggle');
+  if (apEl) {
+    try { apEl.checked = localStorage.getItem('tc-auto-pause') === '1'; } catch {}
+    apEl.addEventListener('change', (e) => {
+      try { localStorage.setItem('tc-auto-pause', e.target.checked ? '1' : '0'); } catch {}
+    });
   }
 
   // Sensor-triggered overlay toggle (v0.5.0) — opt-in in Settings
