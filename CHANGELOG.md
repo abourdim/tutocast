@@ -3,6 +3,34 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.17 — 2026-04-11 (Free resize via Shift + single-pass ticker)
+
+### Added
+- **Non-proportional source resize via Shift+corner**. User feedback:
+  *"allow not proportional video and window resigning"*. Default
+  behaviour stays kid-safe (locked aspect ratio when you drag a corner
+  handle); holding **Shift** breaks the lock so you can stretch the
+  source freely. Reading `e.shiftKey` live in `Drag._onMove` means you
+  can press/release Shift mid-drag. A toast `↔ Étire libre` fires when
+  the user starts a Shift-drag so the modifier is discoverable.
+
+### Changed
+- **Ticker is now a single-pass marquee.** v0.7.13's exponential
+  doubling padded short messages (`hi`) to fix the static-double
+  bug, but it also turned a long custom message like
+  `hello evry body` into a continuous wall of repetitions. User
+  feedback: *"just one"*. Reverted to: text starts at the right
+  edge (`padding-left: 100%`), scrolls all the way to the left
+  (`translateX(-100%)`), then loops with a brief gap. Each message
+  appears exactly once per loop.
+
+### Verified (Preview MCP harness)
+- Ticker: custom `hello evry body` → `tickerText` is exactly
+  `'hello evry body'`, `(text.match(/hello/g) || []).length === 1`.
+- Resize without Shift: 400×300 starting box, drag BR corner toward
+  canvas (800, 700) → ends at 666.67×500 (ratio 1.3333 = original 4:3).
+- Resize WITH Shift: same drag → ends at 600×500 (ratio 1.20, broken).
+
 ## v0.7.16 — 2026-04-11 (Toolbars docked outside the stage)
 
 ### Fixed

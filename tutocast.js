@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.16 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.17 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.16';
+const APP_VERSION = '0.7.17';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -149,6 +149,7 @@ const LANG = {
     setSecSlogan: 'Slogan & effet',
     setSecTicker: 'Ticker',
     textFont: 'Aa Police par défaut',
+    freeResize: 'Étire libre (Shift+coin)',
     brandSloganFont: 'Aa Police du slogan',
     brandSloganSize: '📐 Taille du slogan',
     brandLogoTint: '🎨 Couleur du logo (silhouette)',
@@ -465,6 +466,7 @@ const LANG = {
     setSecSlogan: 'Slogan & effect',
     setSecTicker: 'Ticker',
     textFont: 'Aa Default font',
+    freeResize: 'Free stretch (Shift+corner)',
     brandSloganFont: 'Aa Slogan font',
     brandSloganSize: '📐 Slogan size',
     brandLogoTint: '🎨 Logo color (silhouette)',
@@ -773,6 +775,7 @@ const LANG = {
     setSecSlogan: 'النص والتأثير',
     setSecTicker: 'الشريط',
     textFont: 'Aa الخط الافتراضي',
+    freeResize: 'تمدد حر (Shift+زاوية)',
     brandSloganFont: 'Aa خط الشعار النصي',
     brandSloganSize: '📐 حجم الشعار النصي',
     brandLogoTint: '🎨 لون الشعار (ظلّي)',
@@ -2844,7 +2847,13 @@ const Drag = {
         kind, ref, mode: 'resize', corner,
         startX: ref.x, startY: ref.y, startW: ref.w, startH: ref.h,
         aspect: ref.w / ref.h,
+        // v0.7.17: track Shift state — released by Drag._onMove via the
+        // event's shiftKey, so we just remember the initial press here.
+        freeResize: e.shiftKey,
       };
+      if (kind === 'source' && e.shiftKey) {
+        showToast('↔ ' + t('freeResize'), 1200);
+      }
     } else {
       this.state = {
         kind, ref, mode: 'move', corner: -1,
@@ -2895,8 +2904,12 @@ const Drag = {
       // Minimum sizes
       newW = Math.max(80, newW);
       newH = Math.max(60, newH);
-      // Sources keep aspect ratio; text overlays resize proportionally via their own method
-      if (s.kind === 'source') {
+      // v0.7.17: sources lock aspect ratio by default (kid-safe). Hold
+      // Shift while dragging the corner to break the lock and resize
+      // freely. Shift state is read live from the move event so the
+      // user can press/release mid-drag.
+      const freeResize = !!e.shiftKey || s.freeResize;
+      if (s.kind === 'source' && !freeResize) {
         const keepByWidth = newW / s.aspect > newH;
         if (keepByWidth) newH = newW / s.aspect; else newW = newH * s.aspect;
       }
@@ -4536,25 +4549,13 @@ function renderTicker() {
   if (!items.length) {
     for (let i = 1; i <= 10; i++) items.push(t('tip_' + i));
   }
-  // v0.7.13: pad short content so "one half" is always ≥ container width.
-  // Without this, a short custom message like "hi" produced a track that
-  // fit inside the container, making the duplicated pair visibly doubled
-  // ("hi · hi"). Measure with the real font, then double for seamless scroll.
+  // v0.7.17: SINGLE-pass ticker — user feedback "just one". No JS-side
+  // duplication. Each message appears exactly once per loop. The CSS
+  // animation uses padding-left:100% + translateX(-100%) so the text
+  // starts off-screen right, scrolls all the way to off-screen left,
+  // then loops. Brief gap between loops is intentional and natural.
   const sep = '    •    ';
-  const baseOne = items.join(sep);
-  const containerW = (el.parentElement && el.parentElement.offsetWidth) || 1600;
-  // Build one half by doubling content until it's ≥ 1.2× container width.
-  // Doubling (not single-step) is O(log n) vs O(n), safe for tiny messages.
-  let oneHalf = baseOne;
-  el.textContent = oneHalf;
-  let safety = 0;
-  while (el.scrollWidth < containerW * 1.2 && safety < 15) {
-    oneHalf = oneHalf + sep + oneHalf;
-    el.textContent = oneHalf;
-    safety++;
-  }
-  // Duplicate one-half for the seamless -50% translate marquee.
-  el.textContent = oneHalf + sep + oneHalf;
+  el.textContent = items.join(sep);
 }
 
 /* ─────────── 8. Onboarding + wiring ─────────── */

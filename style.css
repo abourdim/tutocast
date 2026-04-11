@@ -1753,6 +1753,9 @@ body.log-open .app {
   white-space: nowrap;
   display: inline-block;
   animation: tickerScroll 45s linear infinite;
+  /* v0.7.17: single-pass marquee — text starts at right edge (padding
+     pushes it 100% of container width), scrolls all the way left, loops. */
+  padding-left: 100%;
   will-change: transform;
   font-family: var(--font-h);
   font-size: .85rem;
@@ -1760,11 +1763,9 @@ body.log-open .app {
 }
 .tc-ticker:hover .tc-ticker-track,
 .tc-ticker.paused .tc-ticker-track { animation-play-state: paused; }
-/* v0.7.13: standard seamless marquee — content is doubled in JS and
-   we translate exactly one-half width, so copy-2 lands where copy-1 was. */
 @keyframes tickerScroll {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  100% { transform: translateX(-100%); }
 }
 .tc-ticker-pause {
   background: rgba(0,0,0,.25); border: 0; color: #fff;
