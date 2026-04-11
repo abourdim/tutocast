@@ -5664,9 +5664,12 @@ async function init() {
 
   applyI18n();  // after Sfx/Badges so Teleprompter.hasUserText() is safe
 
+  // v0.7.23 hotfix: Ripples.setup() must run BEFORE Engine.init() because
+  // Engine.init() starts the render loop which immediately calls
+  // ctx.drawImage(Ripples.canvas, 0, 0) — if canvas is null it throws.
+  Ripples.setup();
   Engine.init();
   Laser.setup();
-  Ripples.setup();
   Whiteboard.setup();
   Zoom.setup();
   Drag.setup();
