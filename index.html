@@ -114,7 +114,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.6</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.7</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -557,7 +557,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.6</strong></span>
+      <span class="badge"><strong>v0.7.7</strong></span>
     </div>
   </aside>
 
@@ -639,6 +639,21 @@
         <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSize">📐 Taille du logo</label>
         <input type="range" id="tcBrandSizeSlider" min="60" max="500" step="10" value="180" class="tc-brand-range" />
 
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoOpacity">💧 Transparence du logo</label>
+        <input type="range" id="tcBrandOpacitySlider" min="0" max="100" step="5" value="100" class="tc-brand-range" />
+
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoFilter">🎨 Filtre du logo</label>
+        <select id="tcBrandLogoFilterSelect" class="sidebar-select">
+          <option value="none">— Aucun —</option>
+          <option value="bw">N&B</option>
+          <option value="sepia">Sépia</option>
+          <option value="bright">Lumineux</option>
+          <option value="contrast">Contraste</option>
+          <option value="vintage">Vintage</option>
+          <option value="cool">Froid</option>
+          <option value="warm">Chaud</option>
+        </select>
+
         <input type="text" id="tcBrandSloganInput" class="sidebar-select" placeholder="Ton slogan…" style="margin-top:10px" />
 
         <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganColor">🎨 Couleur du slogan</label>
@@ -676,7 +691,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.6</strong></span>
+      <span class="badge"><strong>v0.7.7</strong></span>
     </div>
   </aside>
 
@@ -708,7 +723,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.6</strong></span>
+      <span class="badge"><strong>v0.7.7</strong></span>
     </div>
   </aside>
 

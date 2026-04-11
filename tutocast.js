@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.6 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.7 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.6';
+const APP_VERSION = '0.7.7';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -138,6 +138,8 @@ const LANG = {
     brandBgRestored: '↩ Fond original restauré',
     brandSize: '📐 Taille du logo',
     brandSloganColor: '🎨 Couleur du slogan',
+    brandLogoOpacity: '💧 Transparence du logo',
+    brandLogoFilter: '🎨 Filtre du logo',
     sourceTitlePh: 'Titre (ex: 💻 Mon code)',
     sourceShape: 'Forme',
     filter_none: '— Filtre —',
@@ -440,6 +442,8 @@ const LANG = {
     brandBgRestored: '↩ Original background restored',
     brandSize: '📐 Logo size',
     brandSloganColor: '🎨 Slogan color',
+    brandLogoOpacity: '💧 Logo opacity',
+    brandLogoFilter: '🎨 Logo filter',
     sourceTitlePh: 'Title (e.g. 💻 My code)',
     sourceShape: 'Shape',
     filter_none: '— Filter —',
@@ -734,6 +738,8 @@ const LANG = {
     brandBgRestored: '↩ استُعيدت الخلفية الأصلية',
     brandSize: '📐 حجم الشعار',
     brandSloganColor: '🎨 لون الشعار النصي',
+    brandLogoOpacity: '💧 شفافية الشعار',
+    brandLogoFilter: '🎨 فلتر الشعار',
     sourceTitlePh: 'عنوان (مثلاً 💻 كودي)',
     sourceShape: 'الشكل',
     filter_none: '— فلتر —',
@@ -2698,22 +2704,27 @@ const Drag = {
   },
 
   /* Topmost-first hit test over all interactive layers. Draw order, from
-     bottom to top, is: sources → text overlays → brand. Hit-test in reverse. */
+     bottom to top, is: sources → text overlays → brand slogan → brand logo.
+     Hit-test in reverse. */
   _hitTest(mx, my) {
-    // 1. Brand watermark (topmost if present)
-    if (Brand.visible()) {
-      if (this._insideRect(Brand, mx, my)) return { kind: 'brand', ref: Brand };
+    // 1. Brand slogan (top)
+    if (Brand.hasSlogan()) {
+      if (this._insideRect(Brand.slogan, mx, my)) return { kind: 'brandSlogan', ref: Brand.slogan };
     }
-    // 2. Text overlays (reverse)
+    // 2. Brand logo
+    if (Brand.hasLogo()) {
+      if (this._insideRect(Brand.logo, mx, my)) return { kind: 'brandLogo', ref: Brand.logo };
+    }
+    // 3. Text overlays (reverse)
     for (let i = TextOverlays.items.length - 1; i >= 0; i--) {
       const it = TextOverlays.items[i];
       if (this._insideRect(it, mx, my)) return { kind: 'text', ref: it };
     }
-    // 3. Sources (reverse, respecting shape)
+    // 4. Sources (reverse, respecting shape)
     const srcs = Engine.sources;
     for (let i = srcs.length - 1; i >= 0; i--) {
       const s = srcs[i];
-      if (s.type === 'mic' || !s.visible || !s.video) continue;
+      if (s.type === 'mic' || !s.visible || s.hidden || !s.video) continue;
       const inside = s.shape === 'circle' ? this._insideCircle(s, mx, my) : this._insideRect(s, mx, my);
       if (inside) return { kind: 'source', ref: s };
     }
@@ -2854,10 +2865,17 @@ const Drag = {
         ref.w = newW; ref.h = newH;
         ref.custom = true;
         Engine.onSourcesChanged();
-      } else if (s.kind === 'brand') {
-        Brand.resizeTo(newW);
+      } else if (s.kind === 'brandLogo') {
+        Brand.resizeLogo(newW);
+        ref.x = newX; ref.y = newY;
+      } else if (s.kind === 'brandSlogan') {
+        Brand.resizeSlogan(newW);
         ref.x = newX; ref.y = newY;
       }
+    }
+    // Save brand position after any brand drag
+    if (this.state && (this.state.kind === 'brandLogo' || this.state.kind === 'brandSlogan')) {
+      Brand.save();
     }
   },
 
@@ -2893,59 +2911,78 @@ const Drag = {
    Settings (FileReader → dataURL → <img>), types a slogan, and picks a
    fun effect (spin/pulse/bounce/wiggle/glow/rainbow). Drawn in
    Engine.render() after the text overlays so it's always on top. */
+/* v0.7.7: logo and slogan are now fully INDEPENDENT draggable layers.
+   They live in two sub-objects (Brand.logo, Brand.slogan), each with
+   its own x/y/w/h/rotation, and are hit-tested separately by Drag
+   as kind='brandLogo' and kind='brandSlogan'. */
 const Brand = {
-  img: null,              // HTMLImageElement (already-processed: bg removed if flag set)
-  _originalDataUrl: null, // as uploaded, before background removal
-  slogan: '',             // e.g. "code + robot + ☕"
-  x: 40, y: 40, w: 180, h: 180,   // bounding box (top-left + size)
-  rotation: 0,
-  effect: 'none',          // 'none'|'spin'|'pulse'|'bounce'|'wiggle'|'glow'|'rainbow'
-  bgRemoved: false,        // v0.7.4 — auto-remove solid background (sample top-left pixel)
-  sloganColor: '#ffffff',  // v0.7.4 — slogan text color (white by default)
+  logo: {
+    img: null,
+    _originalDataUrl: null,
+    x: 40, y: 40, w: 180, h: 180,
+    rotation: 0,
+    effect: 'none',
+    bgRemoved: false,
+    opacity: 1,           // v0.7.7: 0–1 transparency
+    filter: 'none',       // v0.7.7: reuse Engine._filterString presets
+  },
+  slogan: {
+    text: '',
+    color: '#ffffff',
+    x: 40, y: 260, w: 220, h: 60,
+    size: 48,
+    font: 0,
+    rotation: 0,
+  },
 
   load() {
     try {
-      this._originalDataUrl = localStorage.getItem('tc-brand-logo') || null;
-      this.slogan       = localStorage.getItem('tc-brand-slogan') || '';
-      this.effect       = localStorage.getItem('tc-brand-effect') || 'none';
-      this.bgRemoved    = localStorage.getItem('tc-brand-bgremove') === '1';
-      this.sloganColor  = localStorage.getItem('tc-brand-color') || '#ffffff';
-      const pos         = localStorage.getItem('tc-brand-pos');
-      if (pos) { try { const p = JSON.parse(pos); Object.assign(this, p); } catch {} }
+      this.logo._originalDataUrl = localStorage.getItem('tc-brand-logo') || null;
+      this.slogan.text           = localStorage.getItem('tc-brand-slogan') || '';
+      this.logo.effect           = localStorage.getItem('tc-brand-effect') || 'none';
+      this.logo.bgRemoved        = localStorage.getItem('tc-brand-bgremove') === '1';
+      this.slogan.color          = localStorage.getItem('tc-brand-color') || '#ffffff';
+      this.logo.opacity          = parseFloat(localStorage.getItem('tc-brand-logo-opacity') || '1');
+      this.logo.filter           = localStorage.getItem('tc-brand-logo-filter') || 'none';
+      // v0.7.7: new keys — independent positions for logo and slogan
+      const logoPos   = localStorage.getItem('tc-brand-logo-pos');
+      const sloganPos = localStorage.getItem('tc-brand-slogan-pos');
+      if (logoPos)   { try { Object.assign(this.logo,   JSON.parse(logoPos));   } catch {} }
+      if (sloganPos) { try { Object.assign(this.slogan, JSON.parse(sloganPos)); } catch {} }
+      // Back-compat: migrate the old tc-brand-pos (single bounding box)
+      // to the new logo-pos if no logo-pos exists yet
+      if (!logoPos) {
+        const oldPos = localStorage.getItem('tc-brand-pos');
+        if (oldPos) { try { Object.assign(this.logo, JSON.parse(oldPos)); } catch {} }
+      }
     } catch {}
-    if (this._originalDataUrl) this._recomputeLogo();
+    if (this.logo._originalDataUrl) this._recomputeLogo();
   },
 
   save() {
     try {
-      if (this._originalDataUrl) localStorage.setItem('tc-brand-logo', this._originalDataUrl);
-      localStorage.setItem('tc-brand-slogan',   this.slogan || '');
-      localStorage.setItem('tc-brand-effect',   this.effect);
-      localStorage.setItem('tc-brand-bgremove', this.bgRemoved ? '1' : '0');
-      localStorage.setItem('tc-brand-color',    this.sloganColor || '#ffffff');
-      localStorage.setItem('tc-brand-pos',      JSON.stringify({ x: this.x, y: this.y, w: this.w, h: this.h }));
+      if (this.logo._originalDataUrl) localStorage.setItem('tc-brand-logo', this.logo._originalDataUrl);
+      localStorage.setItem('tc-brand-slogan',      this.slogan.text || '');
+      localStorage.setItem('tc-brand-effect',      this.logo.effect);
+      localStorage.setItem('tc-brand-bgremove',    this.logo.bgRemoved ? '1' : '0');
+      localStorage.setItem('tc-brand-color',       this.slogan.color || '#ffffff');
+      localStorage.setItem('tc-brand-logo-opacity', String(this.logo.opacity));
+      localStorage.setItem('tc-brand-logo-filter',  this.logo.filter);
+      localStorage.setItem('tc-brand-logo-pos',    JSON.stringify({ x: this.logo.x, y: this.logo.y, w: this.logo.w, h: this.logo.h, rotation: this.logo.rotation }));
+      localStorage.setItem('tc-brand-slogan-pos',  JSON.stringify({ x: this.slogan.x, y: this.slogan.y, w: this.slogan.w, h: this.slogan.h, size: this.slogan.size, font: this.slogan.font, rotation: this.slogan.rotation }));
     } catch {}
   },
 
-  /* Load the current _originalDataUrl, optionally strip its background,
-     then update this.img and fix aspect ratio from the real image dims. */
   _recomputeLogo() {
-    if (!this._originalDataUrl) { this.img = null; return; }
+    const L = this.logo;
+    if (!L._originalDataUrl) { L.img = null; return; }
     const raw = new Image();
-    raw.onerror = () => { this.img = null; log('✗ brand logo failed to load', 'error'); };
+    raw.onerror = () => { L.img = null; log('✗ brand logo failed to load', 'error'); };
     raw.onload = () => {
-      // Fix aspect ratio from the real image — don't force the 180×180 default
       if (raw.width && raw.height) {
-        this.h = this.w * (raw.height / raw.width);
+        L.h = L.w * (raw.height / raw.width);
       }
-      if (!this.bgRemoved) {
-        this.img = raw;
-        return;
-      }
-      // Background removal: sample the top-left pixel as the background
-      // reference colour, then set alpha=0 on every pixel within threshold.
-      // Works for simple JPG logos with solid bg; not perfect for anti-aliased
-      // edges but a huge improvement over "no option at all".
+      if (!L.bgRemoved) { L.img = raw; return; }
       try {
         const cv = document.createElement('canvas');
         cv.width = raw.width; cv.height = raw.height;
@@ -2954,7 +2991,7 @@ const Brand = {
         const id = c.getImageData(0, 0, cv.width, cv.height);
         const d = id.data;
         const r0 = d[0], g0 = d[1], b0 = d[2];
-        const thresh2 = 45 * 45;  // RGB distance²
+        const thresh2 = 45 * 45;
         for (let i = 0; i < d.length; i += 4) {
           const dr = d[i] - r0, dg = d[i+1] - g0, db = d[i+2] - b0;
           if (dr*dr + dg*dg + db*db < thresh2) d[i+3] = 0;
@@ -2962,20 +2999,20 @@ const Brand = {
         c.putImageData(id, 0, 0);
         const processed = cv.toDataURL('image/png');
         const img2 = new Image();
-        img2.onload = () => { this.img = img2; };
+        img2.onload = () => { L.img = img2; };
         img2.src = processed;
       } catch (e) {
         log(`✗ bg removal failed: ${e.message}`, 'error');
-        this.img = raw;
+        L.img = raw;
       }
     };
-    raw.src = this._originalDataUrl;
+    raw.src = L._originalDataUrl;
   },
 
   setLogoFromFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      this._originalDataUrl = e.target.result;
+      this.logo._originalDataUrl = e.target.result;
       this._recomputeLogo();
       this.save();
       showToast(t('brandLogoLoaded'), 2000);
@@ -2984,113 +3021,114 @@ const Brand = {
   },
 
   clearLogo() {
-    this._originalDataUrl = null;
-    this.img = null;
+    this.logo._originalDataUrl = null;
+    this.logo.img = null;
     try { localStorage.removeItem('tc-brand-logo'); } catch {}
   },
 
-  setSlogan(s)      { this.slogan = s || ''; this.save(); },
-  setEffect(e)      { this.effect = e || 'none'; this.save(); },
-  setBgRemoved(v)   { this.bgRemoved = !!v; this._recomputeLogo(); this.save(); },
-  setSloganColor(c) { this.sloganColor = c || '#ffffff'; this.save(); },
+  setSlogan(s)        { this.slogan.text = s || ''; this._measureSlogan(); this.save(); },
+  setEffect(e)        { this.logo.effect = e || 'none'; this.save(); },
+  setBgRemoved(v)     { this.logo.bgRemoved = !!v; this._recomputeLogo(); this.save(); },
+  setSloganColor(c)   { this.slogan.color = c || '#ffffff'; this.save(); },
+  setLogoOpacity(v)   { this.logo.opacity = Math.max(0, Math.min(1, parseFloat(v))); this.save(); },
+  setLogoFilter(f)    { this.logo.filter = f || 'none'; this.save(); },
 
-  /* Size setter: scales w+h together (from the slider). */
+  /* Logo size setter (Settings slider). */
   setSize(newW) {
+    const L = this.logo;
     const clamped = Math.max(60, Math.min(600, newW));
-    const ratio = clamped / this.w;
-    this.w = clamped;
-    this.h = this.h * ratio;
+    const ratio = clamped / L.w;
+    L.w = clamped;
+    L.h = L.h * ratio;
     this.save();
   },
 
-  resizeTo(newW) {
-    const ratio = Math.max(60, newW) / this.w;
-    this.w = Math.max(60, newW);
-    this.h = this.h * ratio;
+  /* Re-measure the slogan's bounding box using current text/size/font. */
+  _measureSlogan() {
+    const S = this.slogan;
+    if (!S.text) return;
+    const ctx = Engine && Engine.ctx;
+    if (!ctx) return;
+    const f = TEXT_FONTS[S.font ?? 0] || TEXT_FONTS[0];
+    ctx.save();
+    ctx.font = `${f.weight} ${S.size}px ${f.family}`;
+    const m = ctx.measureText(S.text);
+    ctx.restore();
+    const padX = 16, padY = 8;
+    S.w = m.width + padX * 2;
+    S.h = S.size * 1.2 + padY * 2;
+  },
+
+  /* Drag interface: called when the user drags the slogan's corner. */
+  resizeSlogan(newW) {
+    const S = this.slogan;
+    const ratio = Math.max(60, newW) / S.w;
+    S.size = Math.max(14, Math.min(200, S.size * ratio));
+    this._measureSlogan();
     this.save();
   },
 
-  /* Is there anything to draw? (logo OR slogan must be set) */
-  visible() { return !!(this.img || (this.slogan && this.slogan.trim())); },
+  /* Drag interface: called when the user drags the logo's corner. */
+  resizeLogo(newW) {
+    const L = this.logo;
+    const clamped = Math.max(60, newW);
+    const ratio = clamped / L.w;
+    L.w = clamped;
+    L.h = L.h * ratio;
+    this.save();
+  },
 
-  /* Apply one of the "fun effects" as a canvas transform around (cx, cy).
-     Called with ctx already saved; we set up the transform and return. */
+  hasLogo()   { return !!this.logo.img; },
+  hasSlogan() { return !!(this.slogan.text && this.slogan.text.trim()); },
+  visible()   { return this.hasLogo() || this.hasSlogan(); },
+
   _applyEffect(ctx, cx, cy) {
-    if (this.effect === 'none') return;
+    if (this.logo.effect === 'none') return;
     const now = Date.now() / 1000;
-    switch (this.effect) {
-      case 'spin': {
-        ctx.translate(cx, cy);
-        ctx.rotate(now * 1.2);          // ~11 rpm
-        ctx.translate(-cx, -cy);
-        break;
-      }
-      case 'pulse': {
-        const s = 1 + Math.sin(now * 3) * 0.08;
-        ctx.translate(cx, cy);
-        ctx.scale(s, s);
-        ctx.translate(-cx, -cy);
-        break;
-      }
-      case 'bounce': {
-        const dy = Math.abs(Math.sin(now * 4)) * -20;
-        ctx.translate(0, dy);
-        break;
-      }
-      case 'wiggle': {
-        ctx.translate(cx, cy);
-        ctx.rotate(Math.sin(now * 5) * 0.1);  // ±5.7° oscillation
-        ctx.translate(-cx, -cy);
-        break;
-      }
-      case 'glow': {
-        const pulse = 20 + Math.sin(now * 3) * 15;
-        ctx.shadowColor = Engine._accentColor || '#a3e635';
-        ctx.shadowBlur = pulse;
-        break;
-      }
-      case 'rainbow': {
-        const hue = (now * 60) % 360;
-        ctx.filter = `hue-rotate(${hue.toFixed(0)}deg) saturate(1.4)`;
-        break;
-      }
+    switch (this.logo.effect) {
+      case 'spin':    ctx.translate(cx, cy); ctx.rotate(now * 1.2); ctx.translate(-cx, -cy); break;
+      case 'pulse':   { const s = 1 + Math.sin(now * 3) * 0.08; ctx.translate(cx, cy); ctx.scale(s, s); ctx.translate(-cx, -cy); } break;
+      case 'bounce':  ctx.translate(0, Math.abs(Math.sin(now * 4)) * -20); break;
+      case 'wiggle':  ctx.translate(cx, cy); ctx.rotate(Math.sin(now * 5) * 0.1); ctx.translate(-cx, -cy); break;
+      case 'glow':    { const pulse = 20 + Math.sin(now * 3) * 15; ctx.shadowColor = Engine._accentColor || '#a3e635'; ctx.shadowBlur = pulse; } break;
+      case 'rainbow': { const hue = (now * 60) % 360; ctx.filter = `hue-rotate(${hue.toFixed(0)}deg) saturate(1.4)`; } break;
     }
   },
 
   draw(ctx) {
-    if (!this.visible()) return;
-    ctx.save();
-    const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
-    // v0.7.1: user rotation applied first, then the "fun effect"
-    if (this.rotation) {
-      ctx.translate(cx, cy);
-      ctx.rotate(this.rotation);
-      ctx.translate(-cx, -cy);
+    // Logo pass — own transform + effect + opacity + filter
+    if (this.hasLogo()) {
+      const L = this.logo;
+      ctx.save();
+      ctx.globalAlpha = L.opacity ?? 1;
+      const cx = L.x + L.w / 2, cy = L.y + L.h / 2;
+      if (L.rotation) { ctx.translate(cx, cy); ctx.rotate(L.rotation); ctx.translate(-cx, -cy); }
+      this._applyEffect(ctx, cx, cy);
+      // v0.7.7: per-logo visual filter preset (combines with effect)
+      const effectFilter = ctx.filter && ctx.filter !== 'none' ? ctx.filter : '';
+      const userFilter   = (L.filter && L.filter !== 'none') ? Engine._filterString(L.filter) : '';
+      const combined = [effectFilter, userFilter].filter(Boolean).join(' ');
+      if (combined) ctx.filter = combined;
+      ctx.drawImage(L.img, L.x, L.y, L.w, L.h);
+      ctx.restore();
     }
-    this._applyEffect(ctx, cx, cy);
-
-    // Logo
-    if (this.img) {
-      ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
-    }
-
-    // Reset filter for the text (we want sharp text) but keep the transform
-    ctx.filter = 'none';
-
-    // Slogan text below the logo
-    if (this.slogan && this.slogan.trim()) {
-      const textSize = Math.max(20, this.w * 0.18);
-      ctx.font = `800 ${textSize}px Bangers, Righteous, sans-serif`;
+    // Slogan pass — independent transform
+    if (this.hasSlogan()) {
+      const S = this.slogan;
+      this._measureSlogan();
+      ctx.save();
+      const cx = S.x + S.w / 2, cy = S.y + S.h / 2;
+      if (S.rotation) { ctx.translate(cx, cy); ctx.rotate(S.rotation); ctx.translate(-cx, -cy); }
+      const f = TEXT_FONTS[S.font ?? 0] || TEXT_FONTS[0];
+      ctx.font = `${f.weight} ${S.size}px ${f.family}`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      const textY = this.img ? this.y + this.h + 8 : this.y;
-      // Outline + fill for readability, user-picked color (v0.7.4)
+      ctx.textBaseline = 'middle';
       ctx.lineWidth = 6; ctx.strokeStyle = '#000';
-      ctx.strokeText(this.slogan, cx, textY);
-      ctx.fillStyle = this.sloganColor || '#ffffff';
-      ctx.fillText(this.slogan, cx, textY);
+      ctx.strokeText(S.text, cx, cy);
+      ctx.fillStyle = S.color || '#ffffff';
+      ctx.fillText(S.text, cx, cy);
+      ctx.restore();
     }
-    ctx.restore();
   },
 };
 
@@ -4599,8 +4637,20 @@ function wireEvents() {
   // Size slider (v0.7.4)
   const sizeSlider = $('tcBrandSizeSlider');
   if (sizeSlider) {
-    sizeSlider.value = Brand.w;
+    sizeSlider.value = Brand.logo.w;
     sizeSlider.addEventListener('input', (e) => Brand.setSize(parseInt(e.target.value)));
+  }
+  // Logo opacity slider (v0.7.7)
+  const opacitySlider = $('tcBrandOpacitySlider');
+  if (opacitySlider) {
+    opacitySlider.value = Math.round((Brand.logo.opacity ?? 1) * 100);
+    opacitySlider.addEventListener('input', (e) => Brand.setLogoOpacity(parseInt(e.target.value) / 100));
+  }
+  // Logo filter select (v0.7.7)
+  const logoFilterSel = $('tcBrandLogoFilterSelect');
+  if (logoFilterSel) {
+    logoFilterSel.value = Brand.logo.filter || 'none';
+    logoFilterSel.addEventListener('change', (e) => Brand.setLogoFilter(e.target.value));
   }
   // Slogan color swatches (v0.7.4)
   document.querySelectorAll('#tcBrandColorRow .tc-brand-swatch').forEach(btn => {
