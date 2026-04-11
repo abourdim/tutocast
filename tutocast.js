@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.48 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.49 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.48';
+const APP_VERSION = '0.7.49';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 01:15';
+const BUILD_DATE = '2026-04-12 01:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -264,6 +264,13 @@ const LANG = {
     drawHint: '✏ D = activer/désactiver · clique-glisse sur l\'aperçu pour dessiner',
     layerForward: '⬆ Vers l\'avant',
     layerBackward: '⬇ Vers l\'arrière',
+    sourceForward: '⬆ Devant',
+    sourceBackward: '⬇ Derrière',
+    ctxForward: 'Avancer',
+    ctxBackward: 'Reculer',
+    ctxFront: 'Avant-plan',
+    ctxBack: 'Arrière-plan',
+    cheatSrcLayer: 'Source : arrière / avant plan',
     sourceRemoved: 'Source retirée',
     firstSourceHint: '💡 Clique la vidéo pour la sélectionner · ✕ pour retirer · 👁 pour cacher · coin pour redimensionner',
     overlayDeleted: '✕ Overlay supprimé',
@@ -735,6 +742,13 @@ const LANG = {
     drawHint: '✏ D = toggle · click-drag on the preview to draw',
     layerForward: '⬆ Forward',
     layerBackward: '⬇ Backward',
+    sourceForward: '⬆ Forward',
+    sourceBackward: '⬇ Backward',
+    ctxForward: 'Bring forward',
+    ctxBackward: 'Send backward',
+    ctxFront: 'Bring to front',
+    ctxBack: 'Send to back',
+    cheatSrcLayer: 'Source: back / front',
     sourceRemoved: 'Source removed',
     firstSourceHint: '💡 Click the video to select · ✕ to remove · 👁 to hide · corner to resize',
     overlayDeleted: '✕ Overlay deleted',
@@ -1198,6 +1212,13 @@ const LANG = {
     drawHint: '✏ D = تفعيل/إلغاء · اسحب على المعاينة للرسم',
     layerForward: '⬆ إلى الأمام',
     layerBackward: '⬇ إلى الخلف',
+    sourceForward: '⬆ للأمام',
+    sourceBackward: '⬇ للخلف',
+    ctxForward: 'إلى الأمام',
+    ctxBackward: 'إلى الخلف',
+    ctxFront: 'إلى الأمام تمامًا',
+    ctxBack: 'إلى الخلف تمامًا',
+    cheatSrcLayer: 'المصدر: إلى الخلف / الأمام',
     sourceRemoved: 'تمت إزالة المصدر',
     firstSourceHint: '💡 انقر الفيديو للتحديد · ✕ للإزالة · 👁 للإخفاء · الزاوية لتغيير الحجم',
     overlayDeleted: '✕ تم حذف الطبقة',
@@ -5956,6 +5977,34 @@ const SourceContextMenu = {
       });
     });
 
+    // v0.7.49: z-order entries (Bring forward / Send backward / front / back)
+    const reorder = (where) => {
+      const s = getSrc(); if (!s) return;
+      const idx = Engine.sources.findIndex(x => x.id === s.id);
+      if (idx < 0) return;
+      Engine.sources.splice(idx, 1);
+      let newIdx;
+      if (where === 'front')        newIdx = Engine.sources.length;
+      else if (where === 'back')    newIdx = 0;
+      else if (where === 'forward') newIdx = Math.min(Engine.sources.length, idx + 1);
+      else                           newIdx = Math.max(0, idx - 1);
+      Engine.sources.splice(newIdx, 0, s);
+      Engine.onSourcesChanged();
+      this.hide();
+    };
+    this.el.querySelector('[data-action="forward"]')?.addEventListener('click', (e) => {
+      e.stopPropagation(); reorder('forward');
+    });
+    this.el.querySelector('[data-action="backward"]')?.addEventListener('click', (e) => {
+      e.stopPropagation(); reorder('backward');
+    });
+    this.el.querySelector('[data-action="front"]')?.addEventListener('click', (e) => {
+      e.stopPropagation(); reorder('front');
+    });
+    this.el.querySelector('[data-action="back"]')?.addEventListener('click', (e) => {
+      e.stopPropagation(); reorder('back');
+    });
+
     this.el.querySelector('[data-action="del"]')?.addEventListener('click', (e) => {
       e.stopPropagation();
       const s = getSrc(); if (!s) return;
@@ -7481,6 +7530,25 @@ function setupHotkeys() {
       else                                newIdx = Math.min(items.length, idx + 1);
       items.splice(newIdx, 0, item);
       showToast(k === '[' ? t('layerBackward') : t('layerForward'), 1200);
+      e.preventDefault();
+      return;
+    }
+    // v0.7.49: layer ordering for the selected SOURCE (same [/] hotkeys),
+    // only when no text overlay is selected.
+    if ((k === '[' || k === ']') && Drag.selectedSourceId != null && TextOverlays.selectedId == null) {
+      const items = Engine.sources;
+      const idx = items.findIndex(s => s.id === Drag.selectedSourceId);
+      if (idx < 0) return;
+      const item = items[idx];
+      items.splice(idx, 1);
+      let newIdx;
+      if (k === '[' && e.shiftKey)       newIdx = 0;
+      else if (k === ']' && e.shiftKey)  newIdx = items.length;
+      else if (k === '[')                newIdx = Math.max(0, idx - 1);
+      else                                newIdx = Math.min(items.length, idx + 1);
+      items.splice(newIdx, 0, item);
+      Engine.onSourcesChanged();
+      showToast(k === '[' ? t('sourceBackward') : t('sourceForward'), 1200);
       e.preventDefault();
       return;
     }
