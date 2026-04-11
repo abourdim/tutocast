@@ -109,12 +109,13 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.6.0</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.0</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
             <span class="tc-rec-time" id="tcRecTime">00:00</span>
           </div>
+          <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
         </div>
 
         <!-- Studio canvas preview + sidebars -->
@@ -384,6 +385,19 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
+          <h3>🖐 v0.7.0 — 11 avril 2026</h3>
+          <p data-i18n="news_070">Max flexibilité : drag+resize pour tout 🖐📐</p>
+          <ul>
+            <li data-i18n="news_070_1">Texts déplaçables ET redimensionnables (poignées aux 4 coins, Ctrl+D = dupliquer, Suppr = supprimer)</li>
+            <li data-i18n="news_070_2">Sources redimensionnables aux 4 coins (aspect ratio conservé)</li>
+            <li data-i18n="news_070_3">Logo + slogan personnalisables (upload PNG/SVG) avec 6 effets fun : spin, pulse, bounce, wiggle, halo, arc-en-ciel</li>
+            <li data-i18n="news_070_4">Filtres visuels par source : N&B, sépia, lumineux, contraste, vintage, froid, chaud</li>
+            <li data-i18n="news_070_5">Titre/caption par source (style lower-third) — tape directement dans le panneau sources</li>
+            <li data-i18n="news_070_6">Bouton plein écran ⛶ — l'aperçu prend tout l'écran, Esc pour sortir</li>
+            <li data-i18n="news_070_7">Hints clavier affichés quand tu actives Zoom / Laser / Gel / Dessin</li>
+          </ul>
+        </div>
+        <div class="wiki-entry">
           <h3>🏆 v0.6.0 — 11 avril 2026</h3>
           <p data-i18n="news_060">Polish adoption 🎵🏆👩‍🏫</p>
           <ul>
@@ -521,7 +535,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.6.0</strong></span>
+      <span class="badge"><strong>v0.7.0</strong></span>
     </div>
   </aside>
 
@@ -585,6 +599,28 @@
           <span data-i18n="jingleLabel">🎵 Jingle d'intro (1.5s)</span>
         </label>
       </div>
+      <!-- ═══ Brand watermark (v0.7.0) ═══ -->
+      <div class="sidebar-group brand-group">
+        <label class="sidebar-label" data-i18n="brandSection">🏷 Marque (logo + slogan)</label>
+        <label class="tc-file-btn" for="tcBrandLogoInput">
+          📁 <span data-i18n="brandUploadLogo">Charger un logo (PNG/SVG)</span>
+        </label>
+        <input type="file" id="tcBrandLogoInput" accept="image/*" style="display:none" />
+        <button id="tcBrandClearBtn" class="tc-btn-full" style="margin-top:6px">
+          🗑 <span data-i18n="brandClearLogo">Retirer le logo</span>
+        </button>
+        <input type="text" id="tcBrandSloganInput" class="sidebar-select" placeholder="Ton slogan…" style="margin-top:8px" />
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandEffect">Effet fun</label>
+        <select id="tcBrandEffectSelect" class="sidebar-select">
+          <option value="none">— Aucun —</option>
+          <option value="spin">🌀 Tourne</option>
+          <option value="pulse">💓 Pulse</option>
+          <option value="bounce">🏀 Rebond</option>
+          <option value="wiggle">〰 Wiggle</option>
+          <option value="glow">✨ Halo</option>
+          <option value="rainbow">🌈 Arc-en-ciel</option>
+        </select>
+      </div>
       <div class="sidebar-group">
         <label class="sidebar-label" data-i18n="outputFormat">🎞 Format de sortie</label>
         <select id="tcFormatSelect" class="sidebar-select" aria-label="Output format">
@@ -597,7 +633,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.6.0</strong></span>
+      <span class="badge"><strong>v0.7.0</strong></span>
     </div>
   </aside>
 
@@ -629,7 +665,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.6.0</strong></span>
+      <span class="badge"><strong>v0.7.0</strong></span>
     </div>
   </aside>
 

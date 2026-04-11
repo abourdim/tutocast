@@ -3,6 +3,84 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.0 — 2026-04-11
+
+**Direct response to real user feedback** — finally got the smoke-test
+screenshot I've been asking for. The user flagged five concrete gaps
+(can't resize/move texts, can't resize videos, wanted filters, wanted
+a logo/slogan system, wanted fullscreen) + four follow-ups ("Canva
+ideas", keyboard hints, video shapes, source titles). All addressed.
+
+### Added — 🖐 Unified drag + resize
+
+- Drag system rewritten to handle three layer kinds in one hit-test:
+  `source`, `text`, `brand`. Reverse z-order hit-test.
+- 4 corner resize handles on every interactive layer (click within
+  36 canvas-px of a corner = resize, anywhere else = move).
+- Sources keep aspect ratio on resize; text overlays scale the font
+  size; brand watermark resizes proportionally.
+
+### Added — 📝 Text overlays, reborn
+
+Pre-v0.7.0 text overlays were fixed at `(960, 120)` with auto-fade.
+Now first-class draggable objects.
+
+- Top-left `(x, y)` coords with auto-computed `w, h`
+- Selection via click (dashed outline + 4 handles, accent color)
+- Pin on first drag — preset texts cancel their 4s auto-fade
+- `Delete` / `Backspace` removes the selected overlay
+- `Ctrl/Cmd + D` duplicates the selection (Canva-style)
+
+### Added — 🏷 Brand watermark
+
+Custom logo + slogan + fun effects.
+
+- PNG/SVG upload via FileReader → dataURL → localStorage
+- Slogan text drawn under the logo with outlined fill
+- 6 fun effects via canvas transform: `spin`, `pulse`, `bounce`,
+  `wiggle`, `glow`, `rainbow`
+- Draggable + resizable
+
+### Added — 🎨 Per-source visual filters
+
+8 presets via `ctx.filter`: `none`, `bw`, `sepia`, `bright`,
+`contrast`, `vintage`, `cool`, `warm`. Zero deps.
+
+### Added — 🔵 Per-source shape selector
+
+Each source can be `rect`, `circle`, or `rounded` — switchable from
+the Active Sources row. Drawn via shape clip in `drawSource()`.
+
+### Added — 🏷 Per-source title chip
+
+Broadcaster lower-third: type a title in the Active Sources row,
+it renders as a rounded chip under the source with an accent bar.
+
+### Added — ⛶ Maximize / fullscreen mode
+
+New `⛶` button in the studio header hides all chrome and stretches
+the stage to fill the viewport. Tries browser-level `requestFullscreen`
+too. `Esc` exits.
+
+### Added — 💡 Keyboard shortcut hints
+
+Toasts pop up on tool activation (Zoom / Laser / Freeze / Draw) with
+the relevant keyboard shortcuts — discoverable without opening help.
+
+### Active Sources panel redesign
+
+2-line rows: top = icon/name/pin/blur/remove, bottom = title input +
+filter select + shape select.
+
+### i18n
+- 30 new keys × 3 languages.
+
+### Verified (Preview MCP harness)
+- `Drag._nearCorner`: TL click → 0, middle → -1
+- TextOverlays: 208×132 bbox, pinned true, resize 208→282
+- Source hit-test, row UI, filter strings, brand persistence
+- Maximize toggle, Ctrl+D duplicate
+
 ## v0.6.0 — 2026-04-11
 
 Polish / adoption round. Two Tier-2 polish features plus two

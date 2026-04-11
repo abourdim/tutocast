@@ -1736,6 +1736,142 @@ body.log-open .app {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   v0.7.0 — Source row 2-line layout + brand settings + maximize mode
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Source rows now have a top line (name + icons) and a bottom line
+   (title input + filter select) for video sources. */
+.tc-src-row {
+  display: flex !important;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 8px !important;
+}
+.tc-src-row-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tc-src-row-top .tc-src-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-src-row-bot {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 4px;
+  align-items: center;
+}
+.tc-src-shape-select {
+  background: rgba(0,0,0,.4);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: .85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tc-src-title-input {
+  background: rgba(0,0,0,.4);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: .72rem;
+  font-family: inherit;
+  min-width: 0;
+}
+.tc-src-title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.tc-src-filter-select {
+  background: rgba(0,0,0,.4);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: .7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Brand settings group */
+.brand-group { border-top: 1px dashed var(--border); padding-top: 14px !important; margin-top: 10px; }
+.tc-file-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(251,146,60,.08);
+  border: 1px dashed rgba(251,146,60,.4);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: .85rem;
+  color: inherit;
+  transition: all .15s;
+}
+.tc-file-btn:hover {
+  background: rgba(251,146,60,.18);
+  border-color: rgba(251,146,60,.7);
+}
+
+/* Maximize button in the studio header */
+.tc-max-btn {
+  margin-inline-start: 8px;
+  font-size: 1.1rem;
+}
+
+/* Maximized mode — hide chrome, stretch stage to viewport */
+.app.maximized .header,
+.app.maximized .deco-band,
+.app.maximized .tc-ticker,
+.app.maximized .app-footer,
+.app.maximized .collapsible,
+.app.maximized .tc-sidebar,
+.app.maximized .tc-templates,
+.app.maximized .card-header,
+.app.maximized .tc-template-strip {
+  display: none !important;
+}
+.app.maximized {
+  max-width: 100vw !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.app.maximized .rows-container { padding: 0 !important; }
+.app.maximized .tc-studio {
+  padding: 0 !important;
+}
+.app.maximized .tc-studio-grid {
+  grid-template-columns: 1fr !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+.app.maximized .tc-stage {
+  max-height: calc(100vh - 120px) !important;
+  max-width: calc((100vh - 120px) * 16 / 9) !important;
+  border-radius: 0 !important;
+}
+.app.maximized .tc-rec-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(0,0,0,.8);
+  backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    HELP PANEL — "First time? Start here" callout (v0.6.0)
    ═══════════════════════════════════════════════════════════════════ */
 

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.6.0 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.0 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.6.0';
+const APP_VERSION = '0.7.0';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -127,6 +127,29 @@ const LANG = {
     firstTimeTitle: 'Première fois ? Commence ici',
     firstTimeBody: 'Les 7 étapes ci-dessous t\'emmènent de zéro à ton premier tuto téléchargé en moins de 5 minutes. TutoCast fonctionne aussi bien sur un Chromebook que sur un ordinateur classique, sans compte, sans installation.',
     firstTimeTeacher: '👩‍🏫 Pour les profs : TutoCast est conçu pour expliquer du code avec un robot (micro:bit, Arduino, LEGO). Utilise le template « 🤖 Démo robot » pour une séquence guidée en 5 étapes. Tes vidéos restent 100% sur ton ordi.',
+    brandSection: '🏷 Marque (logo + slogan)',
+    brandUploadLogo: 'Charger un logo (PNG/SVG)',
+    brandClearLogo: 'Retirer le logo',
+    brandLogoLoaded: '🏷 Logo chargé',
+    brandLogoCleared: '🏷 Logo retiré',
+    brandEffect: 'Effet fun',
+    sourceTitlePh: 'Titre (ex: 💻 Mon code)',
+    sourceShape: 'Forme',
+    filter_none: '— Filtre —',
+    filter_bw: 'N&B',
+    filter_sepia: 'Sépia',
+    filter_bright: 'Lumineux',
+    filter_contrast: 'Contraste',
+    filter_vintage: 'Vintage',
+    filter_cool: 'Froid',
+    filter_warm: 'Chaud',
+    overlayDuplicated: '📋 Overlay dupliqué',
+    maximize: '⛶ Plein écran',
+    restore: '⛶ Restaurer',
+    zoomHint: '🔍 Z = activer/désactiver · ⛶ = plein écran · Esc = sortir',
+    laserHint: '🔴 L = activer/désactiver · incline le micro:bit pour viser',
+    freezeHint: '❄ F = geler/dégeler · parle encore pendant que l\'écran est gelé',
+    drawHint: '✏ D = activer/désactiver · clique-glisse sur l\'aperçu pour dessiner',
     badge_first: 'Premier tuto',
     badge_long: 'Plus de 5 min',
     badge_multi: 'Multi-caméras',
@@ -237,6 +260,14 @@ const LANG = {
     news_060_2: "Carte badge PNG partageable générée après chaque enregistrement",
     news_060_3: "Callout « Première fois ? Commence ici » + pitch prof dans l'aide",
     news_060_4: "README enrichi d'une section « Pour les profs »",
+    news_070: "Max flexibilité : drag+resize pour tout 🖐📐",
+    news_070_1: "Texts déplaçables ET redimensionnables (poignées aux 4 coins, Ctrl+D = dupliquer, Suppr = supprimer)",
+    news_070_2: "Sources redimensionnables aux 4 coins (aspect ratio conservé)",
+    news_070_3: "Logo + slogan personnalisables (upload PNG/SVG) avec 6 effets fun : spin, pulse, bounce, wiggle, halo, arc-en-ciel",
+    news_070_4: "Filtres visuels par source : N&B, sépia, lumineux, contraste, vintage, froid, chaud",
+    news_070_5: "Titre/caption par source (style lower-third) — tape directement dans le panneau sources",
+    news_070_6: "Bouton plein écran ⛶ — l'aperçu prend tout l'écran, Esc pour sortir",
+    news_070_7: "Hints clavier affichés quand tu actives Zoom / Laser / Gel / Dessin",
     tplTitle: "Choisis comment tu commences",
     tplSubtitle: "Chaque template te guide étape par étape",
     tplChoose: "Choisir un template",
@@ -379,6 +410,29 @@ const LANG = {
     firstTimeTitle: 'First time? Start here',
     firstTimeBody: 'The 7 steps below take you from zero to your first downloaded tutorial in under 5 minutes. TutoCast runs on a Chromebook or any desktop browser, no account, no install.',
     firstTimeTeacher: '👩‍🏫 For teachers: TutoCast is built to explain code with a robot (micro:bit, Arduino, LEGO). Use the "🤖 Robot demo" template for a guided 5-step sequence. Your videos stay 100% on your computer.',
+    brandSection: '🏷 Brand (logo + slogan)',
+    brandUploadLogo: 'Upload a logo (PNG/SVG)',
+    brandClearLogo: 'Remove logo',
+    brandLogoLoaded: '🏷 Logo loaded',
+    brandLogoCleared: '🏷 Logo cleared',
+    brandEffect: 'Fun effect',
+    sourceTitlePh: 'Title (e.g. 💻 My code)',
+    sourceShape: 'Shape',
+    filter_none: '— Filter —',
+    filter_bw: 'B&W',
+    filter_sepia: 'Sepia',
+    filter_bright: 'Bright',
+    filter_contrast: 'Contrast',
+    filter_vintage: 'Vintage',
+    filter_cool: 'Cool',
+    filter_warm: 'Warm',
+    overlayDuplicated: '📋 Overlay duplicated',
+    maximize: '⛶ Fullscreen',
+    restore: '⛶ Restore',
+    zoomHint: '🔍 Z = toggle · ⛶ = fullscreen · Esc = exit',
+    laserHint: '🔴 L = toggle · tilt the micro:bit to aim',
+    freezeHint: '❄ F = freeze/unfreeze · keep talking while the screen is frozen',
+    drawHint: '✏ D = toggle · click-drag on the preview to draw',
     badge_first: 'First tutorial',
     badge_long: 'Over 5 minutes',
     badge_multi: 'Multi-camera',
@@ -489,6 +543,14 @@ const LANG = {
     news_060_2: "Shareable PNG badge card generated after every recording",
     news_060_3: "\"First time? Start here\" callout + teacher pitch in the help panel",
     news_060_4: "README now has a proper \"For teachers\" section",
+    news_070: "Max flexibility: drag+resize everything 🖐📐",
+    news_070_1: "Texts draggable AND resizable (4 corner handles, Ctrl+D duplicate, Delete to remove)",
+    news_070_2: "Sources resize from 4 corners (aspect ratio preserved)",
+    news_070_3: "Custom logo + slogan (PNG/SVG upload) with 6 fun effects: spin, pulse, bounce, wiggle, glow, rainbow",
+    news_070_4: "Per-source visual filters: B&W, sepia, bright, contrast, vintage, cool, warm",
+    news_070_5: "Per-source title/caption (lower-third style) — type it directly in the sources panel",
+    news_070_6: "⛶ Fullscreen button — the preview fills the screen, Esc to exit",
+    news_070_7: "Keyboard hints pop up when you toggle Zoom / Laser / Freeze / Draw",
     tplTitle: "Pick how you start",
     tplSubtitle: "Each template guides you step by step",
     tplChoose: "Pick a template",
@@ -623,6 +685,29 @@ const LANG = {
     firstTimeTitle: 'أول مرة؟ ابدأ من هنا',
     firstTimeBody: 'الخطوات السبع أدناه تأخذك من الصفر إلى أول درس محمّل في أقل من 5 دقائق. يعمل TutoCast على Chromebook أو أي متصفح سطح مكتب، بدون حساب، بدون تثبيت.',
     firstTimeTeacher: '👩‍🏫 للمعلّمين: TutoCast مصمّم لشرح الكود مع روبوت (micro:bit، Arduino، LEGO). استخدم قالب «🤖 عرض روبوت» لتسلسل موجّه من 5 خطوات. فيديوهاتك تبقى 100% على حاسوبك.',
+    brandSection: '🏷 العلامة (شعار + شعار نصي)',
+    brandUploadLogo: 'رفع شعار (PNG/SVG)',
+    brandClearLogo: 'إزالة الشعار',
+    brandLogoLoaded: '🏷 تم تحميل الشعار',
+    brandLogoCleared: '🏷 تمت إزالة الشعار',
+    brandEffect: 'تأثير ممتع',
+    sourceTitlePh: 'عنوان (مثلاً 💻 كودي)',
+    sourceShape: 'الشكل',
+    filter_none: '— فلتر —',
+    filter_bw: 'أبيض وأسود',
+    filter_sepia: 'سيبيا',
+    filter_bright: 'ساطع',
+    filter_contrast: 'تباين',
+    filter_vintage: 'كلاسيكي',
+    filter_cool: 'بارد',
+    filter_warm: 'دافئ',
+    overlayDuplicated: '📋 تم تكرار الطبقة',
+    maximize: '⛶ ملء الشاشة',
+    restore: '⛶ استعادة',
+    zoomHint: '🔍 Z = تفعيل/إلغاء · ⛶ = ملء الشاشة · Esc = خروج',
+    laserHint: '🔴 L = تفعيل/إلغاء · أمِل micro:bit للتصويب',
+    freezeHint: '❄ F = تجميد/إلغاء · استمر في الكلام بينما الشاشة مجمّدة',
+    drawHint: '✏ D = تفعيل/إلغاء · اسحب على المعاينة للرسم',
     badge_first: 'أول درس', badge_long: 'أكثر من 5 دقائق', badge_multi: 'كاميرات متعددة',
     badge_all_scenes: 'جميع المشاهد', badge_marker_king: 'ملك العلامات', badge_micro: 'micro:bit موصول',
     faq_q1: "ما هو TutoCast؟",
@@ -729,6 +814,14 @@ const LANG = {
     news_060_2: "بطاقة شارة PNG قابلة للمشاركة تُنشأ بعد كل تسجيل",
     news_060_3: "نداء «أول مرة؟ ابدأ من هنا» + طرح للمعلّمين في لوحة المساعدة",
     news_060_4: "إضافة قسم «للمعلّمين» في README",
+    news_070: "أقصى مرونة: السحب وتغيير الحجم لكل شيء 🖐📐",
+    news_070_1: "النصوص قابلة للسحب وتغيير الحجم (4 مقابض، Ctrl+D للتكرار، Delete للحذف)",
+    news_070_2: "المصادر قابلة لتغيير الحجم من 4 زوايا (مع الحفاظ على النسبة)",
+    news_070_3: "شعار وعبارة مخصّصان (PNG/SVG) مع 6 تأثيرات ممتعة: دوران، نبض، ارتداد، اهتزاز، هالة، قوس قزح",
+    news_070_4: "فلاتر بصرية لكل مصدر: أبيض وأسود، سيبيا، ساطع، تباين، كلاسيكي، بارد، دافئ",
+    news_070_5: "عنوان/تسمية لكل مصدر (أسلوب lower-third) — اكتبه مباشرة في لوحة المصادر",
+    news_070_6: "زر ملء الشاشة ⛶ — المعاينة تملأ الشاشة، Esc للخروج",
+    news_070_7: "تلميحات لوحة مفاتيح تظهر عند تفعيل التكبير / الليزر / التجميد / الرسم",
     tplTitle: "اختر كيف تبدأ",
     tplSubtitle: "كل قالب يرشدك خطوة بخطوة",
     tplChoose: "اختر قالبًا",
@@ -943,6 +1036,9 @@ const Engine = {
     // Whiteboard strokes (persist across frames)
     ctx.drawImage(this.overlayCanvas, 0, 0);
 
+    // Brand watermark (logo + slogan + fun effect) — always on top of overlays
+    Brand.draw(ctx);
+
     // Laser dot — redraw its offscreen canvas then composite
     Laser.render();
     ctx.drawImage(this.laserCanvas, 0, 0);
@@ -986,28 +1082,23 @@ const Engine = {
     ctx.shadowBlur = 30;
     ctx.strokeStyle = accent;
     ctx.lineWidth = 5;
-    ctx.beginPath();
-    if (shape === 'circle') ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    else                    ctx.rect(x, y, w, h);
+    this._pathForShape(ctx, shape, x, y, w, h, cx, cy, r);
     ctx.stroke();
     ctx.stroke();  // double-stroke for a stronger halo
     ctx.restore();
+
+    // --- Per-source visual filter (v0.7.0) ---
+    // Applied via ctx.filter for the duration of the draw pass, reset after.
+    const filter = src.filter && src.filter !== 'none' ? this._filterString(src.filter) : 'none';
 
     // --- Main fill with optional background blur ---
     if (src.blur) {
       // Pass 1: blurred outer layer, clipped to the source shape.
       // Over-draws by 12px all around to hide the blur-filter edge artifacts.
       ctx.save();
-      if (shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.clip();
-      } else {
-        ctx.beginPath();
-        ctx.rect(x, y, w, h);
-        ctx.clip();
-      }
-      ctx.filter = 'blur(24px)';
+      this._pathForShape(ctx, shape, x, y, w, h, cx, cy, r);
+      ctx.clip();
+      ctx.filter = 'blur(24px) ' + (filter !== 'none' ? filter : '');
       this._drawVideoRespectingMirror(video, x - 12, y - 12, w + 24, h + 24, mirrored);
       ctx.filter = 'none';
       ctx.restore();
@@ -1027,18 +1118,90 @@ const Engine = {
         ctx.rect(x + mx, y + my, w - mx * 2, h - my * 2);
         ctx.clip();
       }
+      ctx.filter = filter;
       this._drawVideoRespectingMirror(video, x, y, w, h, mirrored);
+      ctx.filter = 'none';
       ctx.restore();
     } else {
-      // Default path: single pass with shape clip
+      // Default path: single pass with shape clip + optional filter
       ctx.save();
-      if (shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.clip();
-      }
+      this._pathForShape(ctx, shape, x, y, w, h, cx, cy, r);
+      ctx.clip();
+      ctx.filter = filter;
       this._drawVideoRespectingMirror(video, x, y, w, h, mirrored);
+      ctx.filter = 'none';
       ctx.restore();
+    }
+
+    // --- Per-source title chip (v0.7.0, lower-third style) ---
+    if (src.title && src.title.trim()) {
+      ctx.save();
+      const titleSize = Math.max(18, Math.min(42, h * 0.08));
+      ctx.font = `700 ${titleSize}px Righteous, Bangers, sans-serif`;
+      const padX = 14, padY = 8;
+      const m = ctx.measureText(src.title);
+      const tw = m.width + padX * 2;
+      const th = titleSize * 1.2 + padY * 2;
+      // Anchor under the source's bottom center, pushed 12px down
+      const tx = x + (w - tw) / 2;
+      const ty = y + h + 12;
+      // Rounded chip background
+      const rr = 10;
+      ctx.fillStyle = 'rgba(0,0,0,.72)';
+      ctx.beginPath();
+      ctx.moveTo(tx + rr, ty);
+      ctx.lineTo(tx + tw - rr, ty); ctx.quadraticCurveTo(tx + tw, ty, tx + tw, ty + rr);
+      ctx.lineTo(tx + tw, ty + th - rr); ctx.quadraticCurveTo(tx + tw, ty + th, tx + tw - rr, ty + th);
+      ctx.lineTo(tx + rr, ty + th); ctx.quadraticCurveTo(tx, ty + th, tx, ty + th - rr);
+      ctx.lineTo(tx, ty + rr); ctx.quadraticCurveTo(tx, ty, tx + rr, ty);
+      ctx.fill();
+      // Accent left bar
+      ctx.fillStyle = Engine._accentColor || '#a3e635';
+      ctx.fillRect(tx, ty, 4, th);
+      // Label text
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(src.title, tx + tw / 2, ty + th / 2);
+      ctx.restore();
+    }
+  },
+
+  /* Build a canvas path for the given shape. Centralized so glow + clip
+     + background-blur all use the exact same geometry. */
+  _pathForShape(ctx, shape, x, y, w, h, cx, cy, r) {
+    ctx.beginPath();
+    if (shape === 'circle') {
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.closePath();
+      return;
+    }
+    if (shape === 'rounded') {
+      const rr = Math.min(40, Math.min(w, h) * 0.12);
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr); ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+      return;
+    }
+    // default: rect
+    ctx.rect(x, y, w, h);
+  },
+
+  /* Per-source visual filter presets. ctx.filter accepts comma/space-separated
+     CSS filter values — these are standard Canvas2D. No deps. */
+  _filterString(name) {
+    switch (name) {
+      case 'bw':       return 'grayscale(100%)';
+      case 'sepia':    return 'sepia(80%)';
+      case 'bright':   return 'brightness(1.2) contrast(1.1)';
+      case 'contrast': return 'contrast(1.5) saturate(1.2)';
+      case 'vintage':  return 'sepia(40%) contrast(1.1) brightness(0.95)';
+      case 'cool':     return 'hue-rotate(-20deg) saturate(1.2)';
+      case 'warm':     return 'hue-rotate(20deg) saturate(1.2)';
+      default:         return 'none';
     }
   },
 
@@ -1215,19 +1378,23 @@ const Engine = {
       list.innerHTML = '';
       this.sources.forEach(s => {
         const li = document.createElement('li');
+        li.className = 'tc-src-row';
+
+        // Top row: icon + editable title + action icons
+        const topRow = document.createElement('div');
+        topRow.className = 'tc-src-row-top';
         const icon = s.type === 'screen' ? '🖥' : s.type === 'cam' ? '🎥' : '🎤';
         const iconEl = document.createElement('span'); iconEl.textContent = icon;
         const nameEl = document.createElement('span'); nameEl.className = 'tc-src-name'; nameEl.textContent = s.label;
-        li.append(iconEl, nameEl);
+        topRow.append(iconEl, nameEl);
 
-        // Video sources get pin + blur toggles (mic doesn't)
         if (s.type !== 'mic') {
           const pin = document.createElement('button');
           pin.className = 'tc-src-icon-btn' + (s.custom ? ' active' : '');
           pin.textContent = s.custom ? '📌' : '🔓';
           pin.title = s.custom ? t('unpinSource') : t('pinSource');
           pin.addEventListener('click', (e) => { e.stopPropagation(); Drag.togglePin(s.id); });
-          li.appendChild(pin);
+          topRow.appendChild(pin);
 
           const blur = document.createElement('button');
           blur.className = 'tc-src-icon-btn' + (s.blur ? ' active' : '');
@@ -1237,9 +1404,8 @@ const Engine = {
             e.stopPropagation();
             s.blur = !s.blur;
             this.onSourcesChanged();
-            log(`🌫 blur ${s.blur ? 'on' : 'off'}: ${s.label}`, 'info');
           });
-          li.appendChild(blur);
+          topRow.appendChild(blur);
         }
 
         const rm = document.createElement('button');
@@ -1247,7 +1413,61 @@ const Engine = {
         rm.title = t('removeSource');
         rm.textContent = '✕';
         rm.addEventListener('click', (e) => { e.stopPropagation(); this.removeSource(s.id); });
-        li.appendChild(rm);
+        topRow.appendChild(rm);
+        li.appendChild(topRow);
+
+        // Bottom row (video sources only): title input + filter select
+        if (s.type !== 'mic') {
+          const bot = document.createElement('div');
+          bot.className = 'tc-src-row-bot';
+
+          const titleInput = document.createElement('input');
+          titleInput.type = 'text';
+          titleInput.className = 'tc-src-title-input';
+          titleInput.placeholder = t('sourceTitlePh');
+          titleInput.value = s.title || '';
+          titleInput.addEventListener('input', (e) => { s.title = e.target.value; });
+          bot.appendChild(titleInput);
+
+          const filterSel = document.createElement('select');
+          filterSel.className = 'tc-src-filter-select';
+          [
+            ['none',     t('filter_none')],
+            ['bw',       t('filter_bw')],
+            ['sepia',    t('filter_sepia')],
+            ['bright',   t('filter_bright')],
+            ['contrast', t('filter_contrast')],
+            ['vintage',  t('filter_vintage')],
+            ['cool',     t('filter_cool')],
+            ['warm',     t('filter_warm')],
+          ].forEach(([v, l]) => {
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = l;
+            if ((s.filter || 'none') === v) opt.selected = true;
+            filterSel.appendChild(opt);
+          });
+          filterSel.addEventListener('change', (e) => { s.filter = e.target.value; });
+          bot.appendChild(filterSel);
+
+          // Shape selector (v0.7.0)
+          const shapeSel = document.createElement('select');
+          shapeSel.className = 'tc-src-shape-select';
+          [
+            ['rect',    '▭'],
+            ['rounded', '▢'],
+            ['circle',  '⬤'],
+          ].forEach(([v, l]) => {
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = l;
+            if ((s.shape || 'rect') === v) opt.selected = true;
+            shapeSel.appendChild(opt);
+          });
+          shapeSel.title = t('sourceShape');
+          shapeSel.addEventListener('change', (e) => { s.shape = e.target.value; });
+          bot.appendChild(shapeSel);
+
+          li.appendChild(bot);
+        }
 
         list.appendChild(li);
       });
@@ -1525,55 +1745,129 @@ const Templates = {
 
 /* ─────────── Text Overlays ─────────── */
 
+/* v0.7.0 rewrite: items now use top-left (x, y) coordinates and carry a
+   computed bounding box (w, h) so the Drag system can hit-test and
+   resize them like any other layer. Preset texts keep their 4-second
+   auto-fade, but if the user drags or resizes one, the ttl timer is
+   cancelled and the text stays permanent. */
 const TextOverlays = {
-  items: [], // { id, text, x, y, size, color, bg }
+  items: [],  // { id, text, x, y, w, h, size, color, bg, _ttlTimer?, pinned? }
   nextId: 1,
+  selectedId: null,
 
   add(text, opts = {}) {
+    const size = opts.size ?? 80;
+    // Compute w/h using an offscreen canvas measureText
+    const { w, h } = this._measure(text, size);
+    // Default placement: centered-ish near the top, but converted to top-left
+    const cx = opts.x ?? Engine.width / 2;
+    const cy = opts.y ?? 160;
     const item = {
       id: this.nextId++,
       text,
-      x: opts.x ?? Engine.width / 2,
-      y: opts.y ?? 120,
-      size: opts.size ?? 80,
+      x: cx - w / 2,
+      y: cy - h / 2,
+      w, h, size,
       color: opts.color ?? '#ffffff',
       bg: opts.bg ?? 'rgba(0,0,0,.65)',
+      pinned: opts.ttl === 0,   // free texts (from the "Free text" button) are pinned by default
     };
     this.items.push(item);
     log(`${t('textAdded')}: ${text}`, 'info');
-    // auto-remove after 4s for preset texts (kids won't clutter)
-    if (opts.ttl !== 0) setTimeout(() => this.remove(item.id), opts.ttl || 4000);
+    if (!item.pinned) {
+      // auto-fade after 4s unless the user interacts (Drag cancels this)
+      item._ttlTimer = setTimeout(() => this.remove(item.id), opts.ttl || 4000);
+    }
     return item;
   },
 
-  remove(id) { this.items = this.items.filter(i => i.id !== id); },
+  remove(id) {
+    const item = this.items.find(i => i.id === id);
+    if (item && item._ttlTimer) clearTimeout(item._ttlTimer);
+    this.items = this.items.filter(i => i.id !== id);
+    if (this.selectedId === id) this.selectedId = null;
+  },
+
+  /* Called by Drag on first interaction with an item — cancels the
+     auto-fade timer and pins the text to the canvas permanently. */
+  pin(id) {
+    const item = this.items.find(i => i.id === id);
+    if (!item) return;
+    if (item._ttlTimer) { clearTimeout(item._ttlTimer); item._ttlTimer = null; }
+    item.pinned = true;
+  },
+
+  /* Recompute w/h when text or size changes. Uses the main canvas's
+     context for measureText — measurement is cheap. */
+  _measure(text, size) {
+    const ctx = Engine && Engine.ctx;
+    if (!ctx) return { w: 200, h: 100 };
+    ctx.save();
+    ctx.font = `800 ${size}px Bangers, Righteous, sans-serif`;
+    const m = ctx.measureText(text);
+    ctx.restore();
+    const padX = 30, padY = 18;
+    return {
+      w: m.width + padX * 2,
+      h: size * 1.2 + padY * 2,
+    };
+  },
+
+  /* Drag is resizing a text overlay — scale the font size to the new w,
+     then re-measure so the h (and actual w) matches. */
+  resizeTo(item, newW) {
+    const ratio = Math.max(30, newW) / item.w;
+    item.size = Math.max(12, Math.min(400, item.size * ratio));
+    const { w, h } = this._measure(item.text, item.size);
+    // Anchor resize around top-left so the corner the user is dragging follows
+    item.w = w;
+    item.h = h;
+  },
 
   drawAll(ctx) {
     this.items.forEach(item => {
+      // Re-measure each frame in case the font just loaded or the text changed
+      const { w, h } = this._measure(item.text, item.size);
+      item.w = w; item.h = h;
+      const cx = item.x + w / 2, cy = item.y + h / 2;
+
       ctx.save();
       ctx.font = `800 ${item.size}px Bangers, Righteous, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const metrics = ctx.measureText(item.text);
-      const padX = 30, padY = 18;
-      const w = metrics.width + padX * 2;
-      const h = item.size * 1.2 + padY * 2;
-      // bg
+
+      // rounded-rect background
       ctx.fillStyle = item.bg;
       ctx.beginPath();
-      const r = 20;
-      const x = item.x - w / 2, y = item.y - h / 2;
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+      const r = Math.min(20, h / 3);
+      ctx.moveTo(item.x + r, item.y);
+      ctx.lineTo(item.x + w - r, item.y); ctx.quadraticCurveTo(item.x + w, item.y, item.x + w, item.y + r);
+      ctx.lineTo(item.x + w, item.y + h - r); ctx.quadraticCurveTo(item.x + w, item.y + h, item.x + w - r, item.y + h);
+      ctx.lineTo(item.x + r, item.y + h); ctx.quadraticCurveTo(item.x, item.y + h, item.x, item.y + h - r);
+      ctx.lineTo(item.x, item.y + r); ctx.quadraticCurveTo(item.x, item.y, item.x + r, item.y);
       ctx.fill();
+
       // text with outline
       ctx.lineWidth = 6; ctx.strokeStyle = '#000';
-      ctx.strokeText(item.text, item.x, item.y);
+      ctx.strokeText(item.text, cx, cy);
       ctx.fillStyle = item.color;
-      ctx.fillText(item.text, item.x, item.y);
+      ctx.fillText(item.text, cx, cy);
+
+      // Selection + resize handles (teacher-visible, drawn on top)
+      if (TextOverlays.selectedId === item.id) {
+        ctx.strokeStyle = Engine._accentColor || '#a3e635';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([12, 8]);
+        ctx.strokeRect(item.x - 2, item.y - 2, w + 4, h + 4);
+        ctx.setLineDash([]);
+        // 4 corner handles
+        const hs = 18;
+        [[item.x, item.y], [item.x + w, item.y], [item.x, item.y + h], [item.x + w, item.y + h]]
+          .forEach(([hx, hy]) => {
+            ctx.fillStyle = Engine._accentColor || '#a3e635';
+            ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
+          });
+      }
       ctx.restore();
     });
   }
@@ -1971,6 +2265,7 @@ const Laser = {
     this.on = !this.on;
     log(this.on ? t('laserOn') : t('laserOff'), 'info');
     $('tcLaserBtn').classList.toggle('active', this.on);
+    if (this.on) showToast(t('laserHint'), 4000);
   }
 };
 
@@ -1987,6 +2282,7 @@ const Freeze = {
       Recorder.frozen = true;
       log(t('freezeOn'), 'info');
       $('tcFreezeBtn').classList.add('active');
+      showToast(t('freezeHint'), 4000);
     }
   }
 };
@@ -2031,6 +2327,7 @@ const Whiteboard = {
     $('tcStage').classList.toggle('drawing', this.on);
     $('tcWhiteboardBtn').classList.toggle('active', this.on);
     log(this.on ? t('drawOn') : t('drawOff'), 'info');
+    if (this.on) showToast(t('drawHint'), 4000);
   },
   clear() { Engine.overlayCtx.clearRect(0, 0, Engine.width, Engine.height); }
 };
@@ -2040,20 +2337,35 @@ const Whiteboard = {
    position (setLayout explicitly skips custom sources). A "📌 Pin" toggle
    in the Active Sources list flips this manually, and a "Reset layout"
    button in the scenes sidebar clears all custom flags at once. */
+/* v0.7.0 rewrite: the Drag system now owns hit-testing, dragging, AND
+   resizing across THREE kinds of layers:
+     • video sources ('source')
+     • text overlays ('text')
+     • brand watermark ('brand')
+   Corner handles (within 30 canvas-px of any corner of a hit layer)
+   start a resize instead of a drag. Sources keep aspect ratio on resize;
+   text overlays scale their font size instead. */
 const Drag = {
-  dragId: null, offsetX: 0, offsetY: 0,
-  SNAP_RADIUS: 60,   // in canvas (1920×1080) coords
+  state: null,  // { kind, ref, mode: 'move'|'resize', corner, offsetX, offsetY, startW, startH, startX, startY, aspect }
+  SNAP_RADIUS: 60,
+  CORNER_RADIUS: 36,
   stage: null,
 
   setup() {
     this.stage = $('tcStage');
     if (!this.stage) return;
-    // Mouse handlers bound to the stage itself. Whiteboard/laser already
-    // own different events; we only consume mousedown if we actually hit
-    // a source AND whiteboard mode is off.
     this.stage.addEventListener('mousedown', (e) => this._onDown(e));
     window.addEventListener('mousemove', (e) => this._onMove(e));
     window.addEventListener('mouseup', (e) => this._onUp(e));
+    // Escape clears selection, Delete removes the selected overlay
+    window.addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+      const k = e.key.toLowerCase();
+      if ((k === 'delete' || k === 'backspace') && TextOverlays.selectedId != null) {
+        TextOverlays.remove(TextOverlays.selectedId);
+        e.preventDefault();
+      }
+    });
   },
 
   _stageToCanvas(e) {
@@ -2064,77 +2376,162 @@ const Drag = {
     ];
   },
 
-  /* Topmost-first hit test over visible video sources. Last-drawn = topmost
-     in the array, so iterate in reverse. */
+  /* Returns the nearest corner index (0=TL, 1=TR, 2=BL, 3=BR) if (mx,my)
+     is within CORNER_RADIUS canvas-pixels of one of obj's corners, else -1. */
+  _nearCorner(obj, mx, my) {
+    const corners = [
+      [obj.x,            obj.y],
+      [obj.x + obj.w,    obj.y],
+      [obj.x,            obj.y + obj.h],
+      [obj.x + obj.w,    obj.y + obj.h],
+    ];
+    const r2 = this.CORNER_RADIUS * this.CORNER_RADIUS;
+    for (let i = 0; i < 4; i++) {
+      const dx = mx - corners[i][0], dy = my - corners[i][1];
+      if (dx * dx + dy * dy < r2) return i;
+    }
+    return -1;
+  },
+
+  _insideRect(obj, mx, my) {
+    return mx >= obj.x && mx <= obj.x + obj.w && my >= obj.y && my <= obj.y + obj.h;
+  },
+
+  _insideCircle(obj, mx, my) {
+    const cx = obj.x + obj.w / 2, cy = obj.y + obj.h / 2;
+    const r = Math.min(obj.w, obj.h) / 2;
+    return (mx - cx) ** 2 + (my - cy) ** 2 <= r * r;
+  },
+
+  /* Topmost-first hit test over all interactive layers. Draw order, from
+     bottom to top, is: sources → text overlays → brand. Hit-test in reverse. */
   _hitTest(mx, my) {
+    // 1. Brand watermark (topmost if present)
+    if (Brand.visible()) {
+      if (this._insideRect(Brand, mx, my)) return { kind: 'brand', ref: Brand };
+    }
+    // 2. Text overlays (reverse)
+    for (let i = TextOverlays.items.length - 1; i >= 0; i--) {
+      const it = TextOverlays.items[i];
+      if (this._insideRect(it, mx, my)) return { kind: 'text', ref: it };
+    }
+    // 3. Sources (reverse, respecting shape)
     const srcs = Engine.sources;
     for (let i = srcs.length - 1; i >= 0; i--) {
       const s = srcs[i];
       if (s.type === 'mic' || !s.visible || !s.video) continue;
-      const { x, y, w, h, shape } = s;
-      if (shape === 'circle') {
-        const cx = x + w / 2, cy = y + h / 2;
-        const r = Math.min(w, h) / 2;
-        if ((mx - cx) ** 2 + (my - cy) ** 2 <= r * r) return s;
-      } else {
-        if (mx >= x && mx <= x + w && my >= y && my <= y + h) return s;
-      }
+      const inside = s.shape === 'circle' ? this._insideCircle(s, mx, my) : this._insideRect(s, mx, my);
+      if (inside) return { kind: 'source', ref: s };
     }
     return null;
   },
 
   _onDown(e) {
     if (e.button !== 0) return;
-    if (Whiteboard.on) return;   // whiteboard owns the mousedown
+    if (Whiteboard.on) return;
     const [mx, my] = this._stageToCanvas(e);
     const hit = this._hitTest(mx, my);
-    if (!hit) return;
-    this.dragId = hit.id;
-    this.offsetX = mx - hit.x;
-    this.offsetY = my - hit.y;
+    if (!hit) {
+      // Clicking empty canvas deselects any selected text overlay
+      if (TextOverlays.selectedId != null) TextOverlays.selectedId = null;
+      return;
+    }
+    const { kind, ref } = hit;
+    // Mark text selection for the visible selection rectangle
+    if (kind === 'text') TextOverlays.selectedId = ref.id;
+    else TextOverlays.selectedId = null;
+
+    // Corner-near → resize, otherwise move
+    const corner = this._nearCorner(ref, mx, my);
+    if (corner >= 0) {
+      this.state = {
+        kind, ref, mode: 'resize', corner,
+        startX: ref.x, startY: ref.y, startW: ref.w, startH: ref.h,
+        aspect: ref.w / ref.h,
+      };
+    } else {
+      this.state = {
+        kind, ref, mode: 'move', corner: -1,
+        offsetX: mx - ref.x, offsetY: my - ref.y,
+      };
+      // Pin text overlays on first interaction so they don't auto-fade
+      if (kind === 'text') TextOverlays.pin(ref.id);
+    }
     this.stage.classList.add('dragging');
     e.preventDefault();
   },
 
   _onMove(e) {
-    if (this.dragId == null) return;
-    const src = Engine.sources.find(s => s.id === this.dragId);
-    if (!src) { this.dragId = null; return; }
+    if (!this.state) return;
     const [mx, my] = this._stageToCanvas(e);
-    let nx = mx - this.offsetX;
-    let ny = my - this.offsetY;
-    // Snap to one of 7 anchors (4 corners, 3 center-line points)
-    const W = Engine.width, H = Engine.height, M = 40;
-    const anchors = [
-      [M,               M],                  // TL
-      [W - src.w - M,   M],                  // TR
-      [M,               H - src.h - M],      // BL
-      [W - src.w - M,   H - src.h - M],      // BR
-      [(W - src.w) / 2, M],                  // top-center
-      [(W - src.w) / 2, H - src.h - M],      // bottom-center
-      [(W - src.w) / 2, (H - src.h) / 2],    // dead-center
-    ];
-    const r2 = this.SNAP_RADIUS * this.SNAP_RADIUS;
-    for (const [ax, ay] of anchors) {
-      if ((nx - ax) ** 2 + (ny - ay) ** 2 < r2) { nx = ax; ny = ay; break; }
+    const s = this.state;
+    const ref = s.ref;
+
+    if (s.mode === 'move') {
+      let nx = mx - s.offsetX;
+      let ny = my - s.offsetY;
+      // Snap for sources only (keeps kid layouts clean)
+      if (s.kind === 'source') {
+        const W = Engine.width, H = Engine.height, M = 40;
+        const anchors = [
+          [M, M], [W - ref.w - M, M], [M, H - ref.h - M], [W - ref.w - M, H - ref.h - M],
+          [(W - ref.w) / 2, M], [(W - ref.w) / 2, H - ref.h - M], [(W - ref.w) / 2, (H - ref.h) / 2],
+        ];
+        const r2 = this.SNAP_RADIUS * this.SNAP_RADIUS;
+        for (const [ax, ay] of anchors) {
+          if ((nx - ax) ** 2 + (ny - ay) ** 2 < r2) { nx = ax; ny = ay; break; }
+        }
+      }
+      // Keep inside canvas
+      nx = Math.max(0, Math.min(Engine.width  - ref.w, nx));
+      ny = Math.max(0, Math.min(Engine.height - ref.h, ny));
+      ref.x = nx; ref.y = ny;
+      if (s.kind === 'source') { ref.custom = true; Engine.onSourcesChanged(); }
+    } else {
+      // resize
+      // corner: 0=TL, 1=TR, 2=BL, 3=BR
+      const right  = s.corner === 1 || s.corner === 3;
+      const bottom = s.corner === 2 || s.corner === 3;
+      const oppX = right ? s.startX : s.startX + s.startW;
+      const oppY = bottom ? s.startY : s.startY + s.startH;
+      let newW = Math.abs(mx - oppX);
+      let newH = Math.abs(my - oppY);
+      // Minimum sizes
+      newW = Math.max(80, newW);
+      newH = Math.max(60, newH);
+      // Sources keep aspect ratio; text overlays resize proportionally via their own method
+      if (s.kind === 'source') {
+        const keepByWidth = newW / s.aspect > newH;
+        if (keepByWidth) newH = newW / s.aspect; else newW = newH * s.aspect;
+      }
+      // New top-left depends on which corner we're dragging
+      const newX = right ? s.startX : Math.min(mx, oppX);
+      const newY = bottom ? s.startY : Math.min(my, oppY);
+
+      if (s.kind === 'text') {
+        TextOverlays.resizeTo(ref, newW);
+        ref.x = newX;
+        ref.y = newY;
+      } else if (s.kind === 'source') {
+        ref.x = newX; ref.y = newY;
+        ref.w = newW; ref.h = newH;
+        ref.custom = true;
+        Engine.onSourcesChanged();
+      } else if (s.kind === 'brand') {
+        Brand.resizeTo(newW);
+        ref.x = newX; ref.y = newY;
+      }
     }
-    // Keep the source fully inside the canvas
-    nx = Math.max(0, Math.min(W - src.w, nx));
-    ny = Math.max(0, Math.min(H - src.h, ny));
-    src.x = nx; src.y = ny;
-    src.custom = true;                    // mark as user-positioned
-    Engine.onSourcesChanged();            // refresh the pin icon in the list
   },
 
   _onUp() {
-    if (this.dragId != null) {
-      this.dragId = null;
+    if (this.state) {
+      this.state = null;
       if (this.stage) this.stage.classList.remove('dragging');
     }
   },
 
-  /* Flip the custom flag on a source; if re-pinned to scene control,
-     re-run the active scene so it gets re-positioned. */
+  /* Pin/unpin + reset (source-only controls, unchanged from v0.4.0) */
   togglePin(id) {
     const src = Engine.sources.find(s => s.id === id);
     if (!src) return;
@@ -2144,13 +2541,158 @@ const Drag = {
     log(src.custom ? `📌 pinned: ${src.label}` : `🔓 unpinned: ${src.label}`, 'info');
   },
 
-  /* Clear .custom on every source and re-run the active scene. */
   resetAll() {
     Engine.sources.forEach(s => { s.custom = false; });
     Scenes.reapply();
     Engine.onSourcesChanged();
     log('🔓 layout reset', 'info');
     showToast(t('layoutReset'), 1800);
+  },
+};
+
+/* ─────────── Brand — logo + slogan watermark on the canvas (v0.7.0) ─────
+
+   Draggable, resizable, filterable. The teacher uploads their logo via
+   Settings (FileReader → dataURL → <img>), types a slogan, and picks a
+   fun effect (spin/pulse/bounce/wiggle/glow/rainbow). Drawn in
+   Engine.render() after the text overlays so it's always on top. */
+const Brand = {
+  img: null,              // HTMLImageElement, loaded from dataURL
+  logoDataUrl: null,      // persisted in localStorage
+  slogan: '',             // e.g. "code + robot + ☕"
+  x: 40, y: 40, w: 180, h: 180,   // bounding box (top-left + size)
+  effect: 'none',          // 'none'|'spin'|'pulse'|'bounce'|'wiggle'|'glow'|'rainbow'
+
+  load() {
+    try {
+      this.logoDataUrl = localStorage.getItem('tc-brand-logo') || null;
+      this.slogan      = localStorage.getItem('tc-brand-slogan') || '';
+      this.effect      = localStorage.getItem('tc-brand-effect') || 'none';
+      const pos        = localStorage.getItem('tc-brand-pos');
+      if (pos) { try { const p = JSON.parse(pos); Object.assign(this, p); } catch {} }
+    } catch {}
+    if (this.logoDataUrl) this._loadImg();
+  },
+
+  save() {
+    try {
+      if (this.logoDataUrl) localStorage.setItem('tc-brand-logo', this.logoDataUrl);
+      localStorage.setItem('tc-brand-slogan', this.slogan || '');
+      localStorage.setItem('tc-brand-effect', this.effect);
+      localStorage.setItem('tc-brand-pos', JSON.stringify({ x: this.x, y: this.y, w: this.w, h: this.h }));
+    } catch {}
+  },
+
+  _loadImg() {
+    if (!this.logoDataUrl) { this.img = null; return; }
+    const img = new Image();
+    img.onload = () => { this.img = img; };
+    img.onerror = () => { this.img = null; log('✗ brand logo failed to load', 'error'); };
+    img.src = this.logoDataUrl;
+  },
+
+  setLogoFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.logoDataUrl = e.target.result;
+      this._loadImg();
+      this.save();
+      showToast(t('brandLogoLoaded'), 2000);
+    };
+    reader.readAsDataURL(file);
+  },
+
+  clearLogo() {
+    this.logoDataUrl = null;
+    this.img = null;
+    try { localStorage.removeItem('tc-brand-logo'); } catch {}
+  },
+
+  setSlogan(s) { this.slogan = s || ''; this.save(); },
+  setEffect(e) { this.effect = e || 'none'; this.save(); },
+
+  resizeTo(newW) {
+    const ratio = Math.max(60, newW) / this.w;
+    this.w = Math.max(60, newW);
+    this.h = this.h * ratio;
+    this.save();
+  },
+
+  /* Is there anything to draw? (logo OR slogan must be set) */
+  visible() { return !!(this.img || (this.slogan && this.slogan.trim())); },
+
+  /* Apply one of the "fun effects" as a canvas transform around (cx, cy).
+     Called with ctx already saved; we set up the transform and return. */
+  _applyEffect(ctx, cx, cy) {
+    if (this.effect === 'none') return;
+    const now = Date.now() / 1000;
+    switch (this.effect) {
+      case 'spin': {
+        ctx.translate(cx, cy);
+        ctx.rotate(now * 1.2);          // ~11 rpm
+        ctx.translate(-cx, -cy);
+        break;
+      }
+      case 'pulse': {
+        const s = 1 + Math.sin(now * 3) * 0.08;
+        ctx.translate(cx, cy);
+        ctx.scale(s, s);
+        ctx.translate(-cx, -cy);
+        break;
+      }
+      case 'bounce': {
+        const dy = Math.abs(Math.sin(now * 4)) * -20;
+        ctx.translate(0, dy);
+        break;
+      }
+      case 'wiggle': {
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.sin(now * 5) * 0.1);  // ±5.7° oscillation
+        ctx.translate(-cx, -cy);
+        break;
+      }
+      case 'glow': {
+        const pulse = 20 + Math.sin(now * 3) * 15;
+        ctx.shadowColor = Engine._accentColor || '#a3e635';
+        ctx.shadowBlur = pulse;
+        break;
+      }
+      case 'rainbow': {
+        const hue = (now * 60) % 360;
+        ctx.filter = `hue-rotate(${hue.toFixed(0)}deg) saturate(1.4)`;
+        break;
+      }
+    }
+  },
+
+  draw(ctx) {
+    if (!this.visible()) return;
+    ctx.save();
+    const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
+    this._applyEffect(ctx, cx, cy);
+
+    // Logo
+    if (this.img) {
+      ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+    }
+
+    // Reset filter for the text (we want sharp text) but keep the transform
+    ctx.filter = 'none';
+
+    // Slogan text below the logo
+    if (this.slogan && this.slogan.trim()) {
+      const textSize = Math.max(20, this.w * 0.18);
+      ctx.font = `800 ${textSize}px Bangers, Righteous, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const textY = this.img ? this.y + this.h + 8 : this.y;
+      // Outline + fill for readability
+      ctx.lineWidth = 6; ctx.strokeStyle = '#000';
+      ctx.strokeText(this.slogan, cx, textY);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(this.slogan, cx, textY);
+    }
+    ctx.restore();
   },
 };
 
@@ -2183,6 +2725,7 @@ const Zoom = {
     this.target = this.on ? this.maxScale : 1;
     $('tcZoomBtn')?.classList.toggle('active', this.on);
     log(this.on ? t('zoomOn') : t('zoomOff'), 'info');
+    if (this.on) showToast(t('zoomHint'), 4000);
     Sfx.play('click');
   },
 };
@@ -2798,6 +3341,27 @@ const BadgeCard = {
   },
 };
 
+/* Maximize mode (v0.7.0): hide sidebars/header/ticker and stretch the
+   stage to the full viewport. Toggle with the ⛶ button. Also toggles
+   browser-level fullscreen via the Fullscreen API for extra impact. */
+function toggleMaximize() {
+  const app = document.querySelector('.app');
+  if (!app) return;
+  const on = !app.classList.contains('maximized');
+  app.classList.toggle('maximized', on);
+  const btn = $('tcMaxBtn');
+  if (btn) btn.textContent = on ? '⛶' : '⛶';
+  // Also try real browser fullscreen; fall back silently if blocked
+  try {
+    if (on) {
+      if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    }
+  } catch {}
+  log(on ? '⛶ maximized' : '⛶ restored', 'info');
+}
+
 /* QuizCard — press Q mid-recording, enter a question, it appears as a big
    text overlay. Reuses TextOverlays so it's drawn on the canvas and goes
    into the recording. Auto-removes after 6 seconds. Not interactive —
@@ -3344,6 +3908,21 @@ function setupHotkeys() {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && k === 'd') {
       DebugHud.toggle(); e.preventDefault(); return;
     }
+    // Ctrl/Cmd + D duplicates the selected text overlay (Canva-style)
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && k === 'd') {
+      if (TextOverlays.selectedId != null) {
+        const orig = TextOverlays.items.find(i => i.id === TextOverlays.selectedId);
+        if (orig) {
+          const copy = TextOverlays.add(orig.text, { ttl: 0, size: orig.size, color: orig.color, bg: orig.bg });
+          copy.x = orig.x + 30;
+          copy.y = orig.y + 30;
+          TextOverlays.selectedId = copy.id;
+          showToast(t('overlayDuplicated'), 1500);
+        }
+        e.preventDefault();
+      }
+      return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (k >= '1' && k <= '9') {
       const idx = parseInt(k) - 1;
@@ -3357,7 +3936,17 @@ function setupHotkeys() {
     else if (k === 'd') { Whiteboard.toggle(); e.preventDefault(); }
     else if (k === 'z') { Zoom.toggle(); e.preventDefault(); }
     else if (k === 'q') { QuizCard.prompt(); e.preventDefault(); }
-    else if (k === 'escape') { closeAllPanels(); }
+    else if (k === 'f' && !e.ctrlKey && !e.metaKey) {
+      // F alone = freeze screen; handled above. But if shift is held, we
+      // reinterpret as maximize toggle. (Kept F for freeze to not break
+      // existing muscle memory.)
+    }
+    else if (k === 'escape') {
+      // Exit maximize first if active
+      const app = document.querySelector('.app');
+      if (app && app.classList.contains('maximized')) { toggleMaximize(); return; }
+      closeAllPanels();
+    }
   });
 }
 
@@ -3465,6 +4054,32 @@ function wireEvents() {
   const badgeBtn = $('tcBadgeBtn');
   if (badgeBtn) badgeBtn.addEventListener('click', () => BadgeCard.exportPng());
 
+  // Brand watermark (v0.7.0): logo upload, slogan input, fun effect select
+  const brandLogoInput = $('tcBrandLogoInput');
+  if (brandLogoInput) {
+    brandLogoInput.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) Brand.setLogoFromFile(f);
+      e.target.value = '';  // allow re-selecting the same file
+    });
+  }
+  const brandClear = $('tcBrandClearBtn');
+  if (brandClear) brandClear.addEventListener('click', () => { Brand.clearLogo(); showToast(t('brandLogoCleared'), 1500); });
+  const sloganInput = $('tcBrandSloganInput');
+  if (sloganInput) {
+    sloganInput.value = Brand.slogan || '';
+    sloganInput.addEventListener('input', (e) => Brand.setSlogan(e.target.value));
+  }
+  const effectSel = $('tcBrandEffectSelect');
+  if (effectSel) {
+    effectSel.value = Brand.effect || 'none';
+    effectSel.addEventListener('change', (e) => Brand.setEffect(e.target.value));
+  }
+
+  // Maximize mode (v0.7.0): press the ⛶ button or the F hotkey
+  const maxBtn = $('tcMaxBtn');
+  if (maxBtn) maxBtn.addEventListener('click', () => toggleMaximize());
+
   // Jingle toggle (v0.6.0) — opt-in in Settings
   const jingleEl = $('tcJingleToggle');
   if (jingleEl) {
@@ -3515,6 +4130,7 @@ async function init() {
 
   Sfx.load();
   Jingle.load();
+  Brand.load();
   Badges.load();
 
   applyI18n();  // after Sfx/Badges so Teleprompter.hasUserText() is safe
