@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.65</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.66</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -532,6 +532,22 @@
           <div class="tc-cheat-row"><kbd>Shift</kbd>+<kbd>R</kbd><span data-i18n="cheatMiscInstantRec">Rec instantané</span></div>
           <div class="tc-cheat-row"><kbd>Ctrl</kbd>+<kbd>V</kbd><span data-i18n="cheatMiscPasteImg">Coller une image du presse-papier</span></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.7.66: keyboard rebind modal -->
+  <div class="tc-rebind-modal" id="tcRebindModal" style="display:none">
+    <div class="tc-rebind-card">
+      <div class="tc-rebind-header">
+        <span class="tc-rebind-title">⌨ <span data-i18n="rebindTitle">Raccourcis personnalisés</span></span>
+        <button class="tc-rebind-close" id="tcRebindCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="tc-rebind-body">
+        <div class="tc-rebind-list" id="tcRebindList"></div>
+      </div>
+      <div class="tc-rebind-footer">
+        <button class="tc-rebind-reset" id="tcRebindResetBtn">↺ <span data-i18n="rebindReset">Restaurer par défaut</span></button>
       </div>
     </div>
   </div>
@@ -969,7 +985,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.65</strong></span>
+      <span class="badge"><strong>v0.7.66</strong></span>
     </div>
   </aside>
 
@@ -1021,6 +1037,7 @@
             <label class="sidebar-label" data-i18n="setSecDanger">♻ Maintenance</label>
             <button id="tcResetBadgesBtn" class="tc-btn-full" style="margin-bottom:6px">🗑 <span data-i18n="resetBadges">Réinitialiser les badges</span></button>
             <button id="tcClearCacheBtn" class="tc-btn-full tc-btn-danger">💥 <span data-i18n="clearCache">Vider le cache complet</span></button>
+            <button id="tcRebindBtn" class="tc-btn-full" style="margin-top:6px">⌨ <span data-i18n="rebindBtn">Raccourcis clavier…</span></button>
             <button id="tcExportBundleBtn" class="tc-btn-full" style="margin-top:6px">📦 <span data-i18n="bundleExport">Exporter la session</span></button>
             <label class="tc-btn-full" for="tcImportBundleInput" style="margin-top:6px; display: flex; align-items: center; justify-content: center; cursor: pointer;">📥 <span data-i18n="bundleImport">Importer une session</span></label>
             <input type="file" id="tcImportBundleInput" accept="application/json" style="display:none" />
@@ -1250,7 +1267,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.65</strong></span>
+      <span class="badge"><strong>v0.7.66</strong></span>
     </div>
   </aside>
 
@@ -1282,7 +1299,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.65</strong></span>
+      <span class="badge"><strong>v0.7.66</strong></span>
     </div>
   </aside>
 

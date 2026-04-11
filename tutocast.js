@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.65 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.66 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.65';
+const APP_VERSION = '0.7.66';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 05:30';
+const BUILD_DATE = '2026-04-12 05:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -261,6 +261,9 @@ const LANG = {
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Réinitialiser les badges',
     clearCache: 'Vider le cache complet',
+    rebindBtn: 'Raccourcis clavier…',
+    rebindTitle: 'Raccourcis personnalisés',
+    rebindReset: 'Restaurer par défaut',
     badgesReset: '🗑 Badges réinitialisés',
     cacheCleared: '💥 Cache vidé — rechargement…',
     confirmClearCache: 'Effacer TOUTES les données locales (badges, logo, préférences, ticker…) ? L\'app repartira comme neuve.',
@@ -777,6 +780,9 @@ const LANG = {
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Reset badges',
     clearCache: 'Clear all local data',
+    rebindBtn: 'Keyboard shortcuts…',
+    rebindTitle: 'Custom shortcuts',
+    rebindReset: 'Reset to defaults',
     badgesReset: '🗑 Badges reset',
     cacheCleared: '💥 Cache cleared — reloading…',
     confirmClearCache: 'Erase ALL local data (badges, logo, preferences, ticker…)? The app will restart like a fresh install.',
@@ -1285,6 +1291,9 @@ const LANG = {
     setSecDanger: '♻ الصيانة',
     resetBadges: 'إعادة تعيين الشارات',
     clearCache: 'مسح جميع البيانات المحلية',
+    rebindBtn: 'اختصارات لوحة المفاتيح…',
+    rebindTitle: 'اختصارات مخصصة',
+    rebindReset: 'استعادة الافتراضيات',
     badgesReset: '🗑 تم إعادة تعيين الشارات',
     cacheCleared: '💥 تم مسح الذاكرة — إعادة تحميل…',
     confirmClearCache: 'حذف جميع البيانات المحلية (الشارات، الشعار، التفضيلات، الشريط…)؟ سيعيد التطبيق التشغيل كأنه مثبت حديثًا.',
@@ -8569,6 +8578,154 @@ function setupHelpTabs() {
   });
 }
 
+const KeyBindings = {
+  /* v0.7.66: action → key binding lookup. Loaded from localStorage
+     on startup; falls back to defaults. Rebinding via the Settings
+     modal writes back to localStorage. */
+  DEFAULTS: {
+    rec: 'r', pause: 'p', marker: 'm', snapshot: 's',
+    laser: 'l', freeze: 'f', draw: 'd', zoom: 'z',
+    quiz: 'q', teleprompter: 't',
+  },
+  current: {},
+
+  load() {
+    this.current = { ...this.DEFAULTS };
+    try {
+      const raw = localStorage.getItem('tc-keybinds');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && typeof saved === 'object') {
+          Object.keys(this.DEFAULTS).forEach(action => {
+            if (typeof saved[action] === 'string' && saved[action].length > 0) {
+              this.current[action] = saved[action].toLowerCase();
+            }
+          });
+        }
+      }
+    } catch {}
+  },
+
+  save() {
+    try { localStorage.setItem('tc-keybinds', JSON.stringify(this.current)); } catch {}
+  },
+
+  set(action, key) {
+    if (!(action in this.DEFAULTS)) return;
+    this.current[action] = key.toLowerCase();
+    this.save();
+  },
+
+  reset() {
+    this.current = { ...this.DEFAULTS };
+    this.save();
+  },
+
+  // Given a keyboard event's lowercased key, return the matching action
+  // name or null.
+  actionForKey(k) {
+    for (const [action, bound] of Object.entries(this.current)) {
+      if (bound === k) return action;
+    }
+    return null;
+  },
+};
+
+const RebindModal = {
+  el: null,
+  _activeAction: null,
+  _keyListener: null,
+
+  setup() {
+    this.el = $('tcRebindModal');
+    if (!this.el) return;
+    $('tcRebindCloseBtn')?.addEventListener('click', () => this.hide());
+    $('tcRebindResetBtn')?.addEventListener('click', () => {
+      KeyBindings.reset();
+      this.render();
+      showToast(t('rebindReset') || '↺ Raccourcis restaurés', 1400);
+    });
+    this.el.addEventListener('click', (e) => {
+      if (e.target === this.el) this.hide();
+    });
+  },
+
+  show() {
+    if (!this.el) this.setup();
+    if (!this.el) return;
+    this.render();
+    this.el.style.display = 'flex';
+  },
+
+  hide() {
+    if (!this.el) return;
+    this.el.style.display = 'none';
+    this._cancelCapture();
+  },
+
+  render() {
+    const list = $('tcRebindList');
+    if (!list) return;
+    const labels = {
+      rec: '🔴 ' + (t('recStart') || 'Record'),
+      pause: '⏸ Pause',
+      marker: '🏷 Marker',
+      snapshot: '📸 Snapshot',
+      laser: '🔴 Laser',
+      freeze: '❄ Freeze',
+      draw: '✏ Draw',
+      zoom: '🔍 Zoom',
+      quiz: '❓ Quiz',
+      teleprompter: '📜 Teleprompter',
+    };
+    list.innerHTML = '';
+    Object.keys(KeyBindings.DEFAULTS).forEach(action => {
+      const row = document.createElement('div');
+      row.className = 'tc-rebind-row';
+      const cur = KeyBindings.current[action];
+      row.innerHTML = `
+        <span class="tc-rebind-label">${labels[action] || action}</span>
+        <kbd class="tc-rebind-key">${cur.toUpperCase()}</kbd>
+        <button class="tc-rebind-btn" data-action="${action}">Change</button>
+      `;
+      row.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._startCapture(action, row);
+      });
+      list.appendChild(row);
+    });
+  },
+
+  _startCapture(action, row) {
+    this._cancelCapture();
+    this._activeAction = action;
+    const btn = row.querySelector('button');
+    if (btn) { btn.textContent = '…'; btn.disabled = true; }
+    this._keyListener = (e) => {
+      if (e.key === 'Escape') { this._cancelCapture(); return; }
+      const k = e.key.toLowerCase();
+      // Only accept single printable characters for now
+      if (k.length === 1 && /[a-z0-9]/.test(k)) {
+        KeyBindings.set(action, k);
+        this.render();
+        showToast(`⌨ ${action} → ${k.toUpperCase()}`, 1400);
+      }
+      this._cancelCapture();
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener('keydown', this._keyListener, true);
+  },
+
+  _cancelCapture() {
+    if (this._keyListener) {
+      document.removeEventListener('keydown', this._keyListener, true);
+      this._keyListener = null;
+    }
+    this._activeAction = null;
+  },
+};
+
 function setupHotkeys() {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
@@ -8662,41 +8819,51 @@ function setupHotkeys() {
     if (k >= '1' && k <= '9') {
       const idx = parseInt(k) - 1;
       if (Scenes.presets[idx]) { Scenes.switch(Scenes.presets[idx].key); e.preventDefault(); }
-    } else if (k === 'r') {
-      if (e.shiftKey) {
-        // v0.7.61: Shift+R = instant record (skip countdown)
-        if (Recorder.state === 'idle') Recorder.startInstant();
-        else Recorder.stop();
-      } else {
-        Recorder.state === 'idle' ? Recorder.start() : Recorder.stop();
-      }
-      e.preventDefault();
+      return;
     }
-    else if (k === 'p') { Recorder.togglePause(); e.preventDefault(); }
-    else if (k === 'm') { Chapters.addMarker(); e.preventDefault(); }
-    else if (k === 's') { snapshot(); e.preventDefault(); }
-    else if (k === 'l') { Laser.toggle(); e.preventDefault(); }
-    else if (k === 'f') { Freeze.toggle(); e.preventDefault(); }
-    else if (k === 'd') { Whiteboard.toggle(); e.preventDefault(); }
-    else if (k === 'z') { Zoom.toggle(); e.preventDefault(); }
-    else if (k === 'q') { QuizCard.prompt(); e.preventDefault(); }
-    // v0.7.20: T toggles the teleprompter. Safe because the handler
-    // already bails on contentEditable targets above, so pressing 't'
-    // inside the script won't self-trigger a toggle.
-    else if (k === 't') { Teleprompter.toggle(); e.preventDefault(); }
+    // v0.7.61: Shift+R = instant record (skip countdown). Kept as an
+    // explicit branch so Shift+R still works even if the user rebinds
+    // the rec action away from 'r'.
+    if (e.shiftKey && k === 'r') {
+      if (Recorder.state === 'idle') Recorder.startInstant();
+      else Recorder.stop();
+      e.preventDefault();
+      return;
+    }
     // v0.7.24: ? toggles the keyboard cheat sheet overlay. The check uses
     // e.key === '?' directly because on most layouts ? is Shift+/, and the
     // lowercased k would be '/' either way — we accept both.
-    else if (e.key === '?' || (k === '/' && e.shiftKey)) {
+    if (e.key === '?' || (k === '/' && e.shiftKey)) {
       Cheatsheet.toggle();
       e.preventDefault();
+      return;
     }
-    else if (k === 'f' && !e.ctrlKey && !e.metaKey) {
-      // F alone = freeze screen; handled above. But if shift is held, we
-      // reinterpret as maximize toggle. (Kept F for freeze to not break
-      // existing muscle memory.)
+    // v0.7.66: action lookup via rebindable KeyBindings table. Replaces
+    // the old chain of `k === 'r' / 'p' / ...` branches. Only runs for
+    // plain single-key presses (no modifiers), so Shift/Ctrl/Alt combos
+    // handled above are untouched.
+    if (!e.shiftKey) {
+      const action = KeyBindings.actionForKey(k);
+      if (action) {
+        switch (action) {
+          case 'rec':
+            Recorder.state === 'idle' ? Recorder.start() : Recorder.stop();
+            break;
+          case 'pause': Recorder.togglePause(); break;
+          case 'marker': Chapters.addMarker(); break;
+          case 'snapshot': snapshot(); break;
+          case 'laser': Laser.toggle(); break;
+          case 'freeze': Freeze.toggle(); break;
+          case 'draw': Whiteboard.toggle(); break;
+          case 'zoom': Zoom.toggle(); break;
+          case 'quiz': QuizCard.prompt(); break;
+          case 'teleprompter': Teleprompter.toggle(); break;
+        }
+        e.preventDefault();
+        return;
+      }
     }
-    else if (k === 'escape') {
+    if (k === 'escape') {
       // v0.7.24: cheat sheet gets closed first if open
       if (Cheatsheet.el && Cheatsheet.el.style.display === 'flex') {
         Cheatsheet.hide();
@@ -8797,6 +8964,8 @@ function wireEvents() {
     showToast(t('cacheCleared'), 1400);
     setTimeout(() => location.reload(), 900);
   });
+  // v0.7.66: rebindable keyboard shortcuts modal
+  $('tcRebindBtn')?.addEventListener('click', () => RebindModal.show());
   // v0.7.44: portable session bundle — export / import JSON manifest
   $('tcExportBundleBtn')?.addEventListener('click', () => SessionBundle.export());
   $('tcImportBundleInput')?.addEventListener('change', (e) => {
@@ -9267,6 +9436,7 @@ async function init() {
   SourceContextMenu.setup();
   Teleprompter.setup();
   Cheatsheet.setup();
+  RebindModal.setup();
   SnapshotAnnotator.setup();
   Tooltip.setup();
   GuidedTour.setup();
@@ -9283,6 +9453,7 @@ async function init() {
   setupOnboarding();
   GuidedTour.maybeAutoStart();
   setupHelpTabs();
+  KeyBindings.load();
   setupHotkeys();
   wireEvents();
 
