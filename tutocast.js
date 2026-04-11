@@ -3749,6 +3749,7 @@ const Drag = {
   SNAP_RADIUS: 60,
   CORNER_RADIUS: 36,
   GRID_PX: 48,  // canvas pixels between grid anchors when Alt is held during drag
+  THRESHOLD_PX: 6,  // v0.7.45 hotfix: canvas px of mouse movement before drag engages
   stage: null,
 
   setup() {
