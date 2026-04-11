@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.50 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.51 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.50';
+const APP_VERSION = '0.7.51';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 01:45';
+const BUILD_DATE = '2026-04-12 02:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -32,7 +32,7 @@ const LANG = {
     tools: 'Outils', laser: 'Laser', freeze: 'Geler', whiteboard: 'Dessiner', ripples: 'Ripples',
     teleprompter: 'Teleprompter', snapshot: 'Capture photo',
     recStart: 'ENREGISTRER', recStop: 'STOP', pause: 'Pause', mark: 'Marker', stop: 'Stop',
-    download: 'Télécharger', downloadChapters: 'Chapitres (.vtt)', newTake: 'Nouveau tuto',
+    download: 'Télécharger', downloadChapters: 'Chapitres (.vtt)', downloadMd: 'Chapitres (.md)', newTake: 'Nouveau tuto',
     badgesTitle: 'Tes badges',
     onbTitle: 'Salut ! Prêt à faire ton premier tuto ?',
     onb1: 'Choisis tes caméras et ton écran (panneau de gauche)',
@@ -510,7 +510,7 @@ const LANG = {
     tools: 'Tools', laser: 'Laser', freeze: 'Freeze', whiteboard: 'Draw', ripples: 'Ripples',
     teleprompter: 'Teleprompter', snapshot: 'Photo snapshot',
     recStart: 'REC', recStop: 'STOP', pause: 'Pause', mark: 'Marker', stop: 'Stop',
-    download: 'Download', downloadChapters: 'Chapters (.vtt)', newTake: 'New tutorial',
+    download: 'Download', downloadChapters: 'Chapters (.vtt)', downloadMd: 'Chapters (.md)', newTake: 'New tutorial',
     badgesTitle: 'Your badges',
     onbTitle: 'Hi! Ready for your first tutorial?',
     onb1: 'Pick your cameras and screen (left panel)',
@@ -988,7 +988,7 @@ const LANG = {
     tools: 'الأدوات', laser: 'ليزر', freeze: 'تجميد', whiteboard: 'رسم', ripples: 'موجات',
     teleprompter: 'تيليبرومبتر', snapshot: 'لقطة',
     recStart: 'تسجيل', recStop: 'إيقاف', pause: 'إيقاف مؤقت', mark: 'علامة', stop: 'إيقاف',
-    download: 'تحميل', downloadChapters: 'فصول (.vtt)', newTake: 'درس جديد',
+    download: 'تحميل', downloadChapters: 'فصول (.vtt)', downloadMd: 'الفصول (.md)', newTake: 'درس جديد',
     badgesTitle: 'شاراتك',
     onbTitle: 'أهلاً! جاهز لأول درس؟',
     onb1: 'اختر كاميراتك وشاشتك', onb2: 'اختر مشهدًا جاهزًا',
@@ -3411,6 +3411,17 @@ const Recorder = {
     this._prevUrls.push(vttUrl);
     const dlVtt = $('tcDownloadVtt');
     dlVtt.href = vttUrl; dlVtt.download = `${fname}.vtt`;
+    // v0.7.51: markdown chapter list as an additional download format
+    const mdContent = Chapters.toMarkdown(fname);
+    const mdBlob = new Blob([mdContent], { type: 'text/markdown' });
+    const mdUrl = URL.createObjectURL(mdBlob);
+    this._prevUrls.push(mdUrl);
+    const dlMd = $('tcDownloadMd');
+    if (dlMd) {
+      dlMd.href = mdUrl;
+      dlMd.download = `${fname}.md`;
+      dlMd.style.display = '';
+    }
     // v0.5.0: sensor CSV export — only if the micro:bit was connected and
     // actually produced samples during the recording. Goes in the same
     // download flow as the .webm and .vtt.
@@ -3551,6 +3562,35 @@ const Chapters = {
       const next = i + 1 < this.items.length ? this.items[i + 1].time : end;
       out += `${this.fmtTime(c.time)} --> ${this.fmtTime(next)}\n${c.label}\n\n`;
     });
+    return out;
+  },
+
+  toMarkdown(filename) {
+    const base = filename || 'tutocast-take';
+    let out = `# ${base} — chapters\n\n`;
+    if (this.items.length === 0) {
+      out += '_No chapters_\n';
+      return out;
+    }
+    this.items.forEach((c, i) => {
+      const mm = Math.floor(c.time / 60);
+      const ss = Math.floor(c.time % 60);
+      const stamp = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      const label = String(c.label || '').replace(/[\r\n]/g, ' ').trim();
+      const retryMark = c.retry ? ' ⚠' : '';
+      out += `- **${stamp}** — ${label}${retryMark}\n`;
+    });
+    // Retry regions summary (from v0.7.38 soft rewind)
+    if (Recorder.retryRegions && Recorder.retryRegions.length) {
+      out += '\n## Retry regions\n\n';
+      Recorder.retryRegions.forEach(r => {
+        const sMm = Math.floor(r.start / 60);
+        const sSs = Math.floor(r.start % 60);
+        const eMm = Math.floor(r.end / 60);
+        const eSs = Math.floor(r.end % 60);
+        out += `- Retry ${r.n}: **${String(sMm).padStart(2, '0')}:${String(sSs).padStart(2, '0')}** → **${String(eMm).padStart(2, '0')}:${String(eSs).padStart(2, '0')}**\n`;
+      });
+    }
     return out;
   },
 
