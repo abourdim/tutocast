@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.49 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.50 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.49';
+const APP_VERSION = '0.7.50';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 01:30';
+const BUILD_DATE = '2026-04-12 01:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -3895,22 +3895,33 @@ const Whiteboard = {
     // Stop on mouseup anywhere (covers mouse leaving stage mid-stroke)
     window.addEventListener('mouseup', () => { this.drawing = false; });
     stage.addEventListener('mouseleave', () => { this.drawing = false; });
-
-    // v0.7.47: wire the picker UI
-    const picker = $('tcWbPicker');
-    if (picker) {
-      // don't start a drawing stroke on click inside the picker
-      picker.addEventListener('mousedown', (e) => e.stopPropagation());
-      picker.querySelectorAll('.tc-wb-swatch').forEach(btn => {
-        btn.addEventListener('click', () => this.setColor(btn.dataset.color));
-      });
-      picker.querySelectorAll('.tc-wb-thick').forEach(btn => {
-        btn.addEventListener('click', () => this.setThickness(parseInt(btn.dataset.thickness)));
-      });
-      $('tcWbEraserBtn')?.addEventListener('click', () => this.toggleEraser());
-      $('tcWbClearBtn')?.addEventListener('click', () => this.clear());
-      this._refreshUI();  // initial state
-    }
+    // v0.7.50: touch support for whiteboard strokes
+    stage.addEventListener('touchstart', (e) => {
+      if (!this.on) return;
+      if (e.touches.length > 1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      this.drawing = true;
+      [this.lastX, this.lastY] = toStageXY({ clientX: t.clientX, clientY: t.clientY });
+    }, { passive: false });
+    stage.addEventListener('touchmove', (e) => {
+      if (!this.drawing) return;
+      if (e.touches.length > 1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const [x, y] = toStageXY({ clientX: t.clientX, clientY: t.clientY });
+      const c = Engine.overlayCtx;
+      c.strokeStyle = '#fbbf24';  // match the existing mouse draw
+      c.lineWidth = 8;
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+      c.beginPath();
+      c.moveTo(this.lastX, this.lastY);
+      c.lineTo(x, y);
+      c.stroke();
+      this.lastX = x; this.lastY = y;
+    }, { passive: false });
+    window.addEventListener('touchend', () => { this.drawing = false; });
   },
 
   setColor(hex) {
@@ -3977,6 +3988,47 @@ const Drag = {
     this.stage.addEventListener('mousedown', (e) => this._onDown(e));
     window.addEventListener('mousemove', (e) => this._onMove(e));
     window.addEventListener('mouseup', (e) => this._onUp(e));
+    // v0.7.50: touch support — forward single-finger touch to the existing
+    // mouse handlers. Pinch-zoom is out of scope (two fingers fall through
+    // to the browser default).
+    const touchToMouse = (e) => {
+      if (e.touches && e.touches.length > 1) return null;  // let pinch pass
+      const t = e.touches ? e.touches[0] : (e.changedTouches && e.changedTouches[0]);
+      if (!t) return null;
+      return {
+        clientX: t.clientX,
+        clientY: t.clientY,
+        button: 0,
+        preventDefault: () => e.preventDefault(),
+        shiftKey: !!e.shiftKey,
+        ctrlKey: !!e.ctrlKey,
+        metaKey: !!e.metaKey,
+        altKey: !!e.altKey,
+        target: t.target,
+      };
+    };
+    this.stage.addEventListener('touchstart', (e) => {
+      const me = touchToMouse(e);
+      if (!me) return;
+      e.preventDefault();
+      this._onDown(me);
+    }, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (!this.state) return;
+      const me = touchToMouse(e);
+      if (!me) return;
+      e.preventDefault();
+      this._onMove(me);
+    }, { passive: false });
+    window.addEventListener('touchend', (e) => {
+      const me = touchToMouse(e);
+      // Fire onUp even if we didn't get a clientX (use the last state)
+      this._onUp(me || { clientX: 0, clientY: 0 });
+    });
+    window.addEventListener('touchcancel', (e) => {
+      const me = touchToMouse(e);
+      this._onUp(me || { clientX: 0, clientY: 0 });
+    });
     // v0.7.35: right-click on a source opens the HTML context menu
     this.stage.addEventListener('contextmenu', (e) => {
       const [mx, my] = this._stageToCanvas(e);

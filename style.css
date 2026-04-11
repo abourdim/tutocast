@@ -1555,6 +1555,7 @@ body.log-open .app {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 0 0 2px var(--accent), 0 10px 40px rgba(0,0,0,.5);
+  touch-action: none;  /* v0.7.50: let our touchmove handler do the work */
 }
 .tc-stage canvas {
   position: absolute; inset: 0;
