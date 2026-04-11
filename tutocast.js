@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.90 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.91 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.90';
+const APP_VERSION = '0.7.91';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 11:45';
+const BUILD_DATE = '2026-04-12 12:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -3467,7 +3467,16 @@ const Scenes = {
     } catch {}
   },
 
-  render() { renderScenes(); }
+  render() {
+    renderScenes();
+    // v0.7.91: scroll the active scene button into view if scrolled out
+    requestAnimationFrame(() => {
+      const active = document.querySelector('.tc-scene-btn.active');
+      if (active && typeof active.scrollIntoView === 'function') {
+        active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    });
+  }
 };
 
 /* v0.7.64: Opt-in scene transition fade effect.
