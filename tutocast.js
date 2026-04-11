@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.71 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.72 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.71';
+const APP_VERSION = '0.7.72';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 07:00';
+const BUILD_DATE = '2026-04-12 07:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -58,6 +58,26 @@ const LANG = {
     tip_8: '🤖 Tuto micro:bit ? Essaie la scène "Code + Robot"',
     tip_9: '🧠 Commence par la scène "Toi" pour ton intro',
     tip_10: '🎬 Appuie sur R pour démarrer/arrêter l\'enregistrement',
+    tipOfDay_1: "Touche ? pour voir tous les raccourcis clavier d'un coup",
+    tipOfDay_2: "Tu peux glisser-déposer une source avec la souris, puis la redimensionner par ses coins",
+    tipOfDay_3: "Clic droit sur une source = menu complet (cacher, épingler, forme, PiP, chroma)",
+    tipOfDay_4: "Shift + glisser un coin débloque l'aspect ratio pour étirer librement",
+    tipOfDay_5: "Alt + glisser une source la colle à la grille de 48 px",
+    tipOfDay_6: "Ctrl + Z annule ton dernier déplacement (hors enregistrement)",
+    tipOfDay_7: "Ctrl + Z pendant l'enregistrement marque les 30 dernières secondes comme retry",
+    tipOfDay_8: "Shift + R démarre l'enregistrement instantanément (saute le compte à rebours)",
+    tipOfDay_9: "Tu peux coller une image (Ctrl+V) — elle devient une source draggable",
+    tipOfDay_10: "La touche M ajoute un marker : pratique pour retrouver un passage plus tard",
+    tipOfDay_11: "La touche S fait une capture photo, et l'ajoute à la galerie sous le stage",
+    tipOfDay_12: "Tu peux sauvegarder ta disposition actuelle comme scène perso (💾 Sauvegarder)",
+    tipOfDay_13: "Le téléprompteur a un auto-scroll — règle la vitesse avec le slider",
+    tipOfDay_14: "Importe un script .txt, .md ou .vtt dans le téléprompteur via le bouton 📂",
+    tipOfDay_15: "Le bouton 📦 Exporter la session sauvegarde TOUT (badges, logo, tutos…) en JSON",
+    tipOfDay_16: "Tu peux changer la couleur d'accent dans Paramètres → Général",
+    tipOfDay_17: "Le mode plein écran (F11 ou le bouton ⛶) cache tout sauf le stage",
+    tipOfDay_18: "Tu peux connecter un micro:bit en Bluetooth pour filmer ses capteurs en live",
+    tipOfDay_19: "Les dessins au tableau blanc ont maintenant 6 couleurs + une gomme",
+    tipOfDay_20: "Clique sur un chapitre dans la vidéo finale pour sauter directement à ce moment",
     news: 'Nouveautés',
     activityLog: '📜 Journal', eventsMsg: 'Événements et messages',
     clear: 'Effacer', copy: 'Copier', theme: 'Thème',
@@ -584,6 +604,26 @@ const LANG = {
     tip_8: '🤖 micro:bit tutorial? Try the "Code + Robot" scene!',
     tip_9: '🧠 Start with the "You" scene for your intro',
     tip_10: '🎬 Press R to start/stop recording',
+    tipOfDay_1: "Press ? to see all keyboard shortcuts at once",
+    tipOfDay_2: "Drag sources with the mouse, then resize by grabbing a corner",
+    tipOfDay_3: "Right-click a source for a full menu (hide, pin, shape, PiP, chroma)",
+    tipOfDay_4: "Shift + drag a corner unlocks the aspect ratio for free stretching",
+    tipOfDay_5: "Alt + drag a source snaps it to a 48px grid",
+    tipOfDay_6: "Ctrl + Z undoes your last move (outside recording)",
+    tipOfDay_7: "Ctrl + Z during recording flags the last 30s as a retry",
+    tipOfDay_8: "Shift + R starts recording instantly (skips the countdown)",
+    tipOfDay_9: "Paste an image (Ctrl+V) — it becomes a draggable source",
+    tipOfDay_10: "Key M adds a marker: handy for finding a moment later",
+    tipOfDay_11: "Key S takes a snapshot and adds it to the gallery under the stage",
+    tipOfDay_12: "Save your current layout as a custom scene (💾 Save)",
+    tipOfDay_13: "The teleprompter has auto-scroll — tune speed with the slider",
+    tipOfDay_14: "Import a .txt, .md or .vtt script into the teleprompter via the 📂 button",
+    tipOfDay_15: "The 📦 Export session button saves EVERYTHING (badges, logo, tutos…) as JSON",
+    tipOfDay_16: "Change the accent color in Settings → General",
+    tipOfDay_17: "Fullscreen mode (F11 or the ⛶ button) hides everything but the stage",
+    tipOfDay_18: "You can connect a micro:bit via Bluetooth to film its sensors live",
+    tipOfDay_19: "Whiteboard drawing now has 6 colors + an eraser",
+    tipOfDay_20: "Click a chapter in the final video to jump straight to that moment",
     news: 'News',
     activityLog: '📜 Activity Log', eventsMsg: 'Events & messages',
     clear: 'Clear', copy: 'Copy', theme: 'Theme',
@@ -1108,6 +1148,26 @@ const LANG = {
     tip_8: '🤖 جرّب مشهد "كود + روبوت"',
     tip_9: '🧠 ابدأ بمشهد "أنت"',
     tip_10: '🎬 اضغط R للتسجيل',
+    tipOfDay_1: "اضغط ? لرؤية جميع اختصارات لوحة المفاتيح دفعة واحدة",
+    tipOfDay_2: "اسحب المصادر بالفأرة، ثم غيّر حجمها بالإمساك بإحدى الزوايا",
+    tipOfDay_3: "انقر بالزر الأيمن على مصدر للحصول على قائمة كاملة (إخفاء، تثبيت، شكل، PiP، مفتاح اللون)",
+    tipOfDay_4: "Shift + سحب الزاوية يفتح نسبة العرض لتمدد حر",
+    tipOfDay_5: "Alt + سحب مصدر يلتقطه إلى شبكة 48 بكسل",
+    tipOfDay_6: "Ctrl + Z يتراجع عن آخر حركة (خارج التسجيل)",
+    tipOfDay_7: "Ctrl + Z أثناء التسجيل يعلّم آخر 30 ثانية كإعادة",
+    tipOfDay_8: "Shift + R يبدأ التسجيل فورًا (يتخطى العد التنازلي)",
+    tipOfDay_9: "الصق صورة (Ctrl+V) — ستصبح مصدرًا قابلًا للسحب",
+    tipOfDay_10: "المفتاح M يضيف علامة: مفيد للعثور على لحظة لاحقًا",
+    tipOfDay_11: "المفتاح S يأخذ لقطة ويضيفها إلى المعرض تحت المسرح",
+    tipOfDay_12: "احفظ تخطيطك الحالي كمشهد مخصص (💾 حفظ)",
+    tipOfDay_13: "التيليبرومبتر يحتوي على تمرير تلقائي — اضبط السرعة بالشريط",
+    tipOfDay_14: "استورد نصًا .txt أو .md أو .vtt إلى التيليبرومبتر عبر زر 📂",
+    tipOfDay_15: "زر 📦 تصدير الجلسة يحفظ كل شيء (الشارات، الشعار، الدروس…) بصيغة JSON",
+    tipOfDay_16: "غيّر لون التمييز في الإعدادات ← عام",
+    tipOfDay_17: "وضع ملء الشاشة (F11 أو زر ⛶) يخفي كل شيء عدا المسرح",
+    tipOfDay_18: "يمكنك توصيل micro:bit عبر البلوتوث لتصوير مستشعراته مباشرة",
+    tipOfDay_19: "رسم السبورة البيضاء أصبح له 6 ألوان + ممحاة",
+    tipOfDay_20: "انقر على فصل في الفيديو النهائي للانتقال إلى تلك اللحظة مباشرة",
     news: 'جديد',
     activityLog: '📜 سجل النشاط', eventsMsg: 'الأحداث والرسائل',
     clear: 'مسح', copy: 'نسخ', theme: 'المظهر',
@@ -8527,6 +8587,42 @@ const Badges = {
   unlockMicrobit() { this.unlock('micro'); },
 };
 
+/* v0.7.72: Tip of the day — fires once per calendar day on first launch.
+   Shows a deterministic kid-friendly tip (day-of-year % 20) as a toast a
+   few seconds after init so it doesn't collide with the splash/onboard. */
+const TipOfDay = {
+  _tips() {
+    // Pull from i18n — each language has tipOfDay_1 … tipOfDay_20
+    const out = [];
+    for (let i = 1; i <= 20; i++) {
+      const s = t('tipOfDay_' + i);
+      if (s && s !== 'tipOfDay_' + i) out.push(s);
+    }
+    return out;
+  },
+
+  maybeShow() {
+    const today = new Date();
+    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    let last = null;
+    try { last = localStorage.getItem('tc-last-tip-day'); } catch {}
+    if (last === key) return;  // already fired today
+    const tips = this._tips();
+    if (tips.length === 0) return;
+    // Deterministic index based on day-of-year
+    const start = new Date(today.getFullYear(), 0, 0);
+    const diff = today - start;
+    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const idx = dayOfYear % tips.length;
+    const tip = tips[idx];
+    // Show after a short delay so it doesn't collide with splash/onboard
+    setTimeout(() => {
+      showToast('💡 ' + tip, 5500);
+    }, 2800);
+    try { localStorage.setItem('tc-last-tip-day', key); } catch {}
+  },
+};
+
 /* v0.7.52: Modal celebration card shown when a badge unlocks. */
 const BadgeUnlockCard = {
   el: null,
@@ -9607,6 +9703,7 @@ async function init() {
   Templates.renderStepStrip();
 
   setupOnboarding();
+  TipOfDay.maybeShow();
   GuidedTour.maybeAutoStart();
   setupHelpTabs();
   KeyBindings.load();
