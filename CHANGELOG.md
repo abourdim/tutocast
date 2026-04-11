@@ -3,6 +3,44 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.13 — 2026-04-11 (Ticker dedup + floating source toolbar)
+
+Two live-screenshot fixes from user feedback.
+
+### Fixed
+- **Ticker doubled text** — a short custom message like `hi` rendered
+  as `hi · hi` statically because the seamless-scroll technique used
+  `padding-left: 100%` + `translateX(-100%)` + duplicated content in
+  JS. When the doubled string was narrower than the container, both
+  copies were visible simultaneously. Fix: switched to the standard
+  marquee (translateX 0 → −50%, no padding-left) AND `renderTicker`
+  now pads short input by exponential doubling until one-half ≥ 1.2×
+  container width. Measured with real font via scrollWidth so any
+  font/viewport combo works.
+
+### Changed — floating source toolbar (Canva-style)
+User feedback: *"X and Eye interfere with video. choose a better way?"*
+The canvas-drawn red ✕ and 👁 buttons were positioned outside the
+selected source box (at `x+w+40, y−40` and `x−40, y−40`). For a source
+near any stage edge, those circles clipped off-canvas or overlapped
+other sources/video content. Replaced with an HTML floating toolbar.
+- New `<div class="tc-source-toolbar">` element + new `SourceToolbar`
+  JS object that mirrors the existing `TextToolbar` pattern.
+- Position:fixed, viewport coords, z-index 11000 → never clipped by
+  the stage's `overflow:hidden`.
+- Buttons: 👁 hide · 📌 pin/unpin · ⬛ shape cycle · ✕ delete.
+- Follows the selected source each frame during drag/resize.
+- Teacher-only (HTML, not canvas) → never visible in the recording.
+- Old canvas chrome kept the dashed selection outline; removed the
+  red ✕ / 👁 / hint label draws from `_drawSelectedSourceChrome`.
+
+### Verified (Preview MCP harness)
+- Custom ticker `hi` → track width 4576 px, half 2288 px > container
+  1555 px × 1.15 → no static duplication visible.
+- Fake source at canvas (800, 300, 480×270) → toolbar renders at
+  viewport (840, 70), 214×46 px, above the source center.
+- No console errors on load.
+
 ## v0.7.12 — 2026-04-11 (Layout optimization + Bismillah fix)
 
 Two issues that both came out of live screenshots from the user.

@@ -1751,17 +1751,20 @@ body.log-open .app {
 }
 .tc-ticker-track {
   white-space: nowrap;
+  display: inline-block;
   animation: tickerScroll 45s linear infinite;
-  padding-left: 100%;
+  will-change: transform;
   font-family: var(--font-h);
   font-size: .85rem;
   font-weight: 600;
 }
 .tc-ticker:hover .tc-ticker-track,
 .tc-ticker.paused .tc-ticker-track { animation-play-state: paused; }
+/* v0.7.13: standard seamless marquee — content is doubled in JS and
+   we translate exactly one-half width, so copy-2 lands where copy-1 was. */
 @keyframes tickerScroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 .tc-ticker-pause {
   background: rgba(0,0,0,.25); border: 0; color: #fff;
@@ -1850,6 +1853,33 @@ body.log-open .app {
 }
 .tc-toolbar-btn:hover { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .2); }
 .tc-toolbar-del:hover { background: rgba(239, 68, 68, .2); border-color: rgba(239, 68, 68, .5); color: #fca5a5; }
+
+/* v0.7.13: Source toolbar — same visual language as .tc-text-toolbar.
+   HTML floating bar that sits above the selected video source so the
+   ✕ / 👁 / 📌 controls never have to be drawn on the canvas (and thus
+   never overlap the video itself). */
+.tc-source-toolbar {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(12, 31, 10, .96);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(163, 230, 53, .55);
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .6);
+  z-index: 11000;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  font-size: 1rem;
+}
+.tc-source-toolbar .tc-toolbar-btn {
+  min-width: 34px;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 1rem;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    v0.7.0 — Source row 2-line layout + brand settings + maximize mode

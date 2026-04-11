@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.12</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.13</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -173,6 +173,15 @@
               </div>
               <!-- Silence warning chip — appears (teacher-only, never in the recording) when mic is quiet >1.8s -->
               <div class="tc-silence-chip" id="tcSilenceChip">⚠ <span data-i18n="silenceChip">Tu es silencieux…</span></div>
+              <!-- v0.7.13: Floating HTML toolbar for the selected SOURCE (video / screen).
+                   Replaces the canvas-drawn ✕/👁 buttons that used to overlap the video. -->
+              <div class="tc-source-toolbar" id="tcSourceToolbar" style="display:none">
+                <button class="tc-toolbar-btn" id="tcSrcToolbarHide" title="Hide (eye)">👁</button>
+                <button class="tc-toolbar-btn" id="tcSrcToolbarPin"  title="Pin / Unpin">📌</button>
+                <button class="tc-toolbar-btn" id="tcSrcToolbarShape" title="Shape">⬛</button>
+                <span class="tc-toolbar-sep"></span>
+                <button class="tc-toolbar-btn tc-toolbar-del" id="tcSrcToolbarDel" title="Delete">✕</button>
+              </div>
               <!-- Floating color picker toolbar, shown above a selected text overlay (v0.7.1 Canva-style) -->
               <div class="tc-text-toolbar" id="tcTextToolbar" style="display:none">
                 <button class="tc-swatch" data-color="#ffffff" style="background:#ffffff" title="white"></button>
@@ -562,7 +571,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.12</strong></span>
+      <span class="badge"><strong>v0.7.13</strong></span>
     </div>
   </aside>
 
@@ -730,7 +739,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.12</strong></span>
+      <span class="badge"><strong>v0.7.13</strong></span>
     </div>
   </aside>
 
@@ -762,7 +771,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.12</strong></span>
+      <span class="badge"><strong>v0.7.13</strong></span>
     </div>
   </aside>
 

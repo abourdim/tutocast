@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.12 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.13 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.12';
+const APP_VERSION = '0.7.13';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -1133,6 +1133,9 @@ const Engine = {
     // v0.7.1: reposition the floating text color toolbar each frame so it
     // follows the selected overlay during drag/resize/rotation
     TextToolbar.updatePosition();
+    // v0.7.13: same deal for the floating source toolbar (HTML, never
+    // overlaps the video since it's above the stage, not drawn on canvas)
+    if (typeof SourceToolbar !== 'undefined') SourceToolbar.updatePosition();
 
     // update VU meter + FPS stats
     this.updateVU();
@@ -1271,102 +1274,34 @@ const Engine = {
     if (rot !== 0) ctx.restore();
   },
 
-  /* v0.7.6: draw a Canva-style selection chrome (dashed outline + corner
-     handles + red ✕ delete + 👁 hide button) on top of the currently-
-     selected source. Coords for the ✕ and 👁 are cached on the source so
-     Drag._onDown can hit-test them before the move/resize logic. */
+  /* v0.7.13: draw a clean Canva-style selection outline around the
+     currently-selected source. The ✕ delete / 👁 hide / 📌 pin / shape
+     buttons are now rendered in an HTML floating toolbar (SourceToolbar)
+     that sits above the selection — never on the canvas, so they can
+     never overlap the video itself. */
   _drawSelectedSourceChrome() {
     const selId = Drag.selectedSourceId;
     if (selId == null) {
-      // Clear any stale chrome hit regions
       this.sources.forEach(s => { s._chromeDel = null; s._chromeHide = null; });
       return;
     }
     const s = this.sources.find(x => x.id === selId);
     if (!s || s.type === 'mic' || !s.visible || s.hidden) return;
 
+    // Clear stale canvas hit regions (the HTML toolbar handles clicks now)
+    s._chromeDel = null;
+    s._chromeHide = null;
+
     const ctx = this.ctx;
     const { x, y, w, h } = s;
 
     ctx.save();
-    // Dashed outline
+    // Dashed outline — slightly outside the source box
     ctx.strokeStyle = this._accentColor || '#a3e635';
     ctx.lineWidth = 4;
     ctx.setLineDash([16, 10]);
     ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
     ctx.setLineDash([]);
-
-    // Red ✕ delete button — floats above the top-right corner
-    const delR = 32;
-    const delX = x + w + 40;
-    const delY = y - 40;
-    s._chromeDel = { x: delX, y: delY, r: delR };
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.65)';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(delX, delY, delR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    const k = delR * 0.45;
-    ctx.beginPath();
-    ctx.moveTo(delX - k, delY - k); ctx.lineTo(delX + k, delY + k);
-    ctx.moveTo(delX + k, delY - k); ctx.lineTo(delX - k, delY + k);
-    ctx.stroke();
-    ctx.restore();
-
-    // 👁 hide button — floats above the top-left corner
-    const hideR = 32;
-    const hideX = x - 40;
-    const hideY = y - 40;
-    s._chromeHide = { x: hideX, y: hideY, r: hideR };
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.65)';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#1f2937';
-    ctx.strokeStyle = this._accentColor || '#a3e635';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(hideX, hideY, hideR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fff';
-    ctx.font = '800 32px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('👁', hideX, hideY + 2);
-    ctx.restore();
-
-    // Short label "Clique ✕ pour retirer · 👁 pour cacher · Suppr clavier" below the source
-    ctx.save();
-    ctx.font = '700 22px Righteous, sans-serif';
-    ctx.fillStyle = 'rgba(0,0,0,.72)';
-    const hintText = t('sourceChromeHint');
-    const m = ctx.measureText(hintText);
-    const hintPadX = 16, hintPadY = 8;
-    const hintW = m.width + hintPadX * 2;
-    const hintH = 22 * 1.4 + hintPadY * 2;
-    const hintX = x + (w - hintW) / 2;
-    const hintY = y + h + 20;
-    const rr = 10;
-    ctx.beginPath();
-    ctx.moveTo(hintX + rr, hintY);
-    ctx.lineTo(hintX + hintW - rr, hintY); ctx.quadraticCurveTo(hintX + hintW, hintY, hintX + hintW, hintY + rr);
-    ctx.lineTo(hintX + hintW, hintY + hintH - rr); ctx.quadraticCurveTo(hintX + hintW, hintY + hintH, hintX + hintW - rr, hintY + hintH);
-    ctx.lineTo(hintX + rr, hintY + hintH); ctx.quadraticCurveTo(hintX, hintY + hintH, hintX, hintY + hintH - rr);
-    ctx.lineTo(hintX, hintY + rr); ctx.quadraticCurveTo(hintX, hintY, hintX + rr, hintY);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hintText, hintX + hintW / 2, hintY + hintH / 2);
-    ctx.restore();
-
     ctx.restore();
   },
 
@@ -3898,6 +3833,67 @@ const TextToolbar = {
   },
 };
 
+/* v0.7.13: SourceToolbar — HTML floating action bar for the currently-
+   selected video/screen source. Mirror of TextToolbar. Replaces the
+   canvas-drawn ✕ / 👁 buttons that used to overlap the video. */
+const SourceToolbar = {
+  el: null,
+  setup() {
+    this.el = $('tcSourceToolbar');
+    if (!this.el) return;
+    const sel = () => Engine.sources.find(s => s.id === Drag.selectedSourceId);
+    $('tcSrcToolbarHide')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const s = sel(); if (!s) return;
+      s.hidden = !s.hidden;
+      showToast(s.hidden ? '👁 ' + t('sourceHidden') : '👁 ' + t('sourceShown'), 1400);
+      renderActiveSources();
+    });
+    $('tcSrcToolbarPin')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const s = sel(); if (!s) return;
+      s.pinned = !s.pinned;
+      showToast(s.pinned ? '📌 pinned' : '🔓 unpinned', 1400);
+      renderActiveSources();
+    });
+    $('tcSrcToolbarShape')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const s = sel(); if (!s) return;
+      const shapes = ['rect', 'rounded', 'circle'];
+      const i = shapes.indexOf(s.shape || 'rect');
+      s.shape = shapes[(i + 1) % shapes.length];
+      showToast('◻ ' + s.shape, 1200);
+      renderActiveSources();
+    });
+    $('tcSrcToolbarDel')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const s = sel(); if (!s) return;
+      Engine.removeSource(s.id);
+      Drag.selectedSourceId = null;
+    });
+  },
+  updatePosition() {
+    if (!this.el) return;
+    const s = Engine.sources.find(x => x.id === Drag.selectedSourceId);
+    if (!s || s.type === 'mic' || !s.visible || s.hidden) {
+      this.el.style.display = 'none';
+      return;
+    }
+    const stage = $('tcStage');
+    if (!stage) return;
+    const r = stage.getBoundingClientRect();
+    // Map source center-top (canvas coords) to viewport coords
+    const cxStage = (s.x + s.w / 2) / Engine.width * r.width;
+    const topStage = s.y / Engine.height * r.height;
+    const vpLeft = r.left + cxStage;
+    // Place 56px above the source top; clamp so the toolbar stays in the stage
+    const vpTop = Math.max(r.top + 8, r.top + topStage - 56);
+    this.el.style.display = 'flex';
+    this.el.style.left = `${vpLeft}px`;
+    this.el.style.top = `${vpTop}px`;
+  },
+};
+
 /* Maximize mode (v0.7.0): hide sidebars/header/ticker and stretch the
    stage to the full viewport. Toggle with the ⛶ button. Also toggles
    browser-level fullscreen via the Fullscreen API for extra impact. */
@@ -4422,8 +4418,25 @@ function renderTicker() {
   if (!items.length) {
     for (let i = 1; i <= 10; i++) items.push(t('tip_' + i));
   }
-  // duplicate to keep the scroll feeling continuous
-  el.textContent = items.join('    •    ') + '    •    ' + items.join('    •    ');
+  // v0.7.13: pad short content so "one half" is always ≥ container width.
+  // Without this, a short custom message like "hi" produced a track that
+  // fit inside the container, making the duplicated pair visibly doubled
+  // ("hi · hi"). Measure with the real font, then double for seamless scroll.
+  const sep = '    •    ';
+  const baseOne = items.join(sep);
+  const containerW = (el.parentElement && el.parentElement.offsetWidth) || 1600;
+  // Build one half by doubling content until it's ≥ 1.2× container width.
+  // Doubling (not single-step) is O(log n) vs O(n), safe for tiny messages.
+  let oneHalf = baseOne;
+  el.textContent = oneHalf;
+  let safety = 0;
+  while (el.scrollWidth < containerW * 1.2 && safety < 15) {
+    oneHalf = oneHalf + sep + oneHalf;
+    el.textContent = oneHalf;
+    safety++;
+  }
+  // Duplicate one-half for the seamless -50% translate marquee.
+  el.textContent = oneHalf + sep + oneHalf;
 }
 
 /* ─────────── 8. Onboarding + wiring ─────────── */
@@ -4813,6 +4826,7 @@ async function init() {
   Zoom.setup();
   Drag.setup();
   TextToolbar.setup();
+  SourceToolbar.setup();
 
   renderScenes();
   renderTextPresets();
