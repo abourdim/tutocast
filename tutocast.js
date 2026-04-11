@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.23 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.24 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.23';
+const APP_VERSION = '0.7.24';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 18:25';
+const BUILD_DATE = '2026-04-11 18:55';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -161,6 +161,34 @@ const LANG = {
     telePlay: 'Lecture',
     telePause: 'Pause',
     teleReset: 'Retour haut',
+    cheatTitle: 'Raccourcis clavier',
+    cheatRec: '🎬 Enregistrement',
+    cheatRecStart: "Démarrer / arrêter l'enregistrement",
+    cheatRecPause: 'Pause / reprendre',
+    cheatRecMark: 'Ajouter un marker chapitre',
+    cheatRecSnap: 'Capture photo',
+    cheatTools: '🛠 Outils live',
+    cheatToolLaser: 'Laser pointer on/off',
+    cheatToolFreeze: "Geler l'écran",
+    cheatToolDraw: 'Tableau blanc',
+    cheatToolZoom: 'Zoom manuel',
+    cheatToolTele: 'Téléprompteur on/off',
+    cheatToolQuiz: 'Carte question',
+    cheatScenes: '🎭 Scènes',
+    cheatScene: 'Changer de scène',
+    cheatText: '✏️ Texte sélectionné',
+    cheatTextDup: 'Dupliquer le texte',
+    cheatTextRotL: 'Rotation −5°',
+    cheatTextRotR: 'Rotation +5°',
+    cheatTextRotReset: 'Reset rotation',
+    cheatTextLayer: 'Arrière / avant plan',
+    cheatTextLayerX: 'Arrière/avant plan extrême',
+    cheatTextDel: 'Supprimer sélection',
+    cheatMisc: '✨ Divers',
+    cheatMiscFree: "Étire libre d'une source",
+    cheatMiscThis: 'Afficher ce panneau',
+    cheatMiscEsc: 'Fermer panneaux',
+    cheatMiscDebug: 'Debug HUD',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Réinitialiser les badges',
     clearCache: 'Vider le cache complet',
@@ -524,6 +552,34 @@ const LANG = {
     telePlay: 'Play',
     telePause: 'Pause',
     teleReset: 'Reset top',
+    cheatTitle: 'Keyboard shortcuts',
+    cheatRec: '🎬 Recording',
+    cheatRecStart: 'Start / stop recording',
+    cheatRecPause: 'Pause / resume',
+    cheatRecMark: 'Add a chapter marker',
+    cheatRecSnap: 'Photo snapshot',
+    cheatTools: '🛠 Live tools',
+    cheatToolLaser: 'Laser pointer on/off',
+    cheatToolFreeze: 'Freeze the screen',
+    cheatToolDraw: 'Whiteboard',
+    cheatToolZoom: 'Manual zoom',
+    cheatToolTele: 'Teleprompter on/off',
+    cheatToolQuiz: 'Quiz card',
+    cheatScenes: '🎭 Scenes',
+    cheatScene: 'Switch scene',
+    cheatText: '✏️ Selected text',
+    cheatTextDup: 'Duplicate text',
+    cheatTextRotL: 'Rotate −5°',
+    cheatTextRotR: 'Rotate +5°',
+    cheatTextRotReset: 'Reset rotation',
+    cheatTextLayer: 'Back / forward',
+    cheatTextLayerX: 'Send to back / front',
+    cheatTextDel: 'Delete selection',
+    cheatMisc: '✨ Misc',
+    cheatMiscFree: 'Free stretch a source',
+    cheatMiscThis: 'Show this panel',
+    cheatMiscEsc: 'Close panels',
+    cheatMiscDebug: 'Debug HUD',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Reset badges',
     clearCache: 'Clear all local data',
@@ -879,6 +935,34 @@ const LANG = {
     telePlay: 'تشغيل',
     telePause: 'إيقاف',
     teleReset: 'إعادة',
+    cheatTitle: 'اختصارات لوحة المفاتيح',
+    cheatRec: '🎬 التسجيل',
+    cheatRecStart: 'بدء / إيقاف التسجيل',
+    cheatRecPause: 'إيقاف مؤقت / استئناف',
+    cheatRecMark: 'إضافة علامة فصل',
+    cheatRecSnap: 'لقطة صورة',
+    cheatTools: '🛠 الأدوات المباشرة',
+    cheatToolLaser: 'مؤشر ليزر تشغيل/إيقاف',
+    cheatToolFreeze: 'تجميد الشاشة',
+    cheatToolDraw: 'السبورة البيضاء',
+    cheatToolZoom: 'تكبير يدوي',
+    cheatToolTele: 'التيليبرومبتر',
+    cheatToolQuiz: 'بطاقة سؤال',
+    cheatScenes: '🎭 المشاهد',
+    cheatScene: 'تغيير المشهد',
+    cheatText: '✏️ النص المحدد',
+    cheatTextDup: 'تكرار النص',
+    cheatTextRotL: 'دوران −5°',
+    cheatTextRotR: 'دوران +5°',
+    cheatTextRotReset: 'إعادة تعيين الدوران',
+    cheatTextLayer: 'خلف / أمام',
+    cheatTextLayerX: 'إلى الخلف / الأمام تمامًا',
+    cheatTextDel: 'حذف المحدد',
+    cheatMisc: '✨ متنوع',
+    cheatMiscFree: 'تمدد حر لمصدر',
+    cheatMiscThis: 'عرض هذه اللوحة',
+    cheatMiscEsc: 'إغلاق اللوحات',
+    cheatMiscDebug: 'Debug HUD',
     setSecDanger: '♻ الصيانة',
     resetBadges: 'إعادة تعيين الشارات',
     clearCache: 'مسح جميع البيانات المحلية',
@@ -4773,6 +4857,35 @@ function snapshot() {
   });
 }
 
+/* v0.7.24: Cheatsheet — keyboard-shortcut overlay, toggle with ? / Shift+/.
+   All shortcuts grouped by category so teachers can discover the full
+   keyboard API without digging through FAQ. Pure presentation — the
+   underlying hotkeys are wired in setupKeyboard(). */
+const Cheatsheet = {
+  el: null,
+  setup() {
+    this.el = $('tcCheatModal');
+    if (!this.el) return;
+    $('tcCheatCloseBtn')?.addEventListener('click', () => this.hide());
+    // Click on backdrop (outside the card) closes
+    this.el.addEventListener('click', (e) => {
+      if (e.target === this.el) this.hide();
+    });
+  },
+  show() {
+    if (!this.el) return;
+    this.el.style.display = 'flex';
+  },
+  hide() {
+    if (!this.el) return;
+    this.el.style.display = 'none';
+  },
+  toggle() {
+    if (!this.el) return;
+    this.el.style.display === 'flex' ? this.hide() : this.show();
+  },
+};
+
 /* ─────────── SilenceWatch — flash a ⚠ chip when the mic has been quiet too long
 
    The cheap-and-honest alternative to "uh/um detection". We can't run
@@ -5354,12 +5467,24 @@ function setupHotkeys() {
     // already bails on contentEditable targets above, so pressing 't'
     // inside the script won't self-trigger a toggle.
     else if (k === 't') { Teleprompter.toggle(); e.preventDefault(); }
+    // v0.7.24: ? toggles the keyboard cheat sheet overlay. The check uses
+    // e.key === '?' directly because on most layouts ? is Shift+/, and the
+    // lowercased k would be '/' either way — we accept both.
+    else if (e.key === '?' || (k === '/' && e.shiftKey)) {
+      Cheatsheet.toggle();
+      e.preventDefault();
+    }
     else if (k === 'f' && !e.ctrlKey && !e.metaKey) {
       // F alone = freeze screen; handled above. But if shift is held, we
       // reinterpret as maximize toggle. (Kept F for freeze to not break
       // existing muscle memory.)
     }
     else if (k === 'escape') {
+      // v0.7.24: cheat sheet gets closed first if open
+      if (Cheatsheet.el && Cheatsheet.el.style.display === 'flex') {
+        Cheatsheet.hide();
+        return;
+      }
       // Exit maximize first if active
       const app = document.querySelector('.app');
       if (app && app.classList.contains('maximized')) { toggleMaximize(); return; }
@@ -5691,6 +5816,7 @@ async function init() {
   TextToolbar.setup();
   SourceToolbar.setup();
   Teleprompter.setup();
+  Cheatsheet.setup();
 
   renderScenes();
   renderTextPresets();
