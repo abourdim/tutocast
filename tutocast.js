@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.36 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.37 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.36';
+const APP_VERSION = '0.7.37';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 22:00';
+const BUILD_DATE = '2026-04-11 22:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -200,6 +200,7 @@ const LANG = {
     outroTagline: 'Ton tuto est prêt',
     outroPlaying: '🎬 Outro en cours…',
     autoPauseLabel: "⏸ Pause auto quand tu changes d'onglet",
+    sceneIntroLabel: "🎭 Texte d'intro auto sur changement de scène",
     autoPaused: '⏸ Enregistrement suspendu',
     autoResumed: '▶ Enregistrement repris',
     sensorChartTitle: 'Capteurs micro:bit',
@@ -632,6 +633,7 @@ const LANG = {
     outroTagline: 'Your tutorial is ready',
     outroPlaying: '🎬 Outro playing…',
     autoPauseLabel: '⏸ Auto-pause when you switch tab',
+    sceneIntroLabel: '🎭 Auto intro text on scene change',
     autoPaused: '⏸ Recording paused',
     autoResumed: '▶ Recording resumed',
     sensorChartTitle: 'micro:bit sensors',
@@ -1056,6 +1058,7 @@ const LANG = {
     outroTagline: 'درسك جاهز',
     outroPlaying: '🎬 الخاتمة قيد التشغيل…',
     autoPauseLabel: '⏸ إيقاف مؤقت تلقائي عند تبديل علامة التبويب',
+    sceneIntroLabel: '🎭 نص مقدمة تلقائي عند تغيير المشهد',
     autoPaused: '⏸ تم إيقاف التسجيل مؤقتًا',
     autoResumed: '▶ استُؤنف التسجيل',
     sensorChartTitle: 'مستشعرات micro:bit',
@@ -2225,6 +2228,10 @@ const Scenes = {
     this.render();
     log(`${t('sceneChanged')} : ${s.icon} ${t('scene_' + key)}`, 'info');
     Chapters.add(t('scene_' + key));
+    // v0.7.37: auto intro text card, opt-in in Settings
+    if (SceneIntroText.enabled) {
+      SceneIntroText.show(key, s.icon);
+    }
     Badges.unlockScene(key);
   },
 
@@ -2280,6 +2287,41 @@ const Scenes = {
   },
 
   render() { renderScenes(); }
+};
+
+/* v0.7.37: Per-scene auto intro text cards.
+   When enabled, every Scenes.switch() pops a large text overlay with
+   the scene icon + localized name at top-center of the 1920x1080
+   canvas. Uses TextOverlays.add() so the label is baked into the
+   recording via the existing TTL/auto-fade system. Opt-in via
+   Settings > Enregistrement toggle, persisted in localStorage. */
+const SceneIntroText = {
+  enabled: false,
+  DURATION: 3000,  // ms visible before fading
+
+  load() {
+    try { this.enabled = localStorage.getItem('tc-scene-intro') === '1'; } catch {}
+  },
+  setEnabled(v) {
+    this.enabled = !!v;
+    try { localStorage.setItem('tc-scene-intro', v ? '1' : '0'); } catch {}
+  },
+
+  show(sceneKey, icon) {
+    const label = t('scene_' + sceneKey) || sceneKey;
+    const text = `${icon || '🎬'} ${label}`;
+    // Position near top-center of the canvas (1920x1080 coord space).
+    // TextOverlays.add auto-centers around opts.x/y and measures width.
+    TextOverlays.add(text, {
+      ttl: this.DURATION,
+      x: Engine.width / 2,
+      y: 140,           // top-ish, below any header/bismillah area
+      size: 110,        // big and prominent
+      color: '#ffffff',
+      bg: '#000000',
+      transparency: 1,  // semi-bg
+    });
+  },
 };
 
 function setLayout(engine, layout) {
@@ -7024,6 +7066,12 @@ function wireEvents() {
       try { localStorage.setItem('tc-auto-pause', e.target.checked ? '1' : '0'); } catch {}
     });
   }
+  // v0.7.37: auto scene intro text overlay toggle
+  const siEl = $('tcSceneIntroToggle');
+  if (siEl) {
+    siEl.checked = SceneIntroText.enabled;
+    siEl.addEventListener('change', (e) => SceneIntroText.setEnabled(e.target.checked));
+  }
   // v0.7.28: History clear button
   $('tcHistoryClearBtn')?.addEventListener('click', () => {
     if (History.entries.length === 0) return;
@@ -7077,6 +7125,7 @@ async function init() {
 
   Sfx.load();
   Jingle.load();
+  SceneIntroText.load();
   IntroOutro.load();
   History.load();
   Scenes.loadOrder();  // v0.7.32: restore persisted scene order before first render
