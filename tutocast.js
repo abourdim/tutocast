@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.67 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.68 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.67';
+const APP_VERSION = '0.7.68';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 06:00';
+const BUILD_DATE = '2026-04-12 06:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -125,6 +125,12 @@ const LANG = {
     ctxDup: 'Dupliquer',
     ctxShape: 'Forme ▸',
     ctxDel: 'Supprimer',
+    ctxChroma: 'Chroma key…',
+    chromaPromptColor: 'Couleur à rendre transparente (hex)',
+    chromaPromptThresh: 'Seuil (20-120)',
+    chromaOn: 'Chroma key on',
+    chromaOff: 'Chroma key off',
+    chromaDisable: 'Désactiver le chroma key ?',
     resetLayout: '🔓 Réinitialiser la disposition',
     layoutReset: '🔓 Disposition réinitialisée',
     saveScene: 'Sauvegarder la disposition',
@@ -644,6 +650,12 @@ const LANG = {
     ctxDup: 'Duplicate',
     ctxShape: 'Shape ▸',
     ctxDel: 'Delete',
+    ctxChroma: 'Chroma key…',
+    chromaPromptColor: 'Color to make transparent (hex)',
+    chromaPromptThresh: 'Threshold (20-120)',
+    chromaOn: 'Chroma key on',
+    chromaOff: 'Chroma key off',
+    chromaDisable: 'Disable chroma key?',
     resetLayout: '🔓 Reset layout',
     layoutReset: '🔓 Layout reset',
     saveScene: 'Save this layout',
@@ -1155,6 +1167,12 @@ const LANG = {
     ctxDup: 'تكرار',
     ctxShape: 'الشكل ▸',
     ctxDel: 'حذف',
+    ctxChroma: 'مفتاح اللون…',
+    chromaPromptColor: 'اللون المراد جعله شفافًا (hex)',
+    chromaPromptThresh: 'الحد (20-120)',
+    chromaOn: 'مفتاح اللون مُفعَّل',
+    chromaOff: 'مفتاح اللون مُعطَّل',
+    chromaDisable: 'إيقاف مفتاح اللون؟',
     resetLayout: '🔓 إعادة ضبط التخطيط',
     layoutReset: '🔓 تمت إعادة ضبط التخطيط',
     saveScene: 'حفظ التخطيط',
@@ -1766,6 +1784,54 @@ const StageAspect = {
   },
 };
 
+/* v0.7.68: ChromaKey — per-source green-screen pre-processor.
+   When src.chromaKey is set, every frame the source's video is drawn
+   into a WeakMap-cached offscreen canvas (sized to the video's intrinsic
+   resolution for clean edges) and a per-pixel ImageData pass zeros alpha
+   on any pixel within RGB-distance² threshold of the key colour, so the
+   keyed colour becomes transparent and underlying layers show through. */
+const ChromaKey = {
+  _canvases: new WeakMap(),  // source → offscreen canvas
+
+  // Returns an HTMLCanvasElement containing the keyed frame for this source,
+  // or null if chromaKey isn't set. The canvas matches the source's CURRENT
+  // w/h so we don't waste pixels.
+  process(src) {
+    if (!src.chromaKey || !src.video) return null;
+    const { color, threshold } = src.chromaKey;
+    const tr = parseInt(color.slice(1, 3), 16);
+    const tg = parseInt(color.slice(3, 5), 16);
+    const tb = parseInt(color.slice(5, 7), 16);
+    const t2 = threshold * threshold;
+
+    // Use the source's VIDEO intrinsic size, not its display w/h — we want
+    // to process at source resolution for clean edges.
+    const vw = src.video.videoWidth || 640;
+    const vh = src.video.videoHeight || 360;
+    let off = this._canvases.get(src);
+    if (!off || off.width !== vw || off.height !== vh) {
+      off = document.createElement('canvas');
+      off.width = vw;
+      off.height = vh;
+      this._canvases.set(src, off);
+    }
+    const ctx = off.getContext('2d', { willReadFrequently: true });
+    try {
+      ctx.drawImage(src.video, 0, 0, vw, vh);
+    } catch { return null; }
+    const img = ctx.getImageData(0, 0, vw, vh);
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const dr = data[i] - tr;
+      const dg = data[i + 1] - tg;
+      const db = data[i + 2] - tb;
+      if (dr * dr + dg * dg + db * db < t2) data[i + 3] = 0;
+    }
+    ctx.putImageData(img, 0, 0);
+    return off;
+  },
+};
+
 const Engine = {
   canvas: null, ctx: null,
   overlayCanvas: null, overlayCtx: null,   // whiteboard strokes — persist across frames
@@ -2070,7 +2136,16 @@ const Engine = {
       this._pathForShape(ctx, shape, x, y, w, h, cx, cy, r);
       ctx.clip();
       ctx.filter = filter;
-      this._drawVideoRespectingMirror(video, x, y, w, h, mirrored);
+      // v0.7.68: chroma key pre-process — returns an offscreen canvas with
+      // alpha zeroed on matching pixels. When set, we draw THAT canvas instead
+      // of the raw video so transparent pixels reveal the layers below.
+      const chromaCanvas = ChromaKey.process(src);
+      if (chromaCanvas) {
+        // drawImage a canvas like a video
+        this._drawVideoRespectingMirror(chromaCanvas, x, y, w, h, src.mirrored);
+      } else {
+        this._drawVideoRespectingMirror(src.video, x, y, w, h, src.mirrored);
+      }
       ctx.filter = 'none';
       ctx.restore();
     }
@@ -6645,6 +6720,29 @@ const SourceContextMenu = {
     });
     this.el.querySelector('[data-action="back"]')?.addEventListener('click', (e) => {
       e.stopPropagation(); reorder('back');
+    });
+
+    // v0.7.68: chroma key toggle — prompts for hex colour + threshold,
+    // stores { color, threshold } on the source. Re-clicking with chromaKey
+    // already set toggles it back off (after a confirm).
+    this.el.querySelector('[data-action="chroma"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const src = Engine.sources.find(s => s.id === this.currentId);
+      if (!src) { this.hide(); return; }
+      if (src.chromaKey) {
+        // Toggle off
+        if (confirm(t('chromaDisable') || 'Désactiver le chroma key ?')) {
+          src.chromaKey = null;
+          showToast('🟢 ' + (t('chromaOff') || 'Chroma key off'), 1200);
+        }
+      } else {
+        const color = prompt(t('chromaPromptColor') || 'Couleur à rendre transparente (hex)', '#00ff00');
+        if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) { this.hide(); return; }
+        const thresh = parseInt(prompt(t('chromaPromptThresh') || 'Seuil (20-120)', '50')) || 50;
+        src.chromaKey = { color, threshold: Math.max(10, Math.min(200, thresh)) };
+        showToast('🟢 ' + (t('chromaOn') || 'Chroma key on'), 1200);
+      }
+      this.hide();
     });
 
     this.el.querySelector('[data-action="del"]')?.addEventListener('click', (e) => {
