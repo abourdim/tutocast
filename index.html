@@ -118,13 +118,13 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.18</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.19</span></div>
           </div>
-          <!-- v0.7.18: moved the rec indicator to the REC bar next to the button -->
+          <!-- v0.7.19: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
         </div>
 
-        <!-- v0.7.18: Floating horizontal tools bar — Canva-style icon pill
+        <!-- v0.7.19: Floating horizontal tools bar — Canva-style icon pill
              above the studio grid. Frees the right sidebar from 7 stacked
              buttons and puts the live tools one click away from the stage. -->
         <div class="tc-tools-bar" id="tcToolsBar">
@@ -198,12 +198,12 @@
               </div>
               <!-- Silence warning chip — appears (teacher-only, never in the recording) when mic is quiet >1.8s -->
               <div class="tc-silence-chip" id="tcSilenceChip">⚠ <span data-i18n="silenceChip">Tu es silencieux…</span></div>
-              <!-- v0.7.18: Floating HTML toolbar for the selected SOURCE (video / screen).
+              <!-- v0.7.19: Floating HTML toolbar for the selected SOURCE (video / screen).
                    Replaces the canvas-drawn ✕/👁 buttons that used to overlap the video. -->
               <div class="tc-source-toolbar" id="tcSourceToolbar" style="display:none">
                 <button class="tc-toolbar-btn" id="tcSrcToolbarHide" title="Hide (eye)">👁</button>
                 <button class="tc-toolbar-btn" id="tcSrcToolbarPin"  title="Pin / Unpin">📌</button>
-                <!-- v0.7.18: shape picker (select) instead of cycle button -->
+                <!-- v0.7.19: shape picker (select) instead of cycle button -->
                 <select class="tc-toolbar-select" id="tcSrcToolbarShape" title="Shape">
                   <option value="rect">⬛ Rectangle</option>
                   <option value="rounded">🔲 Rounded</option>
@@ -247,7 +247,7 @@
             <div class="tc-side-title" style="margin-top:14px">✏️ <span data-i18n="texts">Textes</span></div>
             <div class="tc-text-presets" id="tcTextPresets"></div>
             <button class="tc-btn-full" id="tcAddTextBtn">+ <span data-i18n="addText">Texte libre</span></button>
-            <!-- v0.7.18: Text default font picker — applies to NEW text overlays
+            <!-- v0.7.19: Text default font picker — applies to NEW text overlays
                  (existing ones can be cycled via the floating Aa toolbar button). -->
             <label class="sidebar-label" style="margin-top:10px;font-size:.7rem;opacity:.75" data-i18n="textFont">Aa Police par défaut</label>
             <select id="tcTextFontSelect" class="sidebar-select" style="font-size:.78rem;padding:6px 8px">
@@ -259,7 +259,7 @@
               <option value="5">Arial</option>
             </select>
 
-            <!-- v0.7.18: Tools moved to floating horizontal bar above the stage -->
+            <!-- v0.7.19: Tools moved to floating horizontal bar above the stage -->
 
           </aside>
         </div>
@@ -273,7 +273,7 @@
             <span class="tc-rec-icon">⏺</span>
             <span class="tc-rec-label" data-i18n="recStart">ENREGISTRER</span>
           </button>
-          <!-- v0.7.18: moved the timer here from the card header so there's
+          <!-- v0.7.19: moved the timer here from the card header so there's
                just one "00:00" on the page, next to the REC button where the
                eye naturally goes during recording. -->
           <div class="tc-rec-timer" id="tcRecIndicator">
@@ -428,6 +428,14 @@
           <summary data-i18n="faq_q8">Navigateur recommandé ?</summary>
           <p data-i18n="faq_a8">Chrome ou Edge desktop. Firefox marche pour l'enregistrement mais pas pour Web Bluetooth (micro:bit). Safari ne supporte ni les capteurs ni certaines options audio. iOS n'est pas supporté car Safari Mobile bloque la capture d'écran.</p>
         </details>
+        <details class="help-item">
+          <summary data-i18n="faq_q9">🏆 C'est quoi les badges ?</summary>
+          <p data-i18n="faq_a9">Des petits trophées locaux qui se débloquent au fur et à mesure : 🎬 Premier tuto (1re prise finie), ⏱ Plus de 5 min (prise de plus de 5 minutes), 🎥 Multi-caméras (2+ cams en même temps), 🎭 Toutes les scènes (toutes utilisées), 🏷 Roi des markers (5+ dans une prise), 🤖 micro:bit branché (1re connexion BT). Tout est stocké localement (localStorage), rien n'est envoyé nulle part.</p>
+        </details>
+        <details class="help-item">
+          <summary data-i18n="faq_q10">♻ Comment remettre à zéro mes données ?</summary>
+          <p data-i18n="faq_a10">Dans ⚙️ Paramètres → Général, deux boutons : « 🗑 Réinitialiser les badges » efface seulement tes trophées. « 💥 Vider le cache complet » efface TOUT : badges, logo, préférences, messages de ticker, police par défaut, onboarding, etc. L'app repart comme une installation neuve après un rechargement.</p>
+        </details>
       </div>
 
       <!-- How-To -->
@@ -469,7 +477,7 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
-          <h3>🎨 v0.7.18 — 11 avril 2026</h3>
+          <h3>🎨 v0.7.19 — 11 avril 2026</h3>
           <p data-i18n="news_018">Redesign + fix critique des toolbars flottantes 🎨🔧</p>
           <ul>
             <li data-i18n="news_018_1">Barre d'outils flottante au-dessus du studio : Laser · Geler · Dessiner · Zoom · Télé · Photo · Plein écran — libère ~280 px dans la sidebar droite</li>
@@ -676,7 +684,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.18</strong></span>
+      <span class="badge"><strong>v0.7.19</strong></span>
     </div>
   </aside>
 
@@ -689,7 +697,7 @@
     </div>
 
     <div class="sidebar-body">
-      <!-- v0.7.18: collapsible sections to break up the formerly flat list -->
+      <!-- v0.7.19: collapsible sections to break up the formerly flat list -->
 
       <details class="tc-set-section" open>
         <summary class="tc-set-summary">🌐 <span data-i18n="setSecGeneral">Général</span></summary>
@@ -714,6 +722,13 @@
               <option value="space" data-i18n="t_space">Space</option>
               <option value="robot" data-i18n="t_robot">Robot</option>
             </select>
+          </div>
+          <!-- v0.7.19: reset controls + build timestamp -->
+          <div class="sidebar-group">
+            <label class="sidebar-label" data-i18n="setSecDanger">♻ Maintenance</label>
+            <button id="tcResetBadgesBtn" class="tc-btn-full" style="margin-bottom:6px">🗑 <span data-i18n="resetBadges">Réinitialiser les badges</span></button>
+            <button id="tcClearCacheBtn" class="tc-btn-full tc-btn-danger">💥 <span data-i18n="clearCache">Vider le cache complet</span></button>
+            <div class="tc-build-meta" id="tcBuildMeta"></div>
           </div>
         </div>
       </details>
@@ -867,7 +882,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.18</strong></span>
+      <span class="badge"><strong>v0.7.19</strong></span>
     </div>
   </aside>
 
@@ -899,7 +914,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.18</strong></span>
+      <span class="badge"><strong>v0.7.19</strong></span>
     </div>
   </aside>
 

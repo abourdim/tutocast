@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.18 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.19 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.18';
+const APP_VERSION = '0.7.19';
+// v0.7.19: build timestamp shown in Settings > Général > Maintenance.
+// Bump by hand on each release — there's no build step.
+const BUILD_DATE = '2026-04-11 15:40';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -150,6 +153,17 @@ const LANG = {
     setSecTicker: 'Ticker',
     textFont: 'Aa Police par défaut',
     freeResize: 'Étire libre (Shift+coin)',
+    setSecDanger: '♻ Maintenance',
+    resetBadges: 'Réinitialiser les badges',
+    clearCache: 'Vider le cache complet',
+    badgesReset: '🗑 Badges réinitialisés',
+    cacheCleared: '💥 Cache vidé — rechargement…',
+    confirmClearCache: 'Effacer TOUTES les données locales (badges, logo, préférences, ticker…) ? L\'app repartira comme neuve.',
+    buildMeta: 'Compilé',
+    faq_q9: '🏆 C\'est quoi les badges ?',
+    faq_a9: 'Des petits trophées locaux qui se débloquent au fur et à mesure : 🎬 Premier tuto (1re prise finie), ⏱ Plus de 5 min (prise de plus de 5 minutes), 🎥 Multi-caméras (2+ cams en même temps), 🎭 Toutes les scènes (toutes utilisées), 🏷 Roi des markers (5+ dans une prise), 🤖 micro:bit branché (1re connexion BT). Tout est stocké localement (localStorage), rien n\'est envoyé nulle part.',
+    faq_q10: '♻ Comment remettre à zéro mes données ?',
+    faq_a10: 'Dans ⚙️ Paramètres → Général, deux boutons : « 🗑 Réinitialiser les badges » efface seulement tes trophées. « 💥 Vider le cache complet » efface TOUT : badges, logo, préférences, messages de ticker, police par défaut, onboarding, etc. L\'app repart comme une installation neuve après un rechargement.',
     brandSloganFont: 'Aa Police du slogan',
     brandSloganSize: '📐 Taille du slogan',
     brandLogoTint: '🎨 Couleur du logo (silhouette)',
@@ -489,6 +503,17 @@ const LANG = {
     setSecTicker: 'Ticker',
     textFont: 'Aa Default font',
     freeResize: 'Free stretch (Shift+corner)',
+    setSecDanger: '♻ Maintenance',
+    resetBadges: 'Reset badges',
+    clearCache: 'Clear all local data',
+    badgesReset: '🗑 Badges reset',
+    cacheCleared: '💥 Cache cleared — reloading…',
+    confirmClearCache: 'Erase ALL local data (badges, logo, preferences, ticker…)? The app will restart like a fresh install.',
+    buildMeta: 'Built',
+    faq_q9: '🏆 What are the badges?',
+    faq_a9: 'Small local trophies that unlock as you go: 🎬 First tutorial (first take finished), ⏱ Over 5 min (take longer than 5 minutes), 🎥 Multi-camera (2+ cams at once), 🎭 All scenes (every preset used), 🏷 Marker king (5+ markers in one take), 🤖 micro:bit plugged (first BT connection). Everything is stored locally (localStorage), nothing is ever sent anywhere.',
+    faq_q10: '♻ How do I reset my data?',
+    faq_a10: 'In ⚙️ Settings → General, two buttons: "🗑 Reset badges" wipes only your trophies. "💥 Clear all local data" wipes EVERYTHING: badges, logo, preferences, ticker messages, default font, onboarding, etc. The app starts like a fresh install after reloading.',
     brandSloganFont: 'Aa Slogan font',
     brandSloganSize: '📐 Slogan size',
     brandLogoTint: '🎨 Logo color (silhouette)',
@@ -820,6 +845,17 @@ const LANG = {
     setSecTicker: 'الشريط',
     textFont: 'Aa الخط الافتراضي',
     freeResize: 'تمدد حر (Shift+زاوية)',
+    setSecDanger: '♻ الصيانة',
+    resetBadges: 'إعادة تعيين الشارات',
+    clearCache: 'مسح جميع البيانات المحلية',
+    badgesReset: '🗑 تم إعادة تعيين الشارات',
+    cacheCleared: '💥 تم مسح الذاكرة — إعادة تحميل…',
+    confirmClearCache: 'حذف جميع البيانات المحلية (الشارات، الشعار، التفضيلات، الشريط…)؟ سيعيد التطبيق التشغيل كأنه مثبت حديثًا.',
+    buildMeta: 'تم البناء',
+    faq_q9: '🏆 ما هي الشارات؟',
+    faq_a9: 'كؤوس محلية صغيرة تُفتح تدريجيًا: 🎬 أول درس (أول تسجيل منتهٍ)، ⏱ أكثر من 5 دقائق (تسجيل يتجاوز 5 دقائق)، 🎥 كاميرات متعددة (2+ كاميرات معًا)، 🎭 جميع المشاهد (استعمال كل المشاهد)، 🏷 ملك العلامات (5+ علامات في تسجيل واحد)، 🤖 micro:bit موصول (أول اتصال BT). كل شيء مخزّن محليًا، لا يُرسل شيء إلى أي مكان.',
+    faq_q10: '♻ كيف أعيد تعيين بياناتي؟',
+    faq_a10: 'في ⚙️ الإعدادات ← عام، زرّان: «🗑 إعادة تعيين الشارات» يحذف كؤوسك فقط. «💥 مسح جميع البيانات المحلية» يحذف كل شيء: الشارات، الشعار، التفضيلات، رسائل الشريط، الخط الافتراضي، التجربة الأولى. يعود التطبيق كالتثبيت الجديد بعد إعادة التحميل.',
     brandSloganFont: 'Aa خط الشعار النصي',
     brandSloganSize: '📐 حجم الشعار النصي',
     brandLogoTint: '🎨 لون الشعار (ظلّي)',
@@ -4783,6 +4819,32 @@ function wireEvents() {
   // Lang & theme
   $('langSelect').addEventListener('change', (e) => setLanguage(e.target.value));
   $('themeSelect').addEventListener('change', (e) => setTheme(e.target.value));
+
+  // v0.7.19: Maintenance — reset badges + clear cache + build meta
+  $('tcResetBadgesBtn')?.addEventListener('click', () => {
+    Badges.unlocked.clear();
+    Badges.scenesUsed.clear();
+    try { localStorage.removeItem('tc-badges'); } catch {}
+    renderBadges();
+    showToast(t('badgesReset'), 1800);
+  });
+  $('tcClearCacheBtn')?.addEventListener('click', () => {
+    if (!confirm(t('confirmClearCache'))) return;
+    // Wipe every tc-* key in localStorage so the app restarts fresh.
+    try {
+      const victims = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('tc-')) victims.push(k);
+      }
+      victims.forEach(k => localStorage.removeItem(k));
+    } catch {}
+    showToast(t('cacheCleared'), 1400);
+    setTimeout(() => location.reload(), 900);
+  });
+  // Build timestamp chip — static text + i18n label
+  const bm = $('tcBuildMeta');
+  if (bm) bm.textContent = `${t('buildMeta')} : v${APP_VERSION} · ${BUILD_DATE}`;
 
   // Sound effects toggle
   const sndEl = $('soundToggle');

@@ -44,6 +44,41 @@ User: *"redesign. better look and feel. reorganize better"*.
 - Visual: bismillah centered, tools bar above stage, scenes 2×3, text
   presets compact, text toolbar docked below stage with selected "Hi".
 
+## v0.7.19 — 2026-04-11 (Maintenance tools + badge docs)
+
+User feedback: *"add this info to help, faq.. add reste badgeds. Add
+fully clear cache. Add last updated date and time. very useful"*.
+
+### Added
+- **FAQ q9 / q10** covering the 6-badge system and how to reset your
+  local data. Full FR/EN/AR translations. `index.html` help panel
+  gets the two new `<details>` entries.
+- **⚙ Settings → Général → ♻ Maintenance** section with three new
+  pieces of chrome:
+  - **🗑 Reset badges** — clears `Badges.unlocked` + `Badges.scenesUsed`
+    + `localStorage['tc-badges']`, re-renders the badges strip, fires
+    a `🗑 Badges réinitialisés` toast. Keeps everything else intact.
+  - **💥 Clear all local data** — `confirm()` gate, then wipes every
+    `tc-*` key in localStorage (badges, logo, theme, language,
+    onboarding flag, ticker messages, default text font, brand slogan,
+    silhouette tint, format preference, sources custom layouts — all
+    of it), toast, `location.reload()` after 900 ms. Dangerous button
+    styled in red via new `.tc-btn-danger`.
+  - **Build meta chip** — Orbitron monospace pill showing
+    `Compilé : v0.7.19 · 2026-04-11 15:40`. Driven by a new
+    `BUILD_DATE` constant bumped by hand each release. User can
+    quickly confirm which build they're running without scrolling
+    the news panel.
+
+### Verified (Preview MCP harness)
+- `APP_VERSION === '0.7.19'`, `BUILD_DATE === '2026-04-11 15:40'`.
+- Build meta chip text: `Compilé : v0.7.19 · 2026-04-11 15:40` ✓.
+- FAQ `q9` resolves to `🏆 C'est quoi les badges ?` ✓.
+- FAQ `q10` resolves to `♻ Comment remettre à zéro mes données ?` ✓.
+- Reset badges regression: unlock `'first'`, click reset button,
+  assert `unlocked` Set is empty — ✓.
+- No console errors on load.
+
 ## v0.7.18 — 2026-04-11 (Redesign + critical toolbar mousedown bug fix)
 
 ### Fixed — critical floating toolbar bug

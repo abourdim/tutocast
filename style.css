@@ -2045,6 +2045,31 @@ body.log-open .app {
 .tc-set-body .sidebar-group { margin-bottom: 8px; }
 .tc-set-body .sidebar-group:last-child { margin-bottom: 0; }
 
+/* v0.7.19: danger button (Clear cache) + build meta chip */
+.tc-btn-danger {
+  background: linear-gradient(180deg, rgba(239, 68, 68, .22), rgba(239, 68, 68, .08));
+  border: 1px solid rgba(239, 68, 68, .45);
+  color: #fecaca;
+}
+.tc-btn-danger:hover {
+  background: linear-gradient(180deg, rgba(239, 68, 68, .35), rgba(239, 68, 68, .12));
+  border-color: rgba(239, 68, 68, .7);
+  color: #fff;
+}
+.tc-build-meta {
+  margin-top: 10px;
+  padding: 6px 10px;
+  font-family: 'Orbitron', ui-monospace, monospace;
+  font-size: .66rem;
+  color: rgba(255, 255, 255, .45);
+  background: rgba(0, 0, 0, .25);
+  border: 1px dashed rgba(255, 255, 255, .08);
+  border-radius: 8px;
+  text-align: center;
+  letter-spacing: .4px;
+  user-select: text;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    v0.7.0 — Source row 2-line layout + brand settings + maximize mode
    ═══════════════════════════════════════════════════════════════════ */
