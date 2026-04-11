@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.96</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.97</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -457,6 +457,18 @@
       <details class="collapsible">
         <summary><span class="icon">📊</span> <span data-i18n="historyTitle">Mes tutos</span></summary>
         <div class="card">
+          <!-- v0.7.97: search + min-star filter -->
+          <div class="tc-history-filter">
+            <input type="search" id="tcHistorySearch" class="tc-history-search" placeholder="🔍" data-i18n-placeholder="historySearchPlaceholder" />
+            <div class="tc-history-stars" id="tcHistoryStars">
+              <button data-stars="0" class="active" title="All">All</button>
+              <button data-stars="1" title="≥1">1+</button>
+              <button data-stars="2" title="≥2">2+</button>
+              <button data-stars="3" title="≥3">3+</button>
+              <button data-stars="4" title="≥4">4+</button>
+              <button data-stars="5" title="5">5</button>
+            </div>
+          </div>
           <div class="tc-history" id="tcHistory">
             <div class="tc-history-empty" data-i18n="historyEmpty">Aucun tuto encore. Clique 🔴 ENREGISTRER pour commencer !</div>
           </div>
@@ -766,7 +778,7 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
-          <h3>🚀 v0.7.40 → v0.7.94 — 12 avril 2026</h3>
+          <h3>🚀 v0.7.40 → v0.7.97 — 12 avril 2026</h3>
           <p data-i18n="news_087">50+ features en vrac : polish, accessibilité, pro tools 🚀⌨🎨🔧</p>
           <ul>
             <li data-i18n="news_087_1">🎚 Audio : meter LED, boost mic, noise gate, ducking auto quand tu parles, sous-titres live (WebSpeech)</li>
@@ -1025,7 +1037,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.96</strong></span>
+      <span class="badge"><strong>v0.7.97</strong></span>
     </div>
   </aside>
 
@@ -1386,7 +1398,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.96</strong></span>
+      <span class="badge"><strong>v0.7.97</strong></span>
     </div>
   </aside>
 
@@ -1418,7 +1430,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.96</strong></span>
+      <span class="badge"><strong>v0.7.97</strong></span>
     </div>
   </aside>
 

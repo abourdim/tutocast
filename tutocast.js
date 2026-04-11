@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.96';
+const APP_VERSION = '0.7.97';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 13:15';
+const BUILD_DATE = '2026-04-12 13:30';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -314,6 +314,7 @@ const LANG = {
     historyClear: "🗑 Vider l'historique",
     historyConfirmClear: "Vider l'historique des tutos ?",
     historyCleared: '🗑 Historique vidé',
+    historySearchPlaceholder: '🔍 Rechercher…',
     dashTitle: 'Tes stats',
     dashEmpty: 'Fais ton premier tuto pour voir tes stats 📊',
     dashRecs: 'tutos',
@@ -920,6 +921,7 @@ const LANG = {
     historyClear: '🗑 Clear history',
     historyConfirmClear: 'Clear tutorial history?',
     historyCleared: '🗑 History cleared',
+    historySearchPlaceholder: '🔍 Search…',
     dashTitle: 'Your stats',
     dashEmpty: 'Record your first tutorial to see your stats 📊',
     dashRecs: 'tutorials',
@@ -1518,6 +1520,7 @@ const LANG = {
     historyClear: '🗑 مسح السجل',
     historyConfirmClear: 'مسح سجل الدروس؟',
     historyCleared: '🗑 تم مسح السجل',
+    historySearchPlaceholder: '🔍 ابحث…',
     dashTitle: 'إحصاءاتك',
     dashEmpty: 'سجّل درسك الأول لرؤية إحصاءاتك 📊',
     dashRecs: 'دروس',
@@ -8743,6 +8746,18 @@ const SensorTimeline = {
 const History = {
   MAX: 10,
   entries: [],
+  // v0.7.97: client-side filter state for search + min-stars
+  _filterText: '',
+  _filterMinStars: 0,
+
+  setFilter(text) {
+    this._filterText = (text || '').toLowerCase();
+    this.render();
+  },
+  setMinStars(n) {
+    this._filterMinStars = Math.max(0, Math.min(5, parseInt(n) || 0));
+    this.render();
+  },
 
   load() {
     try {
@@ -8792,13 +8807,21 @@ const History = {
     const el = $('tcHistory');
     const stats = $('tcHistoryStats');
     if (!el) return;
-    if (this.entries.length === 0) {
+    // v0.7.97: filter entries by text + min stars
+    const text = this._filterText || '';
+    const minStars = this._filterMinStars || 0;
+    const filtered = this.entries.filter(e => {
+      if (minStars > 0 && (!e.rating || e.rating < minStars)) return false;
+      if (text && !(e.name || '').toLowerCase().includes(text)) return false;
+      return true;
+    });
+    if (filtered.length === 0) {
       el.innerHTML = `<div class="tc-history-empty">${t('historyEmpty')}</div>`;
       if (stats) stats.textContent = '';
       return;
     }
     // Build rows
-    const rows = this.entries.map(e => {
+    const rows = filtered.map(e => {
       const dur = this._fmtDur(e.durSec);
       const date = this._fmtDate(e.at);
       const size = this._fmtSize(e.size);
@@ -8816,8 +8839,8 @@ const History = {
     }).join('');
     el.innerHTML = rows;
     if (stats) {
-      const totalSecs = this.entries.reduce((s, e) => s + (e.durSec || 0), 0);
-      stats.textContent = `${this.entries.length} · ${this._fmtDur(totalSecs)}`;
+      const totalSecs = filtered.reduce((s, e) => s + (e.durSec || 0), 0);
+      stats.textContent = `${filtered.length} · ${this._fmtDur(totalSecs)}`;
     }
     if (typeof Dashboard !== 'undefined') Dashboard.render();
   },
@@ -10883,6 +10906,20 @@ function wireEvents() {
     if (!confirm(t('historyConfirmClear') || "Vider l'historique des tutos ?")) return;
     History.clear();
     showToast(t('historyCleared') || '🗑 Historique vidé', 1400);
+  });
+
+  // v0.7.97: history search + min-star filter
+  const hsEl = $('tcHistorySearch');
+  if (hsEl) {
+    hsEl.placeholder = t('historySearchPlaceholder') || '🔍 Rechercher…';
+    hsEl.addEventListener('input', (e) => History.setFilter(e.target.value));
+  }
+  document.querySelectorAll('#tcHistoryStars button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#tcHistoryStars button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      History.setMinStars(parseInt(btn.dataset.stars));
+    });
   });
 
   // Sensor-triggered overlay toggle (v0.5.0) — opt-in in Settings

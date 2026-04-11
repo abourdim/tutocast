@@ -3156,6 +3156,47 @@ body.log-open .app {
 .tc-snap-thumb:hover .tc-snap-del { opacity: 1; }
 .tc-snap-del:hover { background: #ef4444; }
 
+/* v0.7.97: history search + min-star filter row */
+.tc-history-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tc-history-search {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: .78rem;
+  outline: none;
+}
+.tc-history-search:focus { border-color: var(--accent, #a3e635); }
+.tc-history-stars {
+  display: flex;
+  gap: 2px;
+}
+.tc-history-stars button {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .1);
+  color: rgba(255, 255, 255, .65);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: .7rem;
+  cursor: pointer;
+  min-width: 28px;
+}
+.tc-history-stars button:hover { background: rgba(255, 255, 255, .1); }
+.tc-history-stars button.active {
+  background: rgba(251, 191, 36, .2);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
 /* v0.7.28: My tutorials history — compact list of the last 10 takes */
 .tc-history {
   display: flex;
