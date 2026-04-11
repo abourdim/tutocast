@@ -1994,6 +1994,76 @@ body.log-open .app {
   font-size: 1rem;
 }
 
+/* v0.7.47: whiteboard color + thickness + eraser picker — floating
+   strip above the stage when whiteboard mode is ON. Teacher-only UI,
+   never drawn to canvas or recorded. */
+.tc-wb-picker {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, .85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 191, 36, .4);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+.tc-wb-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .2);
+  cursor: pointer;
+  padding: 0;
+  transition: transform .1s, border-color .15s;
+}
+.tc-wb-swatch:hover { transform: scale(1.1); }
+.tc-wb-swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .4);
+}
+.tc-wb-thick {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .15);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .9rem;
+  padding: 0;
+}
+.tc-wb-thick:hover { background: rgba(255, 255, 255, .14); }
+.tc-wb-thick.active {
+  background: rgba(251, 191, 36, .25);
+  border-color: #fbbf24;
+}
+.tc-wb-btn {
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .15);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.tc-wb-btn:hover { background: rgba(255, 255, 255, .14); }
+.tc-wb-btn.active {
+  background: rgba(239, 68, 68, .25);
+  border-color: #ef4444;
+}
+.tc-wb-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, .15);
+  margin: 0 4px;
+}
+
 /* v0.7.35: right-click context menu on a selected source. Plain HTML
    position:fixed panel — appears at the cursor, closes on outside click
    or Escape. Teacher-only — never drawn on canvas, never recorded. */

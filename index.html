@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.46</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.47</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -241,6 +241,22 @@
                 </select>
                 <span class="tc-toolbar-sep"></span>
                 <button class="tc-toolbar-btn tc-toolbar-del" id="tcSrcToolbarDel" title="Delete">✕</button>
+              </div>
+              <!-- v0.7.47: whiteboard color + thickness + eraser picker -->
+              <div class="tc-wb-picker" id="tcWbPicker" style="display:none">
+                <button class="tc-wb-swatch" data-color="#fbbf24" style="background:#fbbf24" title="yellow"></button>
+                <button class="tc-wb-swatch" data-color="#ef4444" style="background:#ef4444" title="red"></button>
+                <button class="tc-wb-swatch" data-color="#22c55e" style="background:#22c55e" title="green"></button>
+                <button class="tc-wb-swatch" data-color="#38bdf8" style="background:#38bdf8" title="cyan"></button>
+                <button class="tc-wb-swatch" data-color="#e879f9" style="background:#e879f9" title="pink"></button>
+                <button class="tc-wb-swatch" data-color="#ffffff" style="background:#ffffff" title="white"></button>
+                <span class="tc-wb-sep"></span>
+                <button class="tc-wb-thick" data-thickness="4" title="Thin">•</button>
+                <button class="tc-wb-thick" data-thickness="8" title="Medium">●</button>
+                <button class="tc-wb-thick" data-thickness="14" title="Thick">⬤</button>
+                <span class="tc-wb-sep"></span>
+                <button class="tc-wb-btn" id="tcWbEraserBtn" title="Eraser">🧽</button>
+                <button class="tc-wb-btn" id="tcWbClearBtn" title="Clear all">🗑</button>
               </div>
               <!-- v0.7.35: right-click context menu on a selected source. Plain
                    position:fixed panel — teacher-only, never drawn on canvas. -->
@@ -891,7 +907,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.46</strong></span>
+      <span class="badge"><strong>v0.7.47</strong></span>
     </div>
   </aside>
 
@@ -1117,7 +1133,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.46</strong></span>
+      <span class="badge"><strong>v0.7.47</strong></span>
     </div>
   </aside>
 
@@ -1149,7 +1165,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.46</strong></span>
+      <span class="badge"><strong>v0.7.47</strong></span>
     </div>
   </aside>
 

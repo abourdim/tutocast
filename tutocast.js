@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.46 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.47 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.46';
+const APP_VERSION = '0.7.47';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 00:45';
+const BUILD_DATE = '2026-04-12 01:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -3685,9 +3685,14 @@ const Freeze = {
   }
 };
 
-/* Whiteboard — draws on the overlay canvas, persists across frames */
+/* Whiteboard — draws on the overlay canvas, persists across frames.
+   v0.7.47: floating picker with 6 colors, 3 thicknesses, eraser, clear. */
 const Whiteboard = {
   on: false, drawing: false, lastX: 0, lastY: 0,
+  color: '#fbbf24',
+  thickness: 8,
+  eraser: false,
+
   setup() {
     const stage = $('tcStage');
     const toStageXY = (e) => {
@@ -3699,6 +3704,8 @@ const Whiteboard = {
     };
     stage.addEventListener('mousedown', (e) => {
       if (!this.on) return;
+      // v0.7.47: ignore clicks on the picker UI
+      if (e.target.closest && e.target.closest('.tc-wb-picker')) return;
       this.drawing = true;
       [this.lastX, this.lastY] = toStageXY(e);
     });
@@ -3706,24 +3713,76 @@ const Whiteboard = {
       if (!this.drawing) return;
       const [x, y] = toStageXY(e);
       const c = Engine.overlayCtx;
-      c.strokeStyle = '#fbbf24';
-      c.lineWidth = 8;
+      c.save();
+      if (this.eraser) {
+        c.globalCompositeOperation = 'destination-out';
+        c.strokeStyle = 'rgba(0,0,0,1)';
+        c.lineWidth = this.thickness * 2;  // eraser is chunkier
+      } else {
+        c.globalCompositeOperation = 'source-over';
+        c.strokeStyle = this.color;
+        c.lineWidth = this.thickness;
+      }
       c.lineCap = 'round';
       c.lineJoin = 'round';
       c.beginPath();
       c.moveTo(this.lastX, this.lastY);
       c.lineTo(x, y);
       c.stroke();
+      c.restore();
       this.lastX = x; this.lastY = y;
     });
     // Stop on mouseup anywhere (covers mouse leaving stage mid-stroke)
     window.addEventListener('mouseup', () => { this.drawing = false; });
     stage.addEventListener('mouseleave', () => { this.drawing = false; });
+
+    // v0.7.47: wire the picker UI
+    const picker = $('tcWbPicker');
+    if (picker) {
+      // don't start a drawing stroke on click inside the picker
+      picker.addEventListener('mousedown', (e) => e.stopPropagation());
+      picker.querySelectorAll('.tc-wb-swatch').forEach(btn => {
+        btn.addEventListener('click', () => this.setColor(btn.dataset.color));
+      });
+      picker.querySelectorAll('.tc-wb-thick').forEach(btn => {
+        btn.addEventListener('click', () => this.setThickness(parseInt(btn.dataset.thickness)));
+      });
+      $('tcWbEraserBtn')?.addEventListener('click', () => this.toggleEraser());
+      $('tcWbClearBtn')?.addEventListener('click', () => this.clear());
+      this._refreshUI();  // initial state
+    }
   },
+
+  setColor(hex) {
+    this.color = hex;
+    this.eraser = false;
+    this._refreshUI();
+  },
+  setThickness(px) {
+    this.thickness = px;
+    this._refreshUI();
+  },
+  toggleEraser() {
+    this.eraser = !this.eraser;
+    this._refreshUI();
+  },
+  _refreshUI() {
+    document.querySelectorAll('#tcWbPicker .tc-wb-swatch').forEach(s => {
+      s.classList.toggle('active', !this.eraser && s.dataset.color === this.color);
+    });
+    document.querySelectorAll('#tcWbPicker .tc-wb-thick').forEach(thk => {
+      thk.classList.toggle('active', parseInt(thk.dataset.thickness) === this.thickness);
+    });
+    $('tcWbEraserBtn')?.classList.toggle('active', this.eraser);
+  },
+
   toggle() {
     this.on = !this.on;
     $('tcStage').classList.toggle('drawing', this.on);
     $('tcWhiteboardBtn').classList.toggle('active', this.on);
+    // v0.7.47: show/hide picker
+    const picker = $('tcWbPicker');
+    if (picker) picker.style.display = this.on ? 'flex' : 'none';
     log(this.on ? t('drawOn') : t('drawOff'), 'info');
     if (this.on) showToast(t('drawHint'), 4000);
   },
