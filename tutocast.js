@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.35 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.36 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.35';
+const APP_VERSION = '0.7.36';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 21:45';
+const BUILD_DATE = '2026-04-11 22:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -441,6 +441,18 @@ const LANG = {
     tpl_fix_s5: "Ça marche !",
     t_mosque: 'Mosque', t_zellige: 'Zellige', t_andalus: 'Andalus',
     t_riad: 'Riad', t_medina: 'Médina', t_space: 'Espace', t_jungle: 'Jungle', t_robot: 'Robot',
+    // v0.7.36: first-time guided tour
+    tour_1_title: '📹 Sources',
+    tour_1_body: 'Commence par ajouter une source — écran, caméra ou micro.',
+    tour_2_title: '🎬 Stage',
+    tour_2_body: 'Compose ta scène ici — drag-drop, redimensionne, change de forme.',
+    tour_3_title: '🎭 Scènes',
+    tour_3_body: 'Change de layout en 1 clic — touches 1-9 aussi.',
+    tour_4_title: '🔴 Enregistre',
+    tour_4_body: 'Clique pour démarrer — R au clavier aussi.',
+    tour_5_title: '⌨ Raccourcis',
+    tour_5_body: 'Touche ? pour voir tous les raccourcis clavier.',
+    tour_skip: 'Passer', tour_back: '← Retour', tour_next: 'Suivant →', tour_done: 'Terminé ✓',
   },
   en: {
     title: 'TutoCast', slogan: '🎬 Lights, camera, ROBOT!',
@@ -861,6 +873,18 @@ const LANG = {
     tpl_fix_s5: "It works!",
     t_mosque: 'Mosque', t_zellige: 'Zellige', t_andalus: 'Andalus',
     t_riad: 'Riad', t_medina: 'Medina', t_space: 'Space', t_jungle: 'Jungle', t_robot: 'Robot',
+    // v0.7.36: first-time guided tour
+    tour_1_title: '📹 Sources',
+    tour_1_body: 'Start by adding a source — screen, camera, or mic.',
+    tour_2_title: '🎬 Stage',
+    tour_2_body: 'Compose your scene here — drag-drop, resize, change shape.',
+    tour_3_title: '🎭 Scenes',
+    tour_3_body: 'Switch layout in one click — 1-9 hotkeys too.',
+    tour_4_title: '🔴 Record',
+    tour_4_body: 'Click to start — R keyboard shortcut too.',
+    tour_5_title: '⌨ Shortcuts',
+    tour_5_body: 'Press ? to see all keyboard shortcuts.',
+    tour_skip: 'Skip', tour_back: '← Back', tour_next: 'Next →', tour_done: 'Done ✓',
   },
   ar: {
     title: 'TutoCast', slogan: '🎬 أضواء، كاميرا، روبوت!',
@@ -1269,6 +1293,18 @@ const LANG = {
     tpl_fix_s5: "يعمل!",
     t_mosque: 'مسجد', t_zellige: 'زليج', t_andalus: 'أندلس',
     t_riad: 'رياض', t_medina: 'مدينة', t_space: 'فضاء', t_jungle: 'أدغال', t_robot: 'روبوت',
+    // v0.7.36: first-time guided tour
+    tour_1_title: '📹 المصادر',
+    tour_1_body: 'ابدأ بإضافة مصدر — شاشة، كاميرا، أو ميكروفون.',
+    tour_2_title: '🎬 المسرح',
+    tour_2_body: 'قم بتأليف مشهدك هنا — سحب، إفلات، تغيير الحجم والشكل.',
+    tour_3_title: '🎭 المشاهد',
+    tour_3_body: 'بدّل التخطيط بنقرة واحدة — أو بمفاتيح 1-9.',
+    tour_4_title: '🔴 سجّل',
+    tour_4_body: 'انقر للبدء — أو اضغط R.',
+    tour_5_title: '⌨ الاختصارات',
+    tour_5_body: 'اضغط ? لرؤية جميع الاختصارات.',
+    tour_skip: 'تخطي', tour_back: '← رجوع', tour_next: 'التالي →', tour_done: 'انتهى ✓',
   }
 };
 
@@ -5662,6 +5698,109 @@ const Cheatsheet = {
   },
 };
 
+/* ─────────── GuidedTour — v0.7.36
+
+   First-time spotlight tour. Dims the full screen, cuts out a
+   spotlight around a target element, and shows a floating tooltip
+   card with title + body + Next/Skip/Back. Gated on localStorage
+   'tc-tour-done' so it only runs on the user's very first visit;
+   skipping or finishing persists the flag. */
+const GuidedTour = {
+  steps: [
+    { target: '.tc-sidebar-sources', titleKey: 'tour_1_title', bodyKey: 'tour_1_body' },
+    { target: '.tc-stage',          titleKey: 'tour_2_title', bodyKey: 'tour_2_body' },
+    { target: '.tc-sidebar-scenes', titleKey: 'tour_3_title', bodyKey: 'tour_3_body' },
+    { target: '.tc-rec-btn',        titleKey: 'tour_4_title', bodyKey: 'tour_4_body' },
+    { target: '.tc-tools-bar',      titleKey: 'tour_5_title', bodyKey: 'tour_5_body' },
+  ],
+  idx: 0,
+  active: false,
+
+  maybeAutoStart() {
+    try {
+      if (localStorage.getItem('tc-tour-done') === '1') return;
+    } catch {}
+    // Delay so splash/onboard cards fade first
+    setTimeout(() => this.start(), 1800);
+  },
+
+  start() {
+    if (this.active) return;
+    this.active = true;
+    this.idx = 0;
+    const modal = $('tcTourModal');
+    if (modal) modal.style.display = '';
+    this.renderStep();
+  },
+
+  stop(done) {
+    this.active = false;
+    const modal = $('tcTourModal');
+    if (modal) modal.style.display = 'none';
+    if (done) {
+      try { localStorage.setItem('tc-tour-done', '1'); } catch {}
+    }
+  },
+
+  skip() { this.stop(true); },
+  finish() { this.stop(true); },
+
+  next() {
+    if (this.idx < this.steps.length - 1) {
+      this.idx++;
+      this.renderStep();
+    } else {
+      this.finish();
+    }
+  },
+  back() {
+    if (this.idx > 0) { this.idx--; this.renderStep(); }
+  },
+
+  renderStep() {
+    const step = this.steps[this.idx];
+    const target = document.querySelector(step.target);
+    const spot = $('tcTourSpotlight');
+    const tip = $('tcTourTip');
+    if (!target || !spot || !tip) {
+      this.finish();
+      return;
+    }
+    const r = target.getBoundingClientRect();
+    // Spotlight is a box with box-shadow extending outward to darken
+    // the rest of the screen. 10px padding, animated.
+    const pad = 10;
+    spot.style.left = (r.left - pad) + 'px';
+    spot.style.top = (r.top - pad) + 'px';
+    spot.style.width = (r.width + pad * 2) + 'px';
+    spot.style.height = (r.height + pad * 2) + 'px';
+    // Tooltip position: below the target, clamp to viewport
+    const tipH = 160;
+    const tipW = 320;
+    let tipTop = r.bottom + 16;
+    if (tipTop + tipH > window.innerHeight - 16) tipTop = r.top - tipH - 16;
+    let tipLeft = r.left + r.width / 2 - tipW / 2;
+    tipLeft = Math.max(16, Math.min(window.innerWidth - tipW - 16, tipLeft));
+    tip.style.left = tipLeft + 'px';
+    tip.style.top = tipTop + 'px';
+    tip.querySelector('.tc-tour-title').textContent = t(step.titleKey);
+    tip.querySelector('.tc-tour-body').textContent = t(step.bodyKey);
+    tip.querySelector('.tc-tour-progress').textContent = `${this.idx + 1} / ${this.steps.length}`;
+    $('tcTourBackBtn').disabled = this.idx === 0;
+    $('tcTourNextBtn').textContent = this.idx === this.steps.length - 1 ? (t('tour_done') || 'Terminé ✓') : (t('tour_next') || 'Suivant →');
+  },
+
+  setup() {
+    const modal = $('tcTourModal');
+    if (!modal) return;
+    $('tcTourNextBtn')?.addEventListener('click', () => this.next());
+    $('tcTourBackBtn')?.addEventListener('click', () => this.back());
+    $('tcTourSkipBtn')?.addEventListener('click', () => this.skip());
+    // Re-render on resize
+    window.addEventListener('resize', () => { if (this.active) this.renderStep(); });
+  },
+};
+
 /* ─────────── SilenceWatch — flash a ⚠ chip when the mic has been quiet too long
 
    The cheap-and-honest alternative to "uh/um detection". We can't run
@@ -6960,6 +7099,7 @@ async function init() {
   SourceContextMenu.setup();
   Teleprompter.setup();
   Cheatsheet.setup();
+  GuidedTour.setup();
   Minimap.setup();
 
   renderScenes();
@@ -6970,6 +7110,7 @@ async function init() {
   Templates.renderStepStrip();
 
   setupOnboarding();
+  GuidedTour.maybeAutoStart();
   setupHelpTabs();
   setupHotkeys();
   wireEvents();

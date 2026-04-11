@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.35</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.36</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -459,6 +459,23 @@
           <div class="tc-cheat-row"><kbd>?</kbd><span data-i18n="cheatMiscThis">Afficher ce panneau</span></div>
           <div class="tc-cheat-row"><kbd>Esc</kbd><span data-i18n="cheatMiscEsc">Fermer panneaux</span></div>
           <div class="tc-cheat-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd><span data-i18n="cheatMiscDebug">Debug HUD</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.7.36: Guided tour — shown on first launch -->
+  <div class="tc-tour-modal" id="tcTourModal" style="display:none">
+    <div class="tc-tour-spotlight" id="tcTourSpotlight"></div>
+    <div class="tc-tour-tip" id="tcTourTip">
+      <div class="tc-tour-title"></div>
+      <div class="tc-tour-body"></div>
+      <div class="tc-tour-footer">
+        <span class="tc-tour-progress"></span>
+        <div class="tc-tour-btns">
+          <button id="tcTourSkipBtn" class="tc-tour-btn-skip" data-i18n="tour_skip">Passer</button>
+          <button id="tcTourBackBtn" class="tc-tour-btn-back" data-i18n="tour_back">← Retour</button>
+          <button id="tcTourNextBtn" class="tc-tour-btn-next" data-i18n="tour_next">Suivant →</button>
         </div>
       </div>
     </div>
@@ -843,7 +860,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.35</strong></span>
+      <span class="badge"><strong>v0.7.36</strong></span>
     </div>
   </aside>
 
@@ -1055,7 +1072,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.35</strong></span>
+      <span class="badge"><strong>v0.7.36</strong></span>
     </div>
   </aside>
 
@@ -1087,7 +1104,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.35</strong></span>
+      <span class="badge"><strong>v0.7.36</strong></span>
     </div>
   </aside>
 
