@@ -3669,75 +3669,105 @@ body.log-open .app {
   .tc-tpl-step { padding: 4px 6px; }
 }
 
-/* v0.7.52 — Badge unlock celebration modal card */
-.tc-badge-unlock {
+/* v0.7.54: snapshot annotator modal */
+.tc-snap-annot-modal {
   position: fixed;
   inset: 0;
-  z-index: 13000;
-  display: none;
+  z-index: 12800;
+  background: rgba(0, 0, 0, .85);
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, .72);
-  opacity: 0;
-  transition: opacity .3s;
-  backdrop-filter: blur(4px);
+  padding: 24px;
 }
-.tc-badge-unlock.visible { opacity: 1; }
-.tc-buc-card {
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--accent2, #fb923c) 15%, var(--panel, #0c1f0a)),
-    var(--panel, #0c1f0a));
-  border: 3px solid var(--accent, #a3e635);
-  border-radius: 22px;
-  padding: 32px 44px;
-  text-align: center;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .7), 0 0 0 6px rgba(163, 230, 53, .12);
-  animation: tcBucPop .5s cubic-bezier(.3, 1.6, .5, 1);
-  max-width: 400px;
+.tc-snap-annot-card {
+  background: var(--panel, #0c1f0a);
+  border: 2px solid var(--accent, #a3e635);
+  border-radius: 14px;
+  max-width: min(1200px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .7);
 }
-@keyframes tcBucPop {
-  0%   { transform: scale(.3) rotate(-8deg); opacity: 0; }
-  60%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
+.tc-snap-annot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px dashed rgba(255, 255, 255, .1);
 }
-.tc-buc-title {
+.tc-snap-annot-title {
   font-family: var(--font-h, Righteous, sans-serif);
   font-size: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
   color: var(--accent, #a3e635);
-  margin-bottom: 14px;
-}
-.tc-buc-icon {
-  font-size: 5rem;
-  line-height: 1;
-  margin: 10px 0 16px;
-  animation: tcBucSpin 1.8s ease-out;
-}
-@keyframes tcBucSpin {
-  0%   { transform: rotate(-180deg) scale(0); }
-  100% { transform: rotate(0) scale(1); }
-}
-.tc-buc-label {
-  font-family: var(--font-h, Righteous, sans-serif);
-  font-size: 1.5rem;
-  color: #ffffff;
-  margin-bottom: 22px;
-}
-.tc-buc-btn {
-  background: var(--accent, #a3e635);
-  color: var(--bg, #000);
-  border: none;
-  padding: 10px 28px;
-  border-radius: 10px;
-  font-family: var(--font-h, Righteous, sans-serif);
-  font-size: .95rem;
-  text-transform: uppercase;
   letter-spacing: 1px;
-  cursor: pointer;
-  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent, #a3e635) 50%, black);
-  transition: transform .1s, box-shadow .1s;
 }
-.tc-buc-btn:hover { transform: translateY(-1px); }
-.tc-buc-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--accent, #a3e635) 50%, black); }
+.tc-snap-annot-close {
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .15);
+  color: #e5e7eb;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.tc-snap-annot-close:hover { background: rgba(239, 68, 68, .2); color: #fff; }
+.tc-snap-annot-body {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.tc-snap-annot-body canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 6px;
+  cursor: crosshair;
+  background: #000;
+}
+.tc-snap-annot-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px dashed rgba(255, 255, 255, .1);
+}
+.tc-snap-annot-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .2);
+  cursor: pointer;
+  padding: 0;
+  transition: transform .1s;
+}
+.tc-snap-annot-swatch:hover { transform: scale(1.1); }
+.tc-snap-annot-swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .4);
+}
+.tc-snap-annot-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, .15);
+  margin: 0 6px;
+}
+.tc-snap-annot-btn {
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .15);
+  color: #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .82rem;
+  font-family: var(--font-h, Righteous, sans-serif);
+}
+.tc-snap-annot-btn:hover { background: rgba(255, 255, 255, .14); }
+.tc-snap-annot-save {
+  background: var(--accent, #a3e635) !important;
+  color: var(--bg, #000) !important;
+  border-color: var(--accent, #a3e635) !important;
+}

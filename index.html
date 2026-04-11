@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.53</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.54</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -500,6 +500,28 @@
           <div class="tc-cheat-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd><span data-i18n="cheatMiscDebug">Debug HUD</span></div>
           <div class="tc-cheat-row"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span data-i18n="cheatMiscRetry">Retry 30s (pendant enregistrement)</span></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v0.7.54: snapshot annotator modal -->
+  <div class="tc-snap-annot-modal" id="tcSnapAnnotModal" style="display:none">
+    <div class="tc-snap-annot-card">
+      <div class="tc-snap-annot-header">
+        <span class="tc-snap-annot-title">✏️ <span data-i18n="snapAnnotTitle">Annote ta capture</span></span>
+        <button class="tc-snap-annot-close" id="tcSnapAnnotCancel" aria-label="Cancel">✕</button>
+      </div>
+      <div class="tc-snap-annot-body">
+        <canvas id="tcSnapAnnotCanvas"></canvas>
+      </div>
+      <div class="tc-snap-annot-toolbar">
+        <button class="tc-snap-annot-swatch active" data-color="#ef4444" style="background:#ef4444" title="red"></button>
+        <button class="tc-snap-annot-swatch" data-color="#fbbf24" style="background:#fbbf24" title="yellow"></button>
+        <button class="tc-snap-annot-swatch" data-color="#38bdf8" style="background:#38bdf8" title="cyan"></button>
+        <span class="tc-snap-annot-sep"></span>
+        <button class="tc-snap-annot-btn" id="tcSnapAnnotClear">🗑 <span data-i18n="snapAnnotClear">Effacer</span></button>
+        <span style="flex:1"></span>
+        <button class="tc-snap-annot-btn tc-snap-annot-save" id="tcSnapAnnotSave">💾 <span data-i18n="snapAnnotSave">Enregistrer</span></button>
       </div>
     </div>
   </div>
@@ -915,7 +937,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.53</strong></span>
+      <span class="badge"><strong>v0.7.54</strong></span>
     </div>
   </aside>
 
@@ -1012,6 +1034,13 @@
             <label class="toggle-ctrl">
               <input type="checkbox" id="tcAutoPauseToggle" class="checkbox-ctrl" />
               <span data-i18n="autoPauseLabel">⏸ Pause auto quand tu changes d'onglet</span>
+            </label>
+          </div>
+          <!-- v0.7.54: opt-in snapshot annotation modal -->
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcSnapAnnotToggle" class="checkbox-ctrl" />
+              <span data-i18n="snapAnnotLabel">✏️ Annoter la capture avant sauvegarde</span>
             </label>
           </div>
           <!-- v0.7.37: auto scene intro text overlay -->
@@ -1141,7 +1170,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.53</strong></span>
+      <span class="badge"><strong>v0.7.54</strong></span>
     </div>
   </aside>
 
@@ -1173,7 +1202,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.53</strong></span>
+      <span class="badge"><strong>v0.7.54</strong></span>
     </div>
   </aside>
 

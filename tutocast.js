@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.53 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.54 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.53';
+const APP_VERSION = '0.7.54';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 02:30';
+const BUILD_DATE = '2026-04-12 02:45';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -214,6 +214,10 @@ const LANG = {
     outroPlaying: '🎬 Outro en cours…',
     autoPauseLabel: "⏸ Pause auto quand tu changes d'onglet",
     sceneIntroLabel: "🎭 Texte d'intro auto sur changement de scène",
+    snapAnnotLabel: '✏️ Annoter la capture avant sauvegarde',
+    snapAnnotTitle: 'Annote ta capture',
+    snapAnnotClear: 'Effacer',
+    snapAnnotSave: 'Enregistrer',
     autoPaused: '⏸ Enregistrement suspendu',
     autoResumed: '▶ Enregistrement repris',
     sensorChartTitle: 'Capteurs micro:bit',
@@ -695,6 +699,10 @@ const LANG = {
     outroPlaying: '🎬 Outro playing…',
     autoPauseLabel: '⏸ Auto-pause when you switch tab',
     sceneIntroLabel: '🎭 Auto intro text on scene change',
+    snapAnnotLabel: '✏️ Annotate snapshots before saving',
+    snapAnnotTitle: 'Annotate your snapshot',
+    snapAnnotClear: 'Clear',
+    snapAnnotSave: 'Save',
     autoPaused: '⏸ Recording paused',
     autoResumed: '▶ Recording resumed',
     sensorChartTitle: 'micro:bit sensors',
@@ -1168,6 +1176,10 @@ const LANG = {
     outroPlaying: '🎬 الخاتمة قيد التشغيل…',
     autoPauseLabel: '⏸ إيقاف مؤقت تلقائي عند تبديل علامة التبويب',
     sceneIntroLabel: '🎭 نص مقدمة تلقائي عند تغيير المشهد',
+    snapAnnotLabel: '✏️ توضيح اللقطة قبل الحفظ',
+    snapAnnotTitle: 'وضّح لقطتك',
+    snapAnnotClear: 'مسح',
+    snapAnnotSave: 'حفظ',
     autoPaused: '⏸ تم إيقاف التسجيل مؤقتًا',
     autoResumed: '▶ استُؤنف التسجيل',
     sensorChartTitle: 'مستشعرات micro:bit',
@@ -6220,6 +6232,14 @@ const QuizCard = {
 /* Snapshot — download current canvas as PNG */
 function snapshot() {
   Engine.canvas.toBlob((blob) => {
+    // v0.7.54: if annotation mode is on, open the modal instead of
+    // immediately downloading. Opt-in via localStorage tc-snap-annotate.
+    let annotate = false;
+    try { annotate = localStorage.getItem('tc-snap-annotate') === '1'; } catch {}
+    if (annotate) {
+      SnapshotAnnotator.open(blob);
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const now = new Date();
@@ -6233,6 +6253,119 @@ function snapshot() {
     SnapshotGallery.add(blob);
   });
 }
+
+/* v0.7.54: SnapshotAnnotator — optional modal that appears before the
+   snapshot is downloaded when the "Annoter la capture" setting is on.
+   Lets the user scribble on the image with 3 colors, then Save re-encodes
+   the canvas and runs the original download + gallery flow. */
+const SnapshotAnnotator = {
+  canvas: null,
+  ctx: null,
+  img: null,
+  color: '#ef4444',
+  drawing: false,
+  lastX: 0,
+  lastY: 0,
+  _origBlob: null,
+
+  open(blob) {
+    this._origBlob = blob;
+    const modal = $('tcSnapAnnotModal');
+    if (!modal) return;
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const c = $('tcSnapAnnotCanvas');
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      this.canvas = c;
+      this.ctx = ctx;
+      this.img = img;
+      URL.revokeObjectURL(url);
+      modal.style.display = 'flex';
+    };
+    img.src = url;
+  },
+
+  close() {
+    const modal = $('tcSnapAnnotModal');
+    if (modal) modal.style.display = 'none';
+    this._origBlob = null;
+    this.canvas = null;
+    this.ctx = null;
+  },
+
+  clear() {
+    if (!this.ctx || !this.img) return;
+    this.ctx.drawImage(this.img, 0, 0);
+  },
+
+  setColor(hex) {
+    this.color = hex;
+    document.querySelectorAll('#tcSnapAnnotModal .tc-snap-annot-swatch').forEach(s => {
+      s.classList.toggle('active', s.dataset.color === hex);
+    });
+  },
+
+  save() {
+    if (!this.canvas) return;
+    this.canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      a.href = url;
+      a.download = `tutocast-snapshot-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-annotated.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      log(t('snapshotSaved') || '📸 Capture enregistrée', 'success');
+      if (typeof SnapshotGallery !== 'undefined') SnapshotGallery.add(blob);
+      this.close();
+    });
+  },
+
+  setup() {
+    const modal = $('tcSnapAnnotModal');
+    if (!modal) return;
+    modal.querySelectorAll('.tc-snap-annot-swatch').forEach(s => {
+      s.addEventListener('click', () => this.setColor(s.dataset.color));
+    });
+    $('tcSnapAnnotClear')?.addEventListener('click', () => this.clear());
+    $('tcSnapAnnotCancel')?.addEventListener('click', () => this.close());
+    $('tcSnapAnnotSave')?.addEventListener('click', () => this.save());
+    const c = $('tcSnapAnnotCanvas');
+    const toCanvasXY = (e) => {
+      const r = c.getBoundingClientRect();
+      return [
+        ((e.clientX - r.left) / r.width) * c.width,
+        ((e.clientY - r.top) / r.height) * c.height,
+      ];
+    };
+    c?.addEventListener('mousedown', (e) => {
+      this.drawing = true;
+      [this.lastX, this.lastY] = toCanvasXY(e);
+    });
+    c?.addEventListener('mousemove', (e) => {
+      if (!this.drawing) return;
+      const [x, y] = toCanvasXY(e);
+      this.ctx.strokeStyle = this.color;
+      this.ctx.lineWidth = 6;
+      this.ctx.lineCap = 'round';
+      this.ctx.lineJoin = 'round';
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+      this.ctx.lineTo(x, y);
+      this.ctx.stroke();
+      this.lastX = x; this.lastY = y;
+    });
+    window.addEventListener('mouseup', () => { this.drawing = false; });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) this.close();
+    });
+  },
+};
 
 /* v0.7.30: SnapshotGallery — compact strip of thumbnails below the stage
    showing every snapshot taken during the current session. Each entry is
@@ -8085,6 +8218,14 @@ function wireEvents() {
       try { localStorage.setItem('tc-auto-pause', e.target.checked ? '1' : '0'); } catch {}
     });
   }
+  // v0.7.54: opt-in snapshot annotation modal before saving
+  const saEl = $('tcSnapAnnotToggle');
+  if (saEl) {
+    try { saEl.checked = localStorage.getItem('tc-snap-annotate') === '1'; } catch {}
+    saEl.addEventListener('change', (e) => {
+      try { localStorage.setItem('tc-snap-annotate', e.target.checked ? '1' : '0'); } catch {}
+    });
+  }
   // v0.7.37: auto scene intro text overlay toggle
   const siEl = $('tcSceneIntroToggle');
   if (siEl) {
@@ -8168,6 +8309,7 @@ async function init() {
   SourceContextMenu.setup();
   Teleprompter.setup();
   Cheatsheet.setup();
+  SnapshotAnnotator.setup();
   Tooltip.setup();
   GuidedTour.setup();
   Minimap.setup();
