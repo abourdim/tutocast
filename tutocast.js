@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.79 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.80 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.79';
+const APP_VERSION = '0.7.80';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 09:00';
+const BUILD_DATE = '2026-04-12 09:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -83,6 +83,7 @@ const LANG = {
     clear: 'Effacer', copy: 'Copier', theme: 'Thème',
     settings: '⚙️ Paramètres', language: 'Langue',
     help: '❓ Aide', faq: 'FAQ', howto: 'Guide', wiki: 'Wiki',
+    helpSearchPlaceholder: '🔍 Rechercher…',
     soundEffects: '🔊 Effets sonores',
     splashHint: 'appuyer pour passer',
     export: 'Exporter', filterAll: 'Tout',
@@ -644,6 +645,7 @@ const LANG = {
     clear: 'Clear', copy: 'Copy', theme: 'Theme',
     settings: '⚙️ Settings', language: 'Language',
     help: '❓ Help', faq: 'FAQ', howto: 'How-to', wiki: 'Wiki',
+    helpSearchPlaceholder: '🔍 Search…',
     soundEffects: '🔊 Sound effects',
     splashHint: 'tap to skip',
     export: 'Export', filterAll: 'All',
@@ -1203,6 +1205,7 @@ const LANG = {
     clear: 'مسح', copy: 'نسخ', theme: 'المظهر',
     settings: '⚙️ الإعدادات', language: 'اللغة',
     help: '❓ مساعدة', faq: 'أسئلة', howto: 'كيف', wiki: 'ويكي',
+    helpSearchPlaceholder: '🔍 ابحث…',
     soundEffects: '🔊 مؤثرات صوتية',
     splashHint: 'انقر للتخطي',
     export: 'تصدير', filterAll: 'الكل',
@@ -1709,6 +1712,11 @@ function applyI18n() {
   document.title = `${s.title} — ${s.slogan}`;
   document.documentElement.lang = currentLang;
   document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+  // v0.7.80: keep the help search placeholder in sync with the active language
+  const helpSearch = $('tcHelpSearch');
+  if (helpSearch && s.helpSearchPlaceholder) {
+    helpSearch.setAttribute('placeholder', s.helpSearchPlaceholder);
+  }
 }
 
 function setLanguage(lang) {
@@ -9122,6 +9130,37 @@ function setupHelpTabs() {
   });
 }
 
+/* v0.7.80: live search box at the top of the Help panel. As the user
+   types, every <details>, .wiki-entry and .help-step in any tab is
+   filtered by case-insensitive substring against its textContent.
+   Non-matches hide via display:none; matching <details> auto-open so
+   the answer is visible. Clearing the input restores everything. */
+const HelpSearch = {
+  setup() {
+    const input = $('tcHelpSearch');
+    if (!input) return;
+    input.setAttribute('placeholder', t('helpSearchPlaceholder') || '🔍 Rechercher…');
+    input.addEventListener('input', () => this._apply(input.value));
+  },
+
+  _apply(query) {
+    const q = (query || '').trim().toLowerCase();
+    const items = document.querySelectorAll(
+      '#helpPanel details, #helpPanel .wiki-entry, #helpPanel .help-step'
+    );
+    if (q === '') {
+      items.forEach(el => { el.style.display = ''; });
+      return;
+    }
+    items.forEach(el => {
+      const text = (el.textContent || '').toLowerCase();
+      const match = text.includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match && el.tagName === 'DETAILS') el.open = true;
+    });
+  },
+};
+
 const KeyBindings = {
   /* v0.7.66: action → key binding lookup. Loaded from localStorage
      on startup; falls back to defaults. Rebinding via the Settings
@@ -10099,6 +10138,7 @@ async function init() {
   TipOfDay.maybeShow();
   GuidedTour.maybeAutoStart();
   setupHelpTabs();
+  HelpSearch.setup();
   KeyBindings.load();
   setupHotkeys();
   wireEvents();

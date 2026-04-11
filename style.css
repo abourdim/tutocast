@@ -4027,3 +4027,27 @@ body.log-open .app {
 .tc-diag-row.pass .tc-diag-label { color: rgba(255, 255, 255, .85); }
 .tc-diag-row.fail .tc-diag-label { color: rgba(252, 165, 165, .9); }
 .tc-diag-icon { font-size: .72rem; }
+
+/* v0.7.80: live search box at the top of the Help panel. Filters
+   FAQ <details>, .wiki-entry and .help-step items across every tab
+   by case-insensitive substring against textContent. */
+.help-search-wrap {
+  padding: 10px 16px 4px;
+}
+.help-search {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: .88rem;
+  font-family: var(--font-b, inherit);
+  outline: none;
+  transition: border-color .15s;
+}
+.help-search:focus {
+  border-color: var(--accent, #a3e635);
+  box-shadow: 0 0 0 3px rgba(163, 230, 53, .15);
+}
+.help-search::placeholder { color: rgba(255, 255, 255, .4); }
