@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.99';
+const APP_VERSION = '0.7.100';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 14:00';
+const BUILD_DATE = '2026-04-12 14:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -630,6 +630,9 @@ const LANG = {
     tip_tele: 'Script téléprompteur avec auto-scroll',
     tip_snap: 'Capture photo PNG + galerie',
     tip_fullscreen: 'Plein écran pour immersion totale',
+    // v0.7.100: milestone celebration
+    v100Subtitle: '100 releases de tuto vidéo pour enfants 🎬',
+    v100Continue: 'Continuer',
   },
   en: {
     title: 'TutoCast', slogan: '🎬 Lights, camera, ROBOT!',
@@ -1239,6 +1242,9 @@ const LANG = {
     tip_tele: 'Teleprompter script with auto-scroll',
     tip_snap: 'PNG snapshot + gallery',
     tip_fullscreen: 'Fullscreen for full immersion',
+    // v0.7.100: milestone celebration
+    v100Subtitle: '100 releases of kid-friendly tutorial recording 🎬',
+    v100Continue: 'Continue',
   },
   ar: {
     title: 'TutoCast', slogan: '🎬 أضواء، كاميرا، روبوت!',
@@ -1834,6 +1840,9 @@ const LANG = {
     tip_tele: 'نص التيليبرومبتر مع تمرير تلقائي',
     tip_snap: 'لقطة PNG + معرض',
     tip_fullscreen: 'ملء الشاشة للانغماس الكامل',
+    // v0.7.100: milestone celebration
+    v100Subtitle: '100 إصدارًا لتسجيل الدروس الملائم للأطفال 🎬',
+    v100Continue: 'متابعة',
   }
 };
 
@@ -9902,6 +9911,62 @@ const TipOfDay = {
   },
 };
 
+/* v0.7.100: One-shot milestone splash for the 100th version bump. Shown
+   exactly once on the first launch of v0.7.100, gated by tc-v100-seen. */
+const V100Celebration = {
+  maybeShow() {
+    try {
+      if (localStorage.getItem('tc-v100-seen') === '1') return;
+    } catch {}
+    // Wait for splash + onboard to clear
+    setTimeout(() => this.show(), 2500);
+  },
+
+  show() {
+    if (document.getElementById('tcV100Modal')) return;
+    const modal = document.createElement('div');
+    modal.className = 'tc-v100-modal';
+    modal.id = 'tcV100Modal';
+    modal.innerHTML = `
+      <div class="tc-v100-card">
+        <div class="tc-v100-number">100</div>
+        <div class="tc-v100-title">TutoCast v0.7.100</div>
+        <div class="tc-v100-subtitle" data-i18n="v100Subtitle">100 releases of kid-friendly tutorial recording 🎬</div>
+        <div class="tc-v100-features">
+          <div>🎚 Live captions + mic boost + noise gate + ducking</div>
+          <div>🎨 Chroma key + 9 shapes + 4 aspect ratios</div>
+          <div>⌨ Cheat sheet + rebindable hotkeys + long-press REC</div>
+          <div>📸 Paste image + annotate + 4× print snapshots</div>
+          <div>📊 Stats dashboard + streak + 9 badges + history filter</div>
+          <div>🎬 Broadcast teleprompter + scene transitions + intro/outro</div>
+          <div>🔧 Session bundle + diagnostics + tour + screensaver</div>
+          <div>📐 Alignment guides + drag threshold + grid snap + minimap</div>
+          <div>💧 Ripples + laser + spotlight + big marker + cursor trail</div>
+          <div>📤 Web Share + markdown chapters + waveform + sensor chart</div>
+        </div>
+        <button class="tc-v100-btn" id="tcV100CloseBtn">
+          <span data-i18n="v100Continue">Continuer</span>
+        </button>
+      </div>
+    `;
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.id === 'tcV100CloseBtn' || e.target.closest('#tcV100CloseBtn')) {
+        this.hide();
+      }
+    });
+    document.body.appendChild(modal);
+    // Fire confetti for extra party vibes
+    try { Confetti && Confetti.burst && Confetti.burst(); } catch {}
+    try { Sfx && Sfx.play && Sfx.play('start'); } catch {}
+  },
+
+  hide() {
+    const modal = document.getElementById('tcV100Modal');
+    if (modal) modal.remove();
+    try { localStorage.setItem('tc-v100-seen', '1'); } catch {}
+  },
+};
+
 /* v0.7.52: Modal celebration card shown when a badge unlocks. */
 const BadgeUnlockCard = {
   el: null,
@@ -11216,6 +11281,7 @@ async function init() {
 
   setupOnboarding();
   TipOfDay.maybeShow();
+  V100Celebration.maybeShow();  // v0.7.100: one-shot milestone splash
   GuidedTour.maybeAutoStart();
   setupHelpTabs();
   HelpSearch.setup();

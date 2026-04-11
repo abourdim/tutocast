@@ -4239,3 +4239,88 @@ body.log-open .app {
 .tc-bulk-dl:hover {
   filter: brightness(1.1);
 }
+
+/* v0.7.100 — Milestone splash celebrating the 100th release. Shown
+   once on the first launch of v0.7.100 (gated by tc-v100-seen). */
+.tc-v100-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 14000;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.85), rgba(0,0,0,.95));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: tcV100Fade .4s ease-out;
+}
+@keyframes tcV100Fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.tc-v100-card {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent2, #fb923c) 15%, var(--panel, #0c1f0a)),
+    var(--panel, #0c1f0a));
+  border: 3px solid var(--accent, #a3e635);
+  border-radius: 22px;
+  padding: 36px 48px;
+  max-width: 620px;
+  text-align: center;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .7), 0 0 0 8px rgba(163, 230, 53, .12);
+  animation: tcV100Pop .8s cubic-bezier(.2, 1.5, .5, 1);
+}
+@keyframes tcV100Pop {
+  0%   { transform: scale(.3); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.tc-v100-number {
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent, #a3e635), var(--accent2, #fb923c));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 14px;
+  letter-spacing: -4px;
+}
+.tc-v100-title {
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: 1.5rem;
+  color: var(--accent, #a3e635);
+  margin-bottom: 8px;
+}
+.tc-v100-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, .85);
+  margin-bottom: 24px;
+}
+.tc-v100-features {
+  text-align: left;
+  font-size: .82rem;
+  color: rgba(255, 255, 255, .75);
+  line-height: 1.9;
+  margin-bottom: 26px;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, .35);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, .1);
+}
+.tc-v100-btn {
+  background: var(--accent, #a3e635);
+  color: var(--bg, #000);
+  border: none;
+  padding: 14px 36px;
+  border-radius: 12px;
+  font-family: var(--font-h, Righteous, sans-serif);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--accent, #a3e635) 50%, black);
+  transition: transform .1s, box-shadow .1s;
+}
+.tc-v100-btn:hover { transform: translateY(-2px); }
+.tc-v100-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 color-mix(in srgb, var(--accent, #a3e635) 50%, black); }
