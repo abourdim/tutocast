@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.39 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.40 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.39';
+const APP_VERSION = '0.7.40';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 22:45';
+const BUILD_DATE = '2026-04-11 23:00';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -2176,7 +2176,7 @@ const Engine = {
   },
 
   updateVU() {
-    const bar = $('tcVuBar'); if (!bar || !this.analyser) return;
+    if (!this.analyser) return;
     const data = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteTimeDomainData(data);
     let sum = 0;
@@ -2186,7 +2186,23 @@ const Engine = {
     }
     const rms = Math.sqrt(sum / data.length);
     const pct = Math.min(100, rms * 400);
-    bar.style.width = pct + '%';
+    // Sidebar VU bar (sources panel)
+    const bar = $('tcVuBar');
+    if (bar) bar.style.width = pct + '%';
+    // v0.7.40: LED-style meter next to the big REC button. 10 segments,
+    // color-coded green/yellow/red, threshold-lit.
+    const leds = $('tcLedMeter');
+    if (leds) {
+      // Convert pct (0..100) to a segment count (0..10)
+      const lit = Math.round(pct / 10);
+      if (this._lastLedLit !== lit) {
+        this._lastLedLit = lit;
+        const segs = leds.children;
+        for (let i = 0; i < segs.length; i++) {
+          segs[i].classList.toggle('lit', i < lit);
+        }
+      }
+    }
   },
 
   async enumerateDevices() {

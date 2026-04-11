@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.39</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.40</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -330,6 +330,20 @@
           <div class="tc-rec-timer" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
             <span class="tc-rec-time" id="tcRecTime">00:00</span>
+          </div>
+          <!-- v0.7.40: LED-style live audio level meter next to the REC button.
+               10 segments, color-coded green/yellow/red. Driven by Engine.updateVU. -->
+          <div class="tc-led-meter" id="tcLedMeter" title="Audio level">
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-g"></span>
+            <span class="tc-led tc-led-y"></span>
+            <span class="tc-led tc-led-y"></span>
+            <span class="tc-led tc-led-r"></span>
+            <span class="tc-led tc-led-r"></span>
           </div>
           <button class="tc-rec-aux" id="tcPauseBtn" disabled>⏸ <span data-i18n="pause">Pause</span></button>
           <button class="tc-rec-aux" id="tcMarkBtn" disabled>🏷 <span data-i18n="mark">Marker</span> <kbd>M</kbd></button>
@@ -633,7 +647,7 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
-          <h3>🎁 v0.7.29 → v0.7.39 — 11 avril 2026</h3>
+          <h3>🎁 v0.7.29 → v0.7.40 — 11 avril 2026</h3>
           <p data-i18n="news_039">11 fonctionnalités d'atelier : thumbnails, gallery, chapters, minimap, waveform, context menu, tour, intro text, retry, badge URL 🎁</p>
           <ul>
             <li data-i18n="news_039_1">Thumbnails des scènes (v0.7.29) + barre de snapshots (v0.7.30) sous la scène</li>
@@ -644,7 +658,7 @@
             <li data-i18n="news_039_6">Tour guidé (v0.7.36) au 1er lancement — 5 étapes spotlight sur les features clés</li>
             <li data-i18n="news_039_7">Texte d'intro auto sur changement de scène (v0.7.37) — opt-in dans les Paramètres</li>
             <li data-i18n="news_039_8">Retry 30s (v0.7.38) — Ctrl+Z pendant l'enregistrement marque les 30 dernières secondes comme retry</li>
-            <li data-i18n="news_039_9">URL du badge card (v0.7.39) — affichée au bas de chaque carte de partage</li>
+            <li data-i18n="news_039_9">URL du badge card (v0.7.40) — affichée au bas de chaque carte de partage</li>
           </ul>
         </div>
         <div class="wiki-entry">
@@ -876,7 +890,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.39</strong></span>
+      <span class="badge"><strong>v0.7.40</strong></span>
     </div>
   </aside>
 
@@ -1079,7 +1093,7 @@
             <option value="rainbow">🌈 Arc-en-ciel</option>
           </select>
 
-          <!-- v0.7.39: badge card link URL — printed on BadgeCard PNG exports -->
+          <!-- v0.7.40: badge card link URL — printed on BadgeCard PNG exports -->
           <label class="sidebar-label" style="margin-top:10px" data-i18n="brandQrUrl">🔗 URL du badge card</label>
           <input type="url" id="tcBrandUrlInput" class="sidebar-select" placeholder="https://mon-cours.fr/lecon-42" />
         </div>
@@ -1099,7 +1113,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.39</strong></span>
+      <span class="badge"><strong>v0.7.40</strong></span>
     </div>
   </aside>
 
@@ -1131,7 +1145,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.39</strong></span>
+      <span class="badge"><strong>v0.7.40</strong></span>
     </div>
   </aside>
 

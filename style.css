@@ -2581,6 +2581,28 @@ body.log-open .app {
   pointer-events: none;
 }
 
+/* v0.7.40: LED-style audio level meter next to the REC button */
+.tc-led-meter {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, .5);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.tc-led {
+  width: 4px;
+  height: 22px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, .06);
+  transition: background .06s linear, box-shadow .06s linear;
+}
+.tc-led.lit.tc-led-g { background: #22c55e; box-shadow: 0 0 4px #22c55e, 0 0 8px rgba(34, 197, 94, .4); }
+.tc-led.lit.tc-led-y { background: #fbbf24; box-shadow: 0 0 4px #fbbf24, 0 0 8px rgba(251, 191, 36, .4); }
+.tc-led.lit.tc-led-r { background: #ef4444; box-shadow: 0 0 4px #ef4444, 0 0 8px rgba(239, 68, 68, .4); }
+
 /* v0.7.34: Audio waveform strip below the take video */
 .tc-waveform-wrap {
   margin: 8px 0 6px;
