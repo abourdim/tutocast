@@ -264,12 +264,23 @@ body {
 /* ── Bismillah ── */
 
 .bismillah {
-  position: absolute; top: 4px; inset-inline: 0;
-  display: flex; justify-content: center; align-items: center; gap: 10px;
-  font-family: 'Amiri', 'Scheherazade New', serif;
+  /* Full-width absolutely-positioned wrapper, with a tight flex inner
+     that actually holds the characters. The wrapper handles centering,
+     the inner handles its own gap and content width. */
+  position: absolute; top: 4px; left: 0; right: 0;
+  display: flex; justify-content: center; align-items: flex-start;
   pointer-events: none;
-  transition: color .4s;
   z-index: 2;
+}
+.bismillah-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Amiri', 'Scheherazade New', serif;
+  /* Neutral direction so the 5 children stay in author order (not
+     flipped by an accidental RTL ancestor). */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 .bism-text {
   /* The single-character Bismillah ligature U+FDFD renders as elegant

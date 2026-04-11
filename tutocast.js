@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.9 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.10 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.9';
+const APP_VERSION = '0.7.10';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
