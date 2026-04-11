@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.24</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.25</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -349,7 +349,7 @@
   </div>
 
   <!-- ═══════════════════ TRIM MODAL ═══════════════════ -->
-  <!-- v0.7.24: Keyboard shortcuts cheat sheet overlay. Toggle via ? key. -->
+  <!-- v0.7.25: Keyboard shortcuts cheat sheet overlay. Toggle via ? key. -->
   <div class="tc-cheat-modal" id="tcCheatModal" style="display:none">
     <div class="tc-cheat-card">
       <div class="tc-cheat-header">
@@ -549,13 +549,13 @@
       <!-- News / Changelog -->
       <div class="help-content" id="helpNews">
         <div class="wiki-entry">
-          <h3>🌊 v0.7.20 → v0.7.24 — 11 avril 2026</h3>
+          <h3>🌊 v0.7.20 → v0.7.25 — 11 avril 2026</h3>
           <p data-i18n="news_023">Ripples + Zoom auto + éditeur trim + téléprompteur broadcast 🌊🎯✂📜</p>
           <ul>
             <li data-i18n="news_023_1">Téléprompteur broadcast (v0.7.20) : auto-scroll avec slider de vitesse, ⏵/⏸, A−/A+, ↔−/↔+, ↻ retour haut, raccourci T, script persisté</li>
             <li data-i18n="news_023_2">Zoom auto sur clic (v0.7.21) : clique n'importe où sur un écran capturé et l'aperçu zoome en douceur pendant 1,5 s (bouton 🎯 dans la barre d'outils)</li>
             <li data-i18n="news_023_3">Éditeur trim amélioré (v0.7.22) : scrubber visuel avec poignées in/out, ✂ auto-couper les silences, raccourcis Espace/←/→/[/]/Enter/Esc, compteur de durée</li>
-            <li data-i18n="news_023_4">Ripples de clic (v0.7.24) : chaque clic émet une onde animée de 600 ms rendue sur le canvas de sortie — intégrée à la vidéo finale (bouton 💧)</li>
+            <li data-i18n="news_023_4">Ripples de clic (v0.7.25) : chaque clic émet une onde animée de 600 ms rendue sur le canvas de sortie — intégrée à la vidéo finale (bouton 💧)</li>
           </ul>
         </div>
         <div class="wiki-entry">
@@ -766,7 +766,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.24</strong></span>
+      <span class="badge"><strong>v0.7.25</strong></span>
     </div>
   </aside>
 
@@ -846,6 +846,13 @@
             <label class="toggle-ctrl">
               <input type="checkbox" id="tcJingleToggle" class="checkbox-ctrl" />
               <span data-i18n="jingleLabel">🎵 Jingle d'intro (1.5s)</span>
+            </label>
+          </div>
+          <!-- v0.7.25: cinematic intro/outro cards baked into the recording -->
+          <div class="sidebar-group">
+            <label class="toggle-ctrl">
+              <input type="checkbox" id="tcIntroOutroToggle" class="checkbox-ctrl" />
+              <span data-i18n="introOutroLabel">🎬 Cartes intro/outro cinématiques</span>
             </label>
           </div>
           <div class="sidebar-group">
@@ -964,7 +971,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.24</strong></span>
+      <span class="badge"><strong>v0.7.25</strong></span>
     </div>
   </aside>
 
@@ -996,7 +1003,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.24</strong></span>
+      <span class="badge"><strong>v0.7.25</strong></span>
     </div>
   </aside>
 

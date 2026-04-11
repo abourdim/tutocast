@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.24 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.25 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.24';
+const APP_VERSION = '0.7.25';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 18:55';
+const BUILD_DATE = '2026-04-11 19:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -189,6 +189,11 @@ const LANG = {
     cheatMiscThis: 'Afficher ce panneau',
     cheatMiscEsc: 'Fermer panneaux',
     cheatMiscDebug: 'Debug HUD',
+    introOutroLabel: "🎬 Cartes intro/outro cinématiques",
+    outroTitle: 'Merci !',
+    outroBadges: 'badges',
+    outroTagline: 'Ton tuto est prêt',
+    outroPlaying: '🎬 Outro en cours…',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Réinitialiser les badges',
     clearCache: 'Vider le cache complet',
@@ -580,6 +585,11 @@ const LANG = {
     cheatMiscThis: 'Show this panel',
     cheatMiscEsc: 'Close panels',
     cheatMiscDebug: 'Debug HUD',
+    introOutroLabel: '🎬 Cinematic intro/outro cards',
+    outroTitle: 'Thank you!',
+    outroBadges: 'badges',
+    outroTagline: 'Your tutorial is ready',
+    outroPlaying: '🎬 Outro playing…',
     setSecDanger: '♻ Maintenance',
     resetBadges: 'Reset badges',
     clearCache: 'Clear all local data',
@@ -963,6 +973,11 @@ const LANG = {
     cheatMiscThis: 'عرض هذه اللوحة',
     cheatMiscEsc: 'إغلاق اللوحات',
     cheatMiscDebug: 'Debug HUD',
+    introOutroLabel: '🎬 بطاقات مقدمة/خاتمة سينمائية',
+    outroTitle: 'شكرًا!',
+    outroBadges: 'شارات',
+    outroTagline: 'درسك جاهز',
+    outroPlaying: '🎬 الخاتمة قيد التشغيل…',
     setSecDanger: '♻ الصيانة',
     resetBadges: 'إعادة تعيين الشارات',
     clearCache: 'مسح جميع البيانات المحلية',
@@ -1371,6 +1386,10 @@ const Engine = {
 
     // Brand watermark (logo + slogan + fun effect) — always on top of overlays
     Brand.draw(ctx);
+
+    // v0.7.25: Intro/outro cards — drawn on top of sources + overlays
+    // but BELOW laser/ripples so pointer visuals still land on top.
+    IntroOutro.render(ctx, width, height);
 
     // Laser dot — redraw its offscreen canvas then composite
     Laser.render();
@@ -2548,6 +2567,8 @@ const Recorder = {
       // v0.6.0: optional intro jingle, plays INTO the recording so every
       // tutorial opens with a "show's starting" cue
       Jingle.play();
+      // v0.7.25: cinematic intro card fades in/out over the first 2.5s
+      IntroOutro.startIntro();
     } finally {
       this._starting = false;
     }
@@ -2616,6 +2637,28 @@ const Recorder = {
   },
 
   stop() {
+    if (!this.recorder) return;
+    // v0.7.25: if the outro card is enabled, start the outro NOW and
+    // delay the actual MediaRecorder.stop() by IntroOutro.DURATION_OUTRO
+    // so the card gets captured into the recording before the encoder
+    // closes. Uses a state flag to avoid re-entering this path if the
+    // user double-clicks stop.
+    if (IntroOutro.enabled && !this._outroPending) {
+      this._outroPending = true;
+      IntroOutro.startOutro();
+      showToast(t('outroPlaying') || '🎬 Outro…', 1400);
+      this.state = 'stopping';
+      this.updateUI();
+      setTimeout(() => {
+        this._outroPending = false;
+        this._stopImmediate();
+      }, IntroOutro.DURATION_OUTRO);
+      return;
+    }
+    this._stopImmediate();
+  },
+
+  _stopImmediate() {
     if (!this.recorder) return;
     // Force a final ondataavailable flush before stopping. Firefox has
     // historically been unreliable with the implicit flush at stop().
@@ -5175,6 +5218,137 @@ const Jingle = {
   },
 };
 
+/* v0.7.25: IntroOutro — cinematic fade-in + fade-out cards baked into
+   the recording. Opt-in via Settings > Recording > tcIntroOutroToggle.
+   - Intro (2.5 s after Recorder.start): dark panel with theme accent
+     gradient, big TutoCast/brand title + slogan + current scene name.
+     Fades in over 0-400 ms, holds, fades out over 2100-2500 ms to
+     reveal the actual scene underneath.
+   - Outro (2 s before Recorder.stop): dark panel with "Merci !" +
+     unlocked badge icons. Recorder.stop() is delayed by the outro
+     duration so the card actually ends up in the recording.
+
+   Rendered in Engine.render() right before the laser/ripples composite,
+   so it sits on top of sources and overlays but under the teacher-only
+   whiteboard + teleprompter. */
+const IntroOutro = {
+  enabled: false,
+  introUntil: 0,
+  outroUntil: 0,
+  outroSince: 0,
+  DURATION_INTRO: 2500,
+  DURATION_OUTRO: 2000,
+
+  load() {
+    try { this.enabled = localStorage.getItem('tc-intro-outro') === '1'; } catch {}
+  },
+  setEnabled(v) {
+    this.enabled = !!v;
+    try { localStorage.setItem('tc-intro-outro', v ? '1' : '0'); } catch {}
+  },
+
+  startIntro() {
+    if (!this.enabled) return;
+    this.introUntil = performance.now() + this.DURATION_INTRO;
+  },
+  startOutro() {
+    if (!this.enabled) return;
+    this.outroSince = performance.now();
+    this.outroUntil = this.outroSince + this.DURATION_OUTRO;
+  },
+
+  // Called from Engine.render() — draws the appropriate card if active
+  render(ctx, W, H) {
+    const now = performance.now();
+    if (now < this.introUntil) {
+      const t0 = this.introUntil - this.DURATION_INTRO;
+      const age = now - t0;
+      const alpha = this._introAlpha(age);
+      this._drawCard(ctx, W, H, alpha, 'intro');
+    } else if (now < this.outroUntil) {
+      const age = now - this.outroSince;
+      const alpha = this._outroAlpha(age);
+      this._drawCard(ctx, W, H, alpha, 'outro');
+    }
+  },
+
+  _introAlpha(age) {
+    // Fade in 0-400ms, hold 400-2100ms, fade out 2100-2500ms
+    if (age < 400) return age / 400;
+    if (age < 2100) return 1;
+    return 1 - (age - 2100) / 400;
+  },
+  _outroAlpha(age) {
+    // Fade in 0-300ms, hold 300-1800ms, fade out 1800-2000ms
+    if (age < 300) return age / 300;
+    if (age < 1800) return 1;
+    return 1 - (age - 1800) / 200;
+  },
+
+  _drawCard(ctx, W, H, alpha, kind) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    // Radial gradient background in theme accent
+    const accent = (Engine && Engine._accentColor) || '#a3e635';
+    const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
+    g.addColorStop(0, 'rgba(0,0,0,0.55)');
+    g.addColorStop(1, 'rgba(0,0,0,0.92)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // Accent halo
+    ctx.globalCompositeOperation = 'screen';
+    const glow = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.min(W, H) * 0.55);
+    glow.addColorStop(0, accent + '55');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (kind === 'intro') {
+      // Big title
+      ctx.font = '800 160px Bangers, Righteous, Impact, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 30;
+      const title = (Brand.slogan && Brand.slogan.text) ? Brand.slogan.text : 'TutoCast';
+      ctx.fillText(title, W / 2, H / 2 - 60);
+      // Scene name
+      ctx.shadowBlur = 0;
+      ctx.font = '700 64px Righteous, sans-serif';
+      ctx.fillStyle = accent;
+      const sceneKey = Scenes.active || 'you';
+      const sceneLabel = t('scene_' + sceneKey);
+      ctx.fillText('🎬 ' + sceneLabel, W / 2, H / 2 + 60);
+      // Subtitle
+      ctx.font = '400 42px Righteous, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(t('recStarted') || 'Action !', W / 2, H / 2 + 140);
+    } else {
+      // Outro
+      ctx.font = '800 180px Bangers, Righteous, Impact, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 30;
+      ctx.fillText(t('outroTitle') || 'Merci !', W / 2, H / 2 - 40);
+      ctx.shadowBlur = 0;
+      // Badge summary
+      const count = (Badges && Badges.unlocked) ? Badges.unlocked.size : 0;
+      ctx.font = '700 56px Righteous, sans-serif';
+      ctx.fillStyle = accent;
+      ctx.fillText(`🏆 ${count} ${t('outroBadges') || 'badges'}`, W / 2, H / 2 + 70);
+      // Tagline
+      ctx.font = '400 36px Righteous, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText(t('outroTagline') || 'Ton tuto est prêt', W / 2, H / 2 + 150);
+    }
+    ctx.restore();
+  },
+};
+
 /* Tiny Web Audio SFX — respects the soundToggle checkbox */
 const Sfx = {
   _ctx: null,
@@ -5754,6 +5928,13 @@ function wireEvents() {
     jingleEl.addEventListener('change', (e) => Jingle.setEnabled(e.target.checked));
   }
 
+  // v0.7.25: Intro/outro cinematic cards toggle — opt-in in Settings
+  const ioEl = $('tcIntroOutroToggle');
+  if (ioEl) {
+    ioEl.checked = IntroOutro.enabled;
+    ioEl.addEventListener('change', (e) => IntroOutro.setEnabled(e.target.checked));
+  }
+
   // Sensor-triggered overlay toggle (v0.5.0) — opt-in in Settings
   const sensorOverlayEl = $('tcSensorOverlayToggle');
   if (sensorOverlayEl) {
@@ -5799,6 +5980,7 @@ async function init() {
 
   Sfx.load();
   Jingle.load();
+  IntroOutro.load();
   Brand.load();
   Badges.load();
 
