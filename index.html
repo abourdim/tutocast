@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.10</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.11</span></div>
           </div>
           <div class="tc-rec-indicator" id="tcRecIndicator">
             <span class="tc-rec-dot"></span>
@@ -562,7 +562,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.10</strong></span>
+      <span class="badge"><strong>v0.7.11</strong></span>
     </div>
   </aside>
 
@@ -658,6 +658,19 @@
           <option value="cool">Froid</option>
           <option value="warm">Chaud</option>
         </select>
+
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandLogoTint">🎨 Couleur du logo (silhouette)</label>
+        <div class="tc-brand-color-row" id="tcBrandLogoTintRow">
+          <button class="tc-brand-swatch active" data-bt="" title="— none —" style="background:linear-gradient(135deg,#888 45%,#fff 55%)">∅</button>
+          <button class="tc-brand-swatch" data-bt="#ffffff" style="background:#ffffff" title="white"></button>
+          <button class="tc-brand-swatch" data-bt="#fbbf24" style="background:#fbbf24" title="yellow"></button>
+          <button class="tc-brand-swatch" data-bt="#fb923c" style="background:#fb923c" title="orange"></button>
+          <button class="tc-brand-swatch" data-bt="#ef4444" style="background:#ef4444" title="red"></button>
+          <button class="tc-brand-swatch" data-bt="#a3e635" style="background:#a3e635" title="lime"></button>
+          <button class="tc-brand-swatch" data-bt="#38bdf8" style="background:#38bdf8" title="cyan"></button>
+          <button class="tc-brand-swatch" data-bt="#e879f9" style="background:#e879f9" title="pink"></button>
+          <button class="tc-brand-swatch" data-bt="#000000" style="background:#000000" title="black"></button>
+        </div>
       </div>
       <!-- ═══ Ticker custom messages (v0.7.8) ═══ -->
       <div class="sidebar-group">
@@ -668,6 +681,19 @@
         <div class="tc-ticker-hint" data-i18n="tickerCustomHint">Laisse vide pour utiliser les 10 conseils par défaut.</div>
 
         <input type="text" id="tcBrandSloganInput" class="sidebar-select" placeholder="Ton slogan…" style="margin-top:10px" />
+
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganFont">Aa Police du slogan</label>
+        <select id="tcBrandSloganFontSelect" class="sidebar-select">
+          <option value="0">Bangers (BD)</option>
+          <option value="1">Righteous</option>
+          <option value="2">Orbitron (futuriste)</option>
+          <option value="3">Amiri (serif)</option>
+          <option value="4">Tajawal</option>
+          <option value="5">Arial (système)</option>
+        </select>
+
+        <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganSize">📐 Taille du slogan</label>
+        <input type="range" id="tcBrandSloganSizeSlider" min="20" max="160" step="2" value="48" class="tc-brand-range" />
 
         <label class="sidebar-label" style="margin-top:10px" data-i18n="brandSloganColor">🎨 Couleur du slogan</label>
         <div class="tc-brand-color-row" id="tcBrandColorRow">
@@ -704,7 +730,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.10</strong></span>
+      <span class="badge"><strong>v0.7.11</strong></span>
     </div>
   </aside>
 
@@ -736,7 +762,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.10</strong></span>
+      <span class="badge"><strong>v0.7.11</strong></span>
     </div>
   </aside>
 

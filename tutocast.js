@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.10 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.11 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.10';
+const APP_VERSION = '0.7.11';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -143,6 +143,9 @@ const LANG = {
     brandLogoFilter: '🎨 Filtre du logo',
     tickerCustomLabel: '📰 Messages du ticker (un par ligne)',
     tickerCustomHint: 'Laisse vide pour utiliser les 10 conseils par défaut.',
+    brandSloganFont: 'Aa Police du slogan',
+    brandSloganSize: '📐 Taille du slogan',
+    brandLogoTint: '🎨 Couleur du logo (silhouette)',
     sourceTitlePh: 'Titre (ex: 💻 Mon code)',
     sourceShape: 'Forme',
     filter_none: '— Filtre —',
@@ -450,6 +453,9 @@ const LANG = {
     brandLogoFilter: '🎨 Logo filter',
     tickerCustomLabel: '📰 Ticker messages (one per line)',
     tickerCustomHint: 'Leave empty to use the 10 default tips.',
+    brandSloganFont: 'Aa Slogan font',
+    brandSloganSize: '📐 Slogan size',
+    brandLogoTint: '🎨 Logo color (silhouette)',
     sourceTitlePh: 'Title (e.g. 💻 My code)',
     sourceShape: 'Shape',
     filter_none: '— Filter —',
@@ -749,6 +755,9 @@ const LANG = {
     brandLogoFilter: '🎨 فلتر الشعار',
     tickerCustomLabel: '📰 رسائل الشريط (سطر لكل رسالة)',
     tickerCustomHint: 'اتركه فارغًا لاستخدام النصائح العشر الافتراضية.',
+    brandSloganFont: 'Aa خط الشعار النصي',
+    brandSloganSize: '📐 حجم الشعار النصي',
+    brandLogoTint: '🎨 لون الشعار (ظلّي)',
     sourceTitlePh: 'عنوان (مثلاً 💻 كودي)',
     sourceShape: 'الشكل',
     filter_none: '— فلتر —',
@@ -2934,6 +2943,7 @@ const Brand = {
     bgRemoved: false,
     opacity: 1,           // v0.7.7: 0–1 transparency
     filter: 'none',       // v0.7.7: reuse Engine._filterString presets
+    tint: null,           // v0.7.11: hex color for silhouette tint (null = no tint)
   },
   slogan: {
     text: '',
@@ -2953,6 +2963,7 @@ const Brand = {
       this.slogan.color          = localStorage.getItem('tc-brand-color') || '#ffffff';
       this.logo.opacity          = parseFloat(localStorage.getItem('tc-brand-logo-opacity') || '1');
       this.logo.filter           = localStorage.getItem('tc-brand-logo-filter') || 'none';
+      this.logo.tint             = localStorage.getItem('tc-brand-logo-tint') || null;
       // v0.7.7: new keys — independent positions for logo and slogan
       const logoPos   = localStorage.getItem('tc-brand-logo-pos');
       const sloganPos = localStorage.getItem('tc-brand-slogan-pos');
@@ -2977,6 +2988,8 @@ const Brand = {
       localStorage.setItem('tc-brand-color',       this.slogan.color || '#ffffff');
       localStorage.setItem('tc-brand-logo-opacity', String(this.logo.opacity));
       localStorage.setItem('tc-brand-logo-filter',  this.logo.filter);
+      if (this.logo.tint) localStorage.setItem('tc-brand-logo-tint', this.logo.tint);
+      else                localStorage.removeItem('tc-brand-logo-tint');
       localStorage.setItem('tc-brand-logo-pos',    JSON.stringify({ x: this.logo.x, y: this.logo.y, w: this.logo.w, h: this.logo.h, rotation: this.logo.rotation }));
       localStorage.setItem('tc-brand-slogan-pos',  JSON.stringify({ x: this.slogan.x, y: this.slogan.y, w: this.slogan.w, h: this.slogan.h, size: this.slogan.size, font: this.slogan.font, rotation: this.slogan.rotation }));
     } catch {}
@@ -3041,6 +3054,9 @@ const Brand = {
   setSloganColor(c)   { this.slogan.color = c || '#ffffff'; this.save(); },
   setLogoOpacity(v)   { this.logo.opacity = Math.max(0, Math.min(1, parseFloat(v))); this.save(); },
   setLogoFilter(f)    { this.logo.filter = f || 'none'; this.save(); },
+  setLogoTint(c)      { this.logo.tint = c || null; this.save(); },
+  setSloganFont(i)    { this.slogan.font = Math.max(0, Math.min(TEXT_FONTS.length - 1, parseInt(i) || 0)); this._measureSlogan(); this.save(); },
+  setSloganSize(px)   { this.slogan.size = Math.max(14, Math.min(200, parseInt(px) || 48)); this._measureSlogan(); this.save(); },
 
   /* Logo size setter (Settings slider). */
   setSize(newW) {
@@ -3119,6 +3135,17 @@ const Brand = {
       const combined = [effectFilter, userFilter].filter(Boolean).join(' ');
       if (combined) ctx.filter = combined;
       ctx.drawImage(L.img, L.x, L.y, L.w, L.h);
+      // v0.7.11: silhouette tint — repaint all visible (non-transparent)
+      // pixels with the target colour via source-atop composite. Great
+      // for flat icon/silhouette logos; subtle on photos.
+      if (L.tint) {
+        ctx.save();
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = L.tint;
+        ctx.fillRect(L.x, L.y, L.w, L.h);
+        ctx.restore();
+      }
       ctx.restore();
     }
     // Slogan pass — independent transform
@@ -4669,6 +4696,31 @@ function wireEvents() {
   if (logoFilterSel) {
     logoFilterSel.value = Brand.logo.filter || 'none';
     logoFilterSel.addEventListener('change', (e) => Brand.setLogoFilter(e.target.value));
+  }
+  // Logo tint swatches (v0.7.11)
+  document.querySelectorAll('#tcBrandLogoTintRow .tc-brand-swatch').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = btn.dataset.bt || null;
+      Brand.setLogoTint(c);
+      document.querySelectorAll('#tcBrandLogoTintRow .tc-brand-swatch').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    if ((btn.dataset.bt || '') === (Brand.logo.tint || '')) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+
+  // Slogan font select (v0.7.11)
+  const sloganFontSel = $('tcBrandSloganFontSelect');
+  if (sloganFontSel) {
+    sloganFontSel.value = String(Brand.slogan.font ?? 0);
+    sloganFontSel.addEventListener('change', (e) => Brand.setSloganFont(parseInt(e.target.value)));
+  }
+  // Slogan size slider (v0.7.11)
+  const sloganSizeSlider = $('tcBrandSloganSizeSlider');
+  if (sloganSizeSlider) {
+    sloganSizeSlider.value = Brand.slogan.size || 48;
+    sloganSizeSlider.addEventListener('input', (e) => Brand.setSloganSize(parseInt(e.target.value)));
   }
   // Custom ticker messages (v0.7.8)
   const tickerTA = $('tcTickerCustomInput');
