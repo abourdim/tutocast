@@ -3,6 +3,64 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.22 — 2026-04-11 (Post-recording trim editor enhancements)
+
+Three additive improvements to the existing `Trim` tool, on top of the
+baseline in-out slider workflow. `Trim.export()` and `Recorder.finish()`
+are **untouched** — this is pure enhancement layering.
+
+### Added — visual scrubber with draggable handles
+A compact 60 px-tall waveform-style track (`.tc-trim-scrubber`) sits
+above the two range sliders in the trim modal. It shows:
+
+- A live **playhead** (white bar) driven by a `requestAnimationFrame`
+  loop while the modal is open. Stops cleanly when the modal closes.
+- Two **draggable handles** (green for in, orange for out) that stay in
+  sync with the existing `tcTrimIn` / `tcTrimOut` sliders. Sliders
+  remain fully functional as a fallback / accessibility path.
+- A **highlighted region** between in/out showing the kept portion.
+- **Click-to-seek** anywhere on the track — sets `video.currentTime`
+  to the click position.
+- **Silence bands** layered faintly behind the region when the
+  auto-cut detector has run (see below).
+
+### Added — ✂ Auto-cut silences button
+New `#tcTrimAutoCutBtn` in the modal. When clicked, `Trim.autoCutSilences()`:
+
+- Decodes the blob's audio via `AudioContext.decodeAudioData`.
+- Computes RMS over 100 ms windows.
+- Flags any window below **−45 dBFS** as silent.
+- Merges consecutive silent windows into runs, drops anything shorter
+  than **2 s** or equal to the full clip length.
+- Renders the detected silences as faint hatched bands on the scrubber.
+- Auto-sets in/out to the **first non-silent window** so the teacher
+  can instantly preview what's actually worth keeping.
+
+This is a fresh detector — `SilenceTrim` already exists but is coupled
+to its own export path, so `Trim` now has a lightweight standalone
+version that just writes to `this.silenceBands` and seeds in/out.
+
+### Added — keyboard shortcuts inside the trim modal
+Active only while `#tcTrimModal.style.display === 'flex'`:
+
+- `Space` — toggle play/pause of the preview video
+- `←` / `→` — nudge `currentTime` by ±1 second
+- `[` — set in point to current time
+- `]` — set out point to current time
+- `Enter` — export (same as clicking the export button)
+- `Esc` — close the modal
+
+Bound via a single `document.addEventListener('keydown', …)` that's
+added in `_bindKeys()` on open and removed in `_unbindKeys()` on close.
+
+### Added — duration readout in the modal footer
+`00:12 / 00:47 (trim 34 s)` — shows current time, total duration, and
+the length of the trimmed output. Updated live via the rAF loop
+(`_updateLabels()` runs each frame).
+
+### Added — i18n
+`trimCutSilences` and `trimScrubberHint` in FR / EN / AR.
+
 ## v0.7.21 — 2026-04-11 (Auto-zoom on click)
 
 Click anywhere on a screen source and the preview smoothly zooms in

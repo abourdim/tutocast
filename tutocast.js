@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.21 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.22 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.21';
+const APP_VERSION = '0.7.22';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-11 18:05';
+const BUILD_DATE = '2026-04-11 18:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -102,6 +102,8 @@ const LANG = {
     trimIn: 'Début', trimOut: 'Fin', trimDuration: 'Durée finale :',
     trimPreviewIn: '▶ début', trimPreviewOut: '▶ fin',
     trimEncoding: 'Encodage en cours…',
+    trimCutSilences: '✂ Couper les silences',
+    trimScrubberHint: 'Clique pour positionner · glisse les poignées',
     trimExport: 'Exporter le tuto coupé', trimExported: 'Tuto coupé exporté',
     trimNoTake: '⚠️ Aucun tuto enregistré à couper',
     trimTooShort: '⚠️ Sélection trop courte (minimum 0.2 s)',
@@ -457,6 +459,8 @@ const LANG = {
     trimIn: 'Start', trimOut: 'End', trimDuration: 'Final duration:',
     trimPreviewIn: '▶ start', trimPreviewOut: '▶ end',
     trimEncoding: 'Encoding…',
+    trimCutSilences: '✂ Auto-cut silences',
+    trimScrubberHint: 'Click to seek · drag handles to trim',
     trimExport: 'Export trimmed tutorial', trimExported: 'Trimmed tutorial exported',
     trimNoTake: '⚠️ No tutorial recorded to trim',
     trimTooShort: '⚠️ Selection too short (minimum 0.2 s)',
@@ -804,6 +808,8 @@ const LANG = {
     trimIn: 'البداية', trimOut: 'النهاية', trimDuration: 'المدة النهائية:',
     trimPreviewIn: '▶ البداية', trimPreviewOut: '▶ النهاية',
     trimEncoding: 'جارٍ الترميز…',
+    trimCutSilences: '✂ قص فترات الصمت',
+    trimScrubberHint: 'انقر للتنقل · اسحب المقابض للقص',
     trimExport: 'تصدير الدرس المقصوص', trimExported: 'تم تصدير الدرس المقصوص',
     trimNoTake: '⚠️ لا يوجد درس مسجّل للقص',
     trimTooShort: '⚠️ التحديد قصير جدًا (الحد الأدنى 0.2 ث)',
@@ -3593,11 +3599,16 @@ const Trim = {
   inTime: 0, outTime: 0, duration: 0,
   encoding: false,
   srcBlob: null, srcMime: null,
+  silenceBands: null,    // [[startSec, endSec], ...] — visualised on the scrubber
+  _rafId: null,
+  _dragging: null,       // 'in' | 'out' | null
+  _keyHandler: null,
 
   open() {
     if (!Recorder._lastBlob) { showToast(t('trimNoTake'), 2500); return; }
     this.srcBlob = Recorder._lastBlob;
     this.srcMime = Recorder._lastMime || 'video/webm';
+    this.silenceBands = null;
     const video = $('tcTrimVideo');
     video.src = URL.createObjectURL(this.srcBlob);
     video.onloadedmetadata = () => {
@@ -3610,14 +3621,22 @@ const Trim = {
       }
     };
     $('tcTrimModal').style.display = 'flex';
+    this._ensureScrubber();
+    this._renderScrubber();
+    this._startRaf();
+    this._bindKeys();
   },
 
   close() {
     $('tcTrimModal').style.display = 'none';
     const v = $('tcTrimVideo');
+    try { v.pause(); } catch {}
     if (v.src) { try { URL.revokeObjectURL(v.src); } catch {} v.src = ''; }
     this.encoding = false;
     $('tcTrimProgress').style.display = 'none';
+    this._stopRaf();
+    this._unbindKeys();
+    this.silenceBands = null;
   },
 
   _setRange(dur) {
@@ -3631,13 +3650,28 @@ const Trim = {
     inSlider.value = 0;
     outSlider.value = this.duration;
     this._updateLabels();
+    this._renderScrubber();
+  },
+
+  _fmtTime(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
   },
 
   _updateLabels() {
-    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    const fmt = this._fmtTime;
     $('tcTrimInLabel').textContent = fmt(this.inTime);
     $('tcTrimOutLabel').textContent = fmt(this.outTime);
     $('tcTrimDurationLabel').textContent = fmt(Math.max(0, this.outTime - this.inTime));
+    // Live footer readout (current / total (trim Xs)) — updated on rAF too
+    const readout = $('tcTrimReadout');
+    if (readout) {
+      const v = $('tcTrimVideo');
+      const cur = (v && isFinite(v.currentTime)) ? v.currentTime : 0;
+      const total = this.duration;
+      const trim = Math.max(0, this.outTime - this.inTime);
+      readout.textContent = `${fmt(cur)} / ${fmt(total)} (trim ${Math.round(trim)} s)`;
+    }
   },
 
   onInChange(v) {
@@ -3645,6 +3679,7 @@ const Trim = {
     $('tcTrimIn').value = this.inTime;
     $('tcTrimVideo').currentTime = this.inTime;
     this._updateLabels();
+    this._renderScrubber();
   },
 
   onOutChange(v) {
@@ -3652,10 +3687,251 @@ const Trim = {
     $('tcTrimOut').value = this.outTime;
     $('tcTrimVideo').currentTime = this.outTime;
     this._updateLabels();
+    this._renderScrubber();
   },
 
   previewIn()  { const v = $('tcTrimVideo'); v.currentTime = this.inTime; v.pause(); },
   previewOut() { const v = $('tcTrimVideo'); v.currentTime = this.outTime; v.pause(); },
+
+  /* ── Scrubber ─────────────────────────────────────────────────────── */
+
+  _ensureScrubber() {
+    if ($('tcTrimScrubber')) return;
+    const host = document.querySelector('#tcTrimModal .tc-trim-controls');
+    if (!host) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'tc-trim-scrubber';
+    wrap.id = 'tcTrimScrubber';
+    wrap.innerHTML = `
+      <div class="tc-trim-scrub-track" id="tcTrimScrubTrack">
+        <div class="tc-trim-silence-layer" id="tcTrimSilenceLayer"></div>
+        <div class="tc-trim-region" id="tcTrimRegion"></div>
+        <div class="tc-trim-handle tc-trim-handle-in" id="tcTrimHandleIn"></div>
+        <div class="tc-trim-handle tc-trim-handle-out" id="tcTrimHandleOut"></div>
+        <div class="tc-trim-playhead" id="tcTrimPlayhead"></div>
+      </div>
+      <div class="tc-trim-scrub-hint" data-i18n="trimScrubberHint">${t('trimScrubberHint')}</div>
+    `;
+    host.insertBefore(wrap, host.firstChild);
+
+    const track = $('tcTrimScrubTrack');
+    const hIn = $('tcTrimHandleIn');
+    const hOut = $('tcTrimHandleOut');
+
+    const pct = clientX => {
+      const r = track.getBoundingClientRect();
+      return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    };
+
+    hIn.addEventListener('mousedown', (e) => { e.stopPropagation(); this._dragging = 'in'; });
+    hOut.addEventListener('mousedown', (e) => { e.stopPropagation(); this._dragging = 'out'; });
+
+    track.addEventListener('mousedown', (e) => {
+      if (this._dragging) return;
+      const p = pct(e.clientX);
+      const v = $('tcTrimVideo');
+      if (this.duration > 0) v.currentTime = p * this.duration;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!this._dragging) return;
+      if ($('tcTrimModal').style.display !== 'flex') return;
+      const p = pct(e.clientX);
+      const tSec = p * this.duration;
+      if (this._dragging === 'in') this.onInChange(tSec);
+      else if (this._dragging === 'out') this.onOutChange(tSec);
+    });
+    document.addEventListener('mouseup', () => { this._dragging = null; });
+  },
+
+  _renderScrubber() {
+    const track = $('tcTrimScrubTrack');
+    if (!track || !this.duration) return;
+    const pctIn = (this.inTime / this.duration) * 100;
+    const pctOut = (this.outTime / this.duration) * 100;
+    const region = $('tcTrimRegion');
+    if (region) {
+      region.style.left = pctIn + '%';
+      region.style.width = Math.max(0, pctOut - pctIn) + '%';
+    }
+    const hIn = $('tcTrimHandleIn');
+    const hOut = $('tcTrimHandleOut');
+    if (hIn) hIn.style.left = pctIn + '%';
+    if (hOut) hOut.style.left = pctOut + '%';
+
+    // Silence bands
+    const layer = $('tcTrimSilenceLayer');
+    if (layer) {
+      if (this.silenceBands && this.silenceBands.length) {
+        layer.innerHTML = this.silenceBands.map(([s, e]) => {
+          const l = (s / this.duration) * 100;
+          const w = ((e - s) / this.duration) * 100;
+          return `<div class="tc-trim-silence-band" style="left:${l}%;width:${w}%"></div>`;
+        }).join('');
+      } else {
+        layer.innerHTML = '';
+      }
+    }
+  },
+
+  _updatePlayhead() {
+    const v = $('tcTrimVideo');
+    const head = $('tcTrimPlayhead');
+    if (!head || !v || !this.duration) return;
+    const cur = isFinite(v.currentTime) ? v.currentTime : 0;
+    head.style.left = ((cur / this.duration) * 100) + '%';
+  },
+
+  _startRaf() {
+    this._stopRaf();
+    const tick = () => {
+      if ($('tcTrimModal').style.display !== 'flex') { this._rafId = null; return; }
+      this._updatePlayhead();
+      this._updateLabels();
+      this._rafId = requestAnimationFrame(tick);
+    };
+    this._rafId = requestAnimationFrame(tick);
+  },
+
+  _stopRaf() {
+    if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+  },
+
+  /* ── Auto-cut silences ─────────────────────────────────────────────── */
+
+  async autoCutSilences() {
+    if (!this.srcBlob || !this.duration) return;
+    showToast(t('trimEncoding'), 1500);
+    try {
+      const ab = await this.srcBlob.arrayBuffer();
+      const Ctor = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      // decode via a throwaway AudioContext (more forgiving than OfflineAC for decode)
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      let audioBuf;
+      try {
+        audioBuf = await ac.decodeAudioData(ab.slice(0));
+      } catch (e) {
+        log(`trim auto-cut decode failed: ${e.message}`, 'error');
+        try { ac.close(); } catch {}
+        return;
+      }
+      const samples = audioBuf.getChannelData(0);
+      const sr = audioBuf.sampleRate;
+      const duration = audioBuf.duration;
+      const WINDOW_MS = 100;
+      const MIN_SILENCE_SEC = 2.0;
+      const DB_THRESHOLD = -45;            // dBFS
+      const rmsThreshold = Math.pow(10, DB_THRESHOLD / 20);
+      const windowSamples = Math.max(1, Math.floor((WINDOW_MS / 1000) * sr));
+
+      const flags = [];  // per-window silent flag
+      for (let i = 0; i < samples.length; i += windowSamples) {
+        let sum = 0;
+        const end = Math.min(i + windowSamples, samples.length);
+        for (let j = i; j < end; j++) sum += samples[j] * samples[j];
+        const rms = Math.sqrt(sum / (end - i));
+        flags.push({ t: i / sr, silent: rms < rmsThreshold });
+      }
+
+      // Merge consecutive silent windows into runs; drop shorter than MIN_SILENCE_SEC
+      const silences = [];
+      let runStart = null;
+      for (let i = 0; i < flags.length; i++) {
+        if (flags[i].silent) {
+          if (runStart == null) runStart = flags[i].t;
+        } else if (runStart != null) {
+          const runEnd = flags[i].t;
+          if (runEnd - runStart >= MIN_SILENCE_SEC) silences.push([runStart, runEnd]);
+          runStart = null;
+        }
+      }
+      if (runStart != null && duration - runStart >= MIN_SILENCE_SEC) {
+        silences.push([runStart, duration]);
+      }
+
+      try { ac.close(); } catch {}
+
+      // Drop anything that would equal the full clip
+      const filtered = silences.filter(([s, e]) => (e - s) < duration);
+      this.silenceBands = filtered;
+
+      if (!filtered.length) {
+        showToast('No long silences detected', 2500);
+        this._renderScrubber();
+        return;
+      }
+
+      // Find first non-silent window and seed inTime/outTime around it
+      // Invert silences into keep-ranges and pick the first one for the preview
+      const keeps = [];
+      let cursor = 0;
+      for (const [s, e] of filtered) {
+        if (s > cursor) keeps.push([cursor, s]);
+        cursor = e;
+      }
+      if (cursor < duration) keeps.push([cursor, duration]);
+
+      if (keeps.length) {
+        const [ks, ke] = keeps[0];
+        this.inTime = ks;
+        this.outTime = Math.min(this.duration, ke);
+        $('tcTrimIn').value = this.inTime;
+        $('tcTrimOut').value = this.outTime;
+        const v = $('tcTrimVideo');
+        if (v) v.currentTime = this.inTime;
+        this._updateLabels();
+      }
+      this._renderScrubber();
+      log(`✂ auto-cut detected ${filtered.length} silence(s)`, 'info');
+      showToast(`✂ ${filtered.length} silence(s)`, 2000);
+    } catch (e) {
+      log(`trim auto-cut error: ${e.message}`, 'error');
+    }
+  },
+
+  /* ── Keyboard shortcuts ────────────────────────────────────────────── */
+
+  _bindKeys() {
+    if (this._keyHandler) return;
+    this._keyHandler = (e) => {
+      if ($('tcTrimModal').style.display !== 'flex') return;
+      // Don't swallow typing in inputs (sliders are OK since they use arrow keys anyway)
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' && e.target.type === 'text') return;
+      const v = $('tcTrimVideo');
+      if (!v) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (v.paused) v.play().catch(() => {}); else v.pause();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        v.currentTime = Math.max(0, (v.currentTime || 0) - 1);
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        v.currentTime = Math.min(this.duration, (v.currentTime || 0) + 1);
+      } else if (e.key === '[') {
+        e.preventDefault();
+        this.onInChange(v.currentTime || 0);
+      } else if (e.key === ']') {
+        e.preventDefault();
+        this.onOutChange(v.currentTime || 0);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        this.exportTrimmed();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.close();
+      }
+    };
+    document.addEventListener('keydown', this._keyHandler);
+  },
+
+  _unbindKeys() {
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+    }
+  },
 
   async exportTrimmed() {
     if (this.encoding) return;
@@ -5283,6 +5559,8 @@ function wireEvents() {
   $('tcTrimOut').addEventListener('input', (e) => Trim.onOutChange(e.target.value));
   $('tcTrimPreviewInBtn').addEventListener('click', () => Trim.previewIn());
   $('tcTrimPreviewOutBtn').addEventListener('click', () => Trim.previewOut());
+  const tcas = $('tcTrimAutoCutBtn');
+  if (tcas) tcas.addEventListener('click', () => Trim.autoCutSilences());
 
   // Ticker pause
   $('tcTickerPause').addEventListener('click', () => {

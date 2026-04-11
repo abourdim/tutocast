@@ -2585,6 +2585,105 @@ body.log-open .app {
   .tc-trim-preview-btn { grid-column: 2 / -1; justify-self: end; }
 }
 
+/* ─── v0.7.22: visual trim scrubber ─────────────────────────────────── */
+.tc-trim-scrubber {
+  margin: 0 0 14px;
+  user-select: none;
+}
+.tc-trim-scrub-track {
+  position: relative;
+  height: 60px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.28));
+  border: 1px solid var(--border);
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -8px 16px rgba(0,0,0,.25);
+}
+.tc-trim-silence-layer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.tc-trim-silence-band {
+  position: absolute; top: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(148, 163, 184, .18) 0 6px,
+    rgba(148, 163, 184, .05) 6px 12px
+  );
+  border-left: 1px dashed rgba(148, 163, 184, .35);
+  border-right: 1px dashed rgba(148, 163, 184, .35);
+}
+.tc-trim-region {
+  position: absolute; top: 4px; bottom: 4px;
+  background: linear-gradient(180deg,
+    rgba(163, 230, 53, .22),
+    rgba(251, 146, 60, .22));
+  border-top: 2px solid var(--accent, #a3e635);
+  border-bottom: 2px solid #fb923c;
+  pointer-events: none;
+}
+.tc-trim-handle {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 12px;
+  margin-left: -6px;
+  border-radius: 4px;
+  cursor: ew-resize;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.3);
+  z-index: 3;
+  transition: transform .08s ease;
+}
+.tc-trim-handle:hover,
+.tc-trim-handle:active { transform: scaleY(1.05); }
+.tc-trim-handle::before {
+  content: ''; position: absolute;
+  left: 50%; top: 50%;
+  width: 2px; height: 24px;
+  margin: -12px 0 0 -1px;
+  background: rgba(0,0,0,.4);
+  border-radius: 1px;
+}
+.tc-trim-handle-in  { background: #a3e635; }
+.tc-trim-handle-out { background: #fb923c; }
+.tc-trim-playhead {
+  position: absolute;
+  top: -4px; bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255,255,255,.6), 0 0 14px var(--accent, #a3e635);
+  pointer-events: none;
+  z-index: 2;
+}
+.tc-trim-scrub-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: .6;
+  text-align: center;
+}
+.tc-trim-autocut {
+  margin-top: 10px;
+  background: linear-gradient(135deg, rgba(163, 230, 53, .18), rgba(251, 146, 60, .18)) !important;
+  border-color: var(--accent, #a3e635) !important;
+  font-weight: 700;
+}
+.tc-trim-autocut:hover {
+  background: linear-gradient(135deg, rgba(163, 230, 53, .32), rgba(251, 146, 60, .32)) !important;
+}
+.tc-trim-readout {
+  flex: 1;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  opacity: .85;
+  padding: 6px 10px;
+  background: rgba(0,0,0,.25);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  align-self: center;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    TEMPLATES — picker card + step strip
    ═══════════════════════════════════════════════════════════════════ */

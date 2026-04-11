@@ -118,7 +118,7 @@
         <div class="card-header">
           <div>
             <div class="card-title"><span class="icon">🎬</span> <span data-i18n="mainSection">Studio</span></div>
-            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.21</span></div>
+            <div class="card-subtitle"><span data-i18n="mainDesc">Compose ta scène et enregistre</span> <span class="version-tag">v0.7.22</span></div>
           </div>
           <!-- v0.7.20: moved the rec indicator to the REC bar next to the button -->
           <button class="btn-icon-only tc-max-btn" id="tcMaxBtn" aria-label="Maximize" title="Plein écran (F)">⛶</button>
@@ -370,12 +370,16 @@
           <span data-i18n="trimDuration">Durée finale :</span>
           <strong id="tcTrimDurationLabel">0:00</strong>
         </div>
+        <!-- v0.7.22: auto-cut silences one-shot -->
+        <button class="tc-btn-full tc-trim-autocut" id="tcTrimAutoCutBtn" data-i18n="trimCutSilences">✂ Couper les silences</button>
       </div>
       <div class="tc-trim-progress" id="tcTrimProgress" style="display:none">
         <div class="tc-trim-progress-label" data-i18n="trimEncoding">Encodage en cours…</div>
         <div class="tc-trim-progress-track"><div class="tc-trim-progress-bar" id="tcTrimProgressBar"></div></div>
       </div>
       <div class="tc-trim-footer">
+        <!-- v0.7.22: live readout — updated via rAF loop in Trim._updateLabels -->
+        <span class="tc-trim-readout" id="tcTrimReadout">00:00 / 00:00 (trim 0 s)</span>
         <button class="tc-btn-full" id="tcTrimCancelBtn" data-i18n="cancel">Annuler</button>
         <button class="tc-btn-full tc-trim-export" id="tcTrimExportBtn">⬇️ <span data-i18n="trimExport">Exporter le tuto coupé</span></button>
       </div>
@@ -700,7 +704,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.21</strong></span>
+      <span class="badge"><strong>v0.7.22</strong></span>
     </div>
   </aside>
 
@@ -898,7 +902,7 @@
 
     <div class="sidebar-footer">
       <span>TutoCast</span>
-      <span class="badge"><strong>v0.7.21</strong></span>
+      <span class="badge"><strong>v0.7.22</strong></span>
     </div>
   </aside>
 
@@ -930,7 +934,7 @@
 
     <div class="sidebar-footer">
       <span data-i18n="eventsMsg">Événements et messages</span>
-      <span class="badge"><strong>v0.7.21</strong></span>
+      <span class="badge"><strong>v0.7.22</strong></span>
     </div>
   </aside>
 
