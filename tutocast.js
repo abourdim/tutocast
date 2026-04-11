@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.47 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.48 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,10 +13,10 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.47';
+const APP_VERSION = '0.7.48';
 // v0.7.19: build timestamp shown in Settings > Général > Maintenance.
 // Bump by hand on each release — there's no build step.
-const BUILD_DATE = '2026-04-12 01:00';
+const BUILD_DATE = '2026-04-12 01:15';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -120,6 +120,10 @@ const LANG = {
     ctxDel: 'Supprimer',
     resetLayout: '🔓 Réinitialiser la disposition',
     layoutReset: '🔓 Disposition réinitialisée',
+    saveScene: 'Sauvegarder la disposition',
+    promptSaveScene: 'Nom de cette scène ?',
+    customSceneEmpty: '⚠ Aucune source visible à sauvegarder',
+    confirmDeleteCustomScene: 'Supprimer cette scène ?',
     downloadCsv: 'Capteurs (.csv)',
     removeSilence: 'Retirer les silences',
     silenceEncoding: '🔇 Encodage sans silences…',
@@ -587,6 +591,10 @@ const LANG = {
     ctxDel: 'Delete',
     resetLayout: '🔓 Reset layout',
     layoutReset: '🔓 Layout reset',
+    saveScene: 'Save this layout',
+    promptSaveScene: 'Name for this scene?',
+    customSceneEmpty: '⚠ No visible source to save',
+    confirmDeleteCustomScene: 'Delete this scene?',
     downloadCsv: 'Sensors (.csv)',
     removeSilence: 'Remove silences',
     silenceEncoding: '🔇 Encoding without silences…',
@@ -1046,6 +1054,10 @@ const LANG = {
     ctxDel: 'حذف',
     resetLayout: '🔓 إعادة ضبط التخطيط',
     layoutReset: '🔓 تمت إعادة ضبط التخطيط',
+    saveScene: 'حفظ التخطيط',
+    promptSaveScene: 'اسم هذا المشهد؟',
+    customSceneEmpty: '⚠ لا يوجد مصدر مرئي للحفظ',
+    confirmDeleteCustomScene: 'حذف هذا المشهد؟',
     downloadCsv: 'المستشعرات (.csv)',
     removeSilence: 'إزالة فترات الصمت',
     silenceEncoding: '🔇 جارٍ الترميز بدون صمت…',
@@ -2390,6 +2402,9 @@ const Scenes = {
     },
   ],
   active: 'code',
+  // v0.7.48: user-saved custom scenes, restored from tc-scene-custom
+  custom: [],
+  _customKeyCounter: 1,
 
   switch(key) {
     const s = this.presets.find(p => p.key === key);
@@ -2397,8 +2412,9 @@ const Scenes = {
     s.apply(Engine);
     this.active = key;
     this.render();
-    log(`${t('sceneChanged')} : ${s.icon} ${t('scene_' + key)}`, 'info');
-    Chapters.add(t('scene_' + key));
+    const labelForLog = s.custom ? s.label : t('scene_' + key);
+    log(`${t('sceneChanged')} : ${s.icon} ${labelForLog}`, 'info');
+    Chapters.add(labelForLog);
     // v0.7.37: auto intro text card, opt-in in Settings
     if (SceneIntroText.enabled) {
       SceneIntroText.show(key, s.icon);
@@ -2454,6 +2470,118 @@ const Scenes = {
       // Append any new presets that weren't in the saved order
       Object.values(byKey).forEach(p => ordered.push(p));
       this.presets = ordered;
+    } catch {}
+  },
+
+  /* v0.7.48: capture current layout of every visible source into a new
+     custom scene. Stored in localStorage as position data only (no blobs),
+     and applied back later by finding the Nth source of each type and
+     copying x/y/w/h/shape onto it. */
+  saveCurrentAsScene() {
+    const label = prompt(t('promptSaveScene') || 'Nom de cette scène ?', '');
+    if (!label || !label.trim()) return;
+    const trimmed = label.trim().slice(0, 40);
+    const key = 'custom-' + Date.now();
+    const W = Engine.width, H = Engine.height;
+    // Snapshot visible sources that aren't mic, as an array of position
+    // descriptors keyed by type + order.
+    const snapshot = Engine.sources
+      .filter(s => s.type !== 'mic' && s.visible !== false && !s.hidden)
+      .map(s => ({
+        type: s.type,
+        label: s.label,
+        x: s.x, y: s.y, w: s.w, h: s.h,
+        shape: s.shape || 'rect',
+      }));
+    if (snapshot.length === 0) {
+      showToast(t('customSceneEmpty') || '⚠ Aucune source visible à sauvegarder', 2000);
+      return;
+    }
+    // Build a static `apply` closure that captures the snapshot at save time.
+    // When the user clicks the custom scene, we find matching sources by type
+    // + order-in-type and apply the snapshot positions.
+    const sceneDef = {
+      key,
+      icon: '💾',
+      label: trimmed,
+      custom: true,
+      snapshot,
+      apply: (e) => this._applyCustomSnapshot(snapshot, e),
+      preview: snapshot.map(s => ({
+        kind: s.type === 'screen' ? 'screen' : s.type === 'cam' ? 'cam' : 'face',
+        x: s.x / W, y: s.y / H, w: s.w / W, h: s.h / H,
+        shape: s.shape,
+      })),
+    };
+    this.custom.push(sceneDef);
+    this.presets.push(sceneDef);
+    this.saveCustom();
+    this.render();
+    showToast('💾 ' + trimmed, 1500);
+  },
+
+  _applyCustomSnapshot(snapshot, engine) {
+    // For each snapshot entry, find the Nth source of that type and copy
+    // the saved position. Non-custom-flagged first so we don't clobber
+    // sources the user dragged since.
+    const perType = { screen: [], cam: [] };
+    engine.sources.forEach(s => {
+      if (s.type === 'screen' || s.type === 'cam') perType[s.type].push(s);
+    });
+    const cursors = { screen: 0, cam: 0 };
+    snapshot.forEach(snap => {
+      const bucket = perType[snap.type];
+      if (!bucket) return;
+      const target = bucket[cursors[snap.type]++];
+      if (!target) return;
+      target.visible = true;
+      target.x = snap.x; target.y = snap.y;
+      target.w = snap.w; target.h = snap.h;
+      target.shape = snap.shape;
+      target.custom = true;
+    });
+  },
+
+  deleteCustom(key) {
+    if (!confirm(t('confirmDeleteCustomScene') || 'Supprimer cette scène ?')) return;
+    this.custom = this.custom.filter(c => c.key !== key);
+    this.presets = this.presets.filter(p => p.key !== key);
+    this.saveCustom();
+    this.render();
+  },
+
+  saveCustom() {
+    try {
+      localStorage.setItem('tc-scene-custom', JSON.stringify(
+        this.custom.map(c => ({ key: c.key, icon: c.icon, label: c.label, snapshot: c.snapshot }))
+      ));
+    } catch {}
+  },
+
+  loadCustom() {
+    try {
+      const raw = localStorage.getItem('tc-scene-custom');
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!Array.isArray(saved)) return;
+      const W = Engine.width || 1920, H = Engine.height || 1080;
+      saved.forEach(c => {
+        const scene = {
+          key: c.key,
+          icon: c.icon || '💾',
+          label: c.label || 'Custom',
+          custom: true,
+          snapshot: c.snapshot,
+          apply: (e) => this._applyCustomSnapshot(c.snapshot, e),
+          preview: (c.snapshot || []).map(s => ({
+            kind: s.type === 'screen' ? 'screen' : s.type === 'cam' ? 'cam' : 'face',
+            x: s.x / W, y: s.y / H, w: s.w / W, h: s.h / H,
+            shape: s.shape || 'rect',
+          })),
+        };
+        this.custom.push(scene);
+        this.presets.push(scene);
+      });
     } catch {}
   },
 
@@ -2542,14 +2670,25 @@ function renderScenes() {
     btn.className = 'tc-scene-btn' + (Scenes.active === s.key ? ' active' : '');
     btn.draggable = true;
     btn.dataset.sceneKey = s.key;
+    const sceneLabel = s.custom ? s.label : t('scene_' + s.key);
     btn.innerHTML = `
       ${sceneThumbSvg(s.preview)}
       <span class="tc-scene-icon">${s.icon}</span>
-      <span class="tc-scene-label">${t('scene_' + s.key)}</span>
+      <span class="tc-scene-label">${sceneLabel}</span>
       <kbd class="tc-scene-kbd">${i + 1}</kbd>
       <span class="tc-scene-grip" aria-hidden="true">⋮⋮</span>
+      ${s.custom ? '<button class="tc-scene-del" data-del="' + s.key + '" title="Delete">✕</button>' : ''}
     `;
     btn.addEventListener('click', () => Scenes.switch(s.key));
+    if (s.custom) {
+      const delBtn = btn.querySelector('.tc-scene-del');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Scenes.deleteCustom(s.key);
+        });
+      }
+    }
     // v0.7.32: drag-to-reorder via native HTML5 drag API
     btn.addEventListener('dragstart', (e) => {
       btn.classList.add('dragging');
@@ -7561,6 +7700,9 @@ function wireEvents() {
   const resetBtn = $('tcResetLayoutBtn');
   if (resetBtn) resetBtn.addEventListener('click', () => Drag.resetAll());
 
+  // v0.7.48: Save current layout as a new custom scene
+  $('tcSaveSceneBtn')?.addEventListener('click', () => Scenes.saveCurrentAsScene());
+
   // Silence-trim wiring (v0.5.0) — appears after recording if the scan found > 2s of silence
   const silBtn = $('tcSilenceTrimBtn');
   if (silBtn) silBtn.addEventListener('click', () => SilenceTrim.exportCleaned());
@@ -7767,6 +7909,7 @@ async function init() {
   SceneIntroText.load();
   IntroOutro.load();
   History.load();
+  Scenes.loadCustom();  // v0.7.48: restore custom scenes
   Scenes.loadOrder();  // v0.7.32: restore persisted scene order before first render
   Brand.load();
   Badges.load();
