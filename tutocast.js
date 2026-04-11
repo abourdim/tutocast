@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   TutoCast v0.7.15 — kids-friendly multi-cam screen recorder
+   TutoCast v0.7.16 — kids-friendly multi-cam screen recorder
    Single-file app logic. Zero dependencies. Chrome/Edge desktop.
 
    Architecture:
@@ -13,7 +13,7 @@
      8. Onboarding + wiring
    ═══════════════════════════════════════════════════════════════════ */
 
-const APP_VERSION = '0.7.15';
+const APP_VERSION = '0.7.16';
 const $ = (id) => document.getElementById(id);
 
 /* ─────────── 1. i18n ─────────── */
@@ -3915,13 +3915,19 @@ const TextToolbar = {
     const stage = $('tcStage');
     if (!stage) return;
     const r = stage.getBoundingClientRect();
-    // v0.7.3: toolbar is position:fixed, so we need VIEWPORT coords.
-    // Map canvas-space (1920×1080) → stage-local → viewport.
-    const itemCxStage = (item.x + item.w / 2) / Engine.width * r.width;
-    const itemTopStage = item.y / Engine.height * r.height;
-    const vpLeft = r.left + itemCxStage;
-    // Place 56px above the text top, but never above the stage's top edge
-    const vpTop = Math.max(r.top + 8, r.top + itemTopStage - 56);
+    // v0.7.16: same docking rule as SourceToolbar — ALWAYS outside the
+    // stage (below by default) so the ✕ delete and friends never cover
+    // the recording area. Text overlays are decorative; their toolbar
+    // would otherwise hover right over the headline you're editing.
+    const cxStage = (item.x + item.w / 2) / Engine.width * r.width;
+    const tbH = this.el.offsetHeight || 44;
+    const tbHalfW = (this.el.offsetWidth || 280) / 2;
+    let vpLeft = r.left + cxStage;
+    vpLeft = Math.max(tbHalfW + 8, Math.min(window.innerWidth - tbHalfW - 8, vpLeft));
+    let vpTop = r.bottom + 12;
+    if (vpTop + tbH > window.innerHeight - 8) {
+      vpTop = r.top - tbH - 12;
+    }
     this.el.style.display = 'flex';
     this.el.style.left = `${vpLeft}px`;
     this.el.style.top = `${vpTop}px`;
@@ -3977,12 +3983,24 @@ const SourceToolbar = {
     const stage = $('tcStage');
     if (!stage) return;
     const r = stage.getBoundingClientRect();
-    // Map source center-top (canvas coords) to viewport coords
+    // v0.7.16: ALWAYS dock the toolbar OUTSIDE the stage rectangle so it
+    // never covers the recording area. Default placement: 12 px BELOW
+    // the stage's bottom edge, horizontally centered on the source so
+    // the visual connection to the selected layer stays clear.
+    // If there isn't enough room below (rare — stage already at viewport
+    // bottom), fall back to ABOVE the stage's top edge instead.
     const cxStage = (s.x + s.w / 2) / Engine.width * r.width;
-    const topStage = s.y / Engine.height * r.height;
-    const vpLeft = r.left + cxStage;
-    // Place 56px above the source top; clamp so the toolbar stays in the stage
-    const vpTop = Math.max(r.top + 8, r.top + topStage - 56);
+    const tbH = this.el.offsetHeight || 48;
+    const tbHalfW = (this.el.offsetWidth || 240) / 2;
+    let vpLeft = r.left + cxStage;
+    // Horizontally clamp so the toolbar stays inside the viewport
+    vpLeft = Math.max(tbHalfW + 8, Math.min(window.innerWidth - tbHalfW - 8, vpLeft));
+    let vpTop = r.bottom + 12;  // below the stage
+    // If the stage's bottom + toolbar height would overflow the viewport,
+    // dock above the stage instead.
+    if (vpTop + tbH > window.innerHeight - 8) {
+      vpTop = r.top - tbH - 12;
+    }
     this.el.style.display = 'flex';
     this.el.style.left = `${vpLeft}px`;
     this.el.style.top = `${vpTop}px`;

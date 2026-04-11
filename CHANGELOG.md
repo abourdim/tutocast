@@ -3,6 +3,28 @@
 All notable changes to **TutoCast** are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## v0.7.16 — 2026-04-11 (Toolbars docked outside the stage)
+
+### Fixed
+- **Source toolbar (✕ delete · 👁 hide · 📌 pin · shape) was hovering
+  over the canvas.** Even though it's an HTML element and never appears
+  in the recording, it still blocks part of the source visually while
+  teaching, which is the same problem the canvas-drawn buttons had.
+  User feedback: *"the tools x, eye shall never shown in record area.
+  they interfere"*. Fixed `SourceToolbar.updatePosition` to ALWAYS dock
+  the toolbar OUTSIDE the stage rectangle:
+  - Default placement: 12 px below the stage's bottom edge
+  - Fallback: 12 px above the stage's top edge if there's no room below
+  - Horizontally still follows the source center, clamped to viewport
+- **`TextToolbar` got the same docking treatment** for the same reason
+  — text overlay color/font/✕ buttons used to hover over the headline
+  the teacher was editing.
+
+### Verified (Preview MCP harness)
+- Fake source at center-stage → toolbar lands at viewport (655, 781),
+  stage bottom 769 → `belowStage: true`, `overlapsStage: false`.
+- No console errors on load.
+
 ## v0.7.15 — 2026-04-11 (Shapes as an option)
 
 ### Added
